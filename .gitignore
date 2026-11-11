@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Production builds
+dist/
+*/dist/
+
+# Build logs and cache
+*.tsbuildinfo
+*.log
+.init_temp
+1st proyect/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
