@@ -116,8 +116,8 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
     <section className="page-container py-16">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-heading-sm font-semibold text-white">{title}</h1>
-          {description && <p className="mt-2 max-w-2xl text-body-sm text-fog">{description}</p>}
+          <h1 className="text-heading-sm font-extrabold text-[#0F172A]">{title}</h1>
+          {description && <p className="mt-2 max-w-2xl text-body-sm text-[#475569]">{description}</p>}
         </div>
         <Button variant="brand" onClick={openCreate}>
           Nuevo registro
@@ -143,29 +143,29 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
         )}
 
         {items.length > 0 && (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] shadow-xs px-4 py-2">
             <table className="w-full min-w-[640px] border-collapse text-left">
               <thead>
-                <tr className="border-b border-white/10">
+                <tr className="border-b border-[#E2E8F0]">
                   {columns.map((column) => (
                     <th
                       key={column.header}
                       scope="col"
-                      className="px-3 py-3 text-caption font-semibold uppercase tracking-wider text-fog"
+                      className="px-3 py-3 text-caption font-bold uppercase tracking-wider text-[#475569]"
                     >
                       {column.header}
                     </th>
                   ))}
-                  <th scope="col" className="px-3 py-3 text-right text-caption font-semibold uppercase tracking-wider text-fog">
+                  <th scope="col" className="px-3 py-3 text-right text-caption font-bold uppercase tracking-wider text-[#475569]">
                     Acciones
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((item) => (
-                  <tr key={getId(item)} className="border-b border-white/5">
+                  <tr key={getId(item)} className="border-b border-[#E2E8F0] last:border-b-0 hover:bg-[#F8FAFC] transition-colors">
                     {columns.map((column) => (
-                      <td key={column.header} className={`px-3 py-3 text-body-sm ${column.className ?? 'text-white'}`}>
+                      <td key={column.header} className={`px-3 py-3 text-body-sm ${column.className ?? 'text-[#0F172A] font-medium'}`}>
                         {column.render(item)}
                       </td>
                     ))}
@@ -174,14 +174,14 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
                         <button
                           type="button"
                           onClick={() => openEdit(item)}
-                          className="text-body-sm text-signal-blue transition-colors hover:text-white"
+                          className="text-body-sm font-semibold text-[#1E1B4B] transition-colors hover:text-[#FF2A5F]"
                         >
                           Editar
                         </button>
                         <button
                           type="button"
                           onClick={() => setItemToDelete(item)}
-                          className="text-body-sm text-[#ff7b7b] transition-colors hover:text-white"
+                          className="text-body-sm font-semibold text-[#EF4444] transition-colors hover:text-[#991B1B]"
                         >
                           Eliminar
                         </button>

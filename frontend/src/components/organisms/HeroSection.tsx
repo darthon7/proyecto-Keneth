@@ -12,12 +12,12 @@ export function HeroSection({ onExplore, onSearch, onPublish }: HeroSectionProps
     <section>
       <div className="page-container pt-16 pb-24">
         <div className="max-w-2xl">
-          <h1 className="text-display text-white">
+          <h1 className="text-display text-[#0F172A]">
             Busca el juego.
             <br />
             Compra la edición.
           </h1>
-          <p className="mt-6 max-w-md text-body text-mist">
+          <p className="mt-6 max-w-md text-body text-[#475569]">
             Ediciones digitales y físicas, promociones activas y tu biblioteca
             siempre a mano.
           </p>

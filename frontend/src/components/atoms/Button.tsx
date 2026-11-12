@@ -21,18 +21,18 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    'bg-white text-obsidian hover:bg-bone shadow-[0_4px_14px_rgba(255,255,255,0.15)] hover:shadow-[0_8px_20px_rgba(255,255,255,0.25)] disabled:bg-mid-gray disabled:text-fog',
+    'bg-[#FF2A5F] text-white hover:bg-[#E01E4F] shadow-[0_4px_14px_rgba(255,42,95,0.28)] hover:shadow-[0_8px_20px_rgba(255,42,95,0.42)] disabled:bg-[#E2E8F0] disabled:text-[#94A3B8]',
   brand:
-    'bg-[#4f8eff] text-[#00275e] hover:bg-blue-400 shadow-[0_4px_14px_rgba(79,142,255,0.3)] hover:shadow-[0_8px_20px_rgba(79,142,255,0.45)] disabled:bg-slate-700 disabled:text-slate-400',
+    'bg-[#FF2A5F] text-white hover:bg-[#E01E4F] shadow-[0_4px_14px_rgba(255,42,95,0.28)] hover:shadow-[0_8px_20px_rgba(255,42,95,0.42)] disabled:bg-[#E2E8F0] disabled:text-[#94A3B8]',
   success:
-    'bg-emerald-500 text-black hover:bg-emerald-400 shadow-[0_4px_14px_rgba(16,185,129,0.35)] hover:shadow-[0_8px_20px_rgba(16,185,129,0.5)] disabled:bg-slate-700 disabled:text-slate-400',
-  ghost: 'bg-transparent text-fog hover:text-white disabled:text-mid-gray',
+    'bg-emerald-500 text-[#0F172A] hover:bg-emerald-400 shadow-[0_4px_14px_rgba(16,185,129,0.25)] hover:shadow-[0_8px_20px_rgba(16,185,129,0.4)] disabled:bg-[#E2E8F0] disabled:text-[#94A3B8]',
+  ghost: 'bg-transparent text-[#475569] hover:text-[#0F172A] hover:bg-[#E2E8F0]/60 disabled:text-[#94A3B8]',
   outline:
-    'bg-transparent text-white surface-hairline hover:bg-graphite disabled:text-mid-gray',
+    'bg-[#FFFFFF] text-[#0F172A] border border-[#E2E8F0] hover:bg-[#F4F4F6] hover:border-[#1E1B4B] disabled:text-[#94A3B8]',
   danger:
-    'bg-transparent text-[#ff7b7b] surface-hairline hover:bg-[#ff7b7b]/10 disabled:text-mid-gray',
+    'bg-transparent text-[#EF4444] border border-[#FECACA] hover:bg-[#FEE2E2] hover:text-[#991B1B] disabled:text-[#94A3B8]',
   nintendo:
-    'bg-[#e60012] text-white hover:bg-[#ff1a1a] shadow-[0_4px_14px_rgba(230,0,18,0.35)] hover:shadow-[0_8px_20px_rgba(230,0,18,0.5)] disabled:bg-slate-700 disabled:text-slate-400',
+    'bg-[#e60012] text-white hover:bg-[#c80010] shadow-[0_4px_14px_rgba(230,0,18,0.3)] hover:shadow-[0_8px_20px_rgba(230,0,18,0.45)] disabled:bg-[#E2E8F0] disabled:text-[#94A3B8]',
 };
 
 const SIZES = {

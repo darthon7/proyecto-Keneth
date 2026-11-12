@@ -20,7 +20,7 @@ export function PaginationDots({ total, current, onChange, className = '' }: Pag
             aria-current={isActive ? 'true' : undefined}
             onClick={() => onChange(index)}
             className={`h-2 w-2 rounded-full transition-colors ${
-              isActive ? 'bg-white' : 'bg-fog/40 hover:bg-fog/70'
+              isActive ? 'bg-[#FF2A5F]' : 'bg-[#CBD5E1] hover:bg-[#94A3B8]'
             }`}
           />
         );

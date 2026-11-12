@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { wishlistsExtraApi } from '@/api';
+import { BrandLogo } from '@/components/atoms/BrandLogo';
 import { LoginModal } from '@/components/molecules/LoginModal';
 import { useCart } from '@/context/CartContext';
 import { useSession } from '@/context/SessionContext';
@@ -107,12 +108,12 @@ export function NavBar() {
   return (
     <header
       data-testid="navbar-header"
-      className="sticky top-0 z-50 w-full bg-[#0B0C10]/85 backdrop-blur-2xl border-b border-white/[0.08] shadow-[0_10px_32px_rgba(0,0,0,0.72)]"
+      className="sticky top-0 z-50 w-full bg-[#1E1B4B] border-b border-[#312E81] shadow-[0_8px_28px_rgba(30,27,75,0.22)]"
     >
-      {/* Subtle controlled HUD micro-hairline accent */}
+      {/* Pop contrast bottom hairline accent */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-cyan-400/35 to-transparent"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-[#FF2A5F] via-[#FFC700] to-[#FF2A5F]"
       />
 
       <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8">
@@ -122,35 +123,13 @@ export function NavBar() {
             <Link
               to="/"
               data-testid="navbar-brand"
-              className="flex items-center gap-2 sm:gap-2.5 group shrink-0"
+              className="flex items-center group shrink-0 py-1 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFC700]"
             >
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#12151E] border border-cyan-400/25 group-hover:border-cyan-400/60 flex items-center justify-center transition-colors shadow-[inset_0_0_12px_rgba(34,211,238,0.08)]">
-                <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 40 40" fill="none" aria-hidden="true">
-                  <path
-                    d="M20 3L35 11.66V28.34L20 37L5 28.34V11.66L20 3Z"
-                    stroke="#22d3ee"
-                    strokeWidth="2.4"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M20 10.5L28.5 15.4V24.6L20 29.5L11.5 24.6V15.4L20 10.5Z"
-                    fill="#a855f7"
-                    fillOpacity="0.22"
-                    stroke="#c084fc"
-                    strokeWidth="1.5"
-                  />
-                  <circle cx="20" cy="20" r="3.2" fill="#22d3ee" />
-                </svg>
-              </div>
-
-              <div className="flex flex-col leading-none">
-                <span className="text-sm sm:text-lg font-black tracking-wider uppercase text-white font-display whitespace-nowrap">
-                  EL <span className="text-cyan-400">PIBES</span>
-                </span>
-                <span className="hidden sm:block text-[9px] font-mono uppercase tracking-[0.24em] text-slate-400 mt-0.5">
-                  DIGITAL STORE
-                </span>
-              </div>
+              <BrandLogo
+                titleClassName="text-sm sm:text-lg"
+                subtitle="DIGITAL STORE"
+                subtitleClassName="hidden sm:block text-[9px] font-mono uppercase tracking-[0.24em] text-indigo-200 mt-0.5"
+              />
             </Link>
 
             {/* Desktop Navigation Links */}
@@ -162,8 +141,8 @@ export function NavBar() {
                   className={({ isActive }) =>
                     `relative px-3 py-2 rounded-lg text-[11px] font-bold uppercase tracking-[0.08em] transition-colors duration-200 ${
                       isActive
-                        ? 'text-white bg-white/[0.05] shadow-[inset_0_-2px_0_0_#22d3ee]'
-                        : 'text-slate-400 hover:text-white hover:bg-white/[0.03]'
+                        ? 'text-[#0F172A] bg-[#FFC700]'
+                        : 'text-indigo-100 hover:text-white hover:bg-white/10'
                     }`
                   }
                 >
@@ -181,14 +160,14 @@ export function NavBar() {
                   aria-haspopup="menu"
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-bold uppercase tracking-[0.08em] transition-colors duration-200 ${
                     isCatalogOpen
-                      ? 'text-cyan-300 bg-cyan-400/10'
-                      : 'text-slate-400 hover:text-white hover:bg-white/[0.03]'
+                      ? 'text-[#0F172A] bg-[#FFC700]'
+                      : 'text-indigo-100 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   <span>CATÁLOGO</span>
                   <svg
                     className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                      isCatalogOpen ? 'rotate-180 text-cyan-400' : ''
+                      isCatalogOpen ? 'rotate-180 text-[#0F172A]' : ''
                     }`}
                     fill="none"
                     viewBox="0 0 24 24"
@@ -203,11 +182,11 @@ export function NavBar() {
                   <div
                     role="menu"
                     aria-label="Secciones y gestión del catálogo"
-                    className="absolute top-full left-0 mt-2.5 w-[420px] rounded-2xl bg-[#12151E]/95 border border-white/10 p-4 shadow-[0_20px_48px_rgba(0,0,0,0.85)] backdrop-blur-2xl z-50"
+                    className="absolute top-full left-0 mt-2.5 w-[420px] rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-4 shadow-[0_20px_48px_rgba(15,23,42,0.2)] z-50"
                   >
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <p className="px-2.5 pb-1 text-[10px] font-mono uppercase tracking-widest text-cyan-400/90 border-b border-white/[0.06]">
+                        <p className="px-2.5 pb-1 text-[10px] font-mono font-bold uppercase tracking-widest text-[#1E1B4B] border-b border-[#E2E8F0]">
                           Mi Espacio
                         </p>
                         {USER_SECTION_LINKS.map((item) => (
@@ -216,7 +195,7 @@ export function NavBar() {
                             to={item.to}
                             role="menuitem"
                             onClick={() => setIsCatalogOpen(false)}
-                            className="block px-2.5 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors"
+                            className="block px-2.5 py-2 rounded-lg text-xs font-semibold text-[#475569] hover:text-[#FF2A5F] hover:bg-[#F4F4F6] transition-colors"
                           >
                             {item.label}
                           </Link>
@@ -224,7 +203,7 @@ export function NavBar() {
                       </div>
 
                       <div className="space-y-1.5">
-                        <p className="px-2.5 pb-1 text-[10px] font-mono uppercase tracking-widest text-purple-300/90 border-b border-white/[0.06]">
+                        <p className="px-2.5 pb-1 text-[10px] font-mono font-bold uppercase tracking-widest text-[#FF2A5F] border-b border-[#E2E8F0]">
                           Gestión
                         </p>
                         {CATALOG_ADMIN_LINKS.map((item) => (
@@ -233,7 +212,7 @@ export function NavBar() {
                             to={item.to}
                             role="menuitem"
                             onClick={() => setIsCatalogOpen(false)}
-                            className="block px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors"
+                            className="block px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#475569] hover:text-[#1E1B4B] hover:bg-[#F4F4F6] transition-colors"
                           >
                             {item.label}
                           </Link>
@@ -246,12 +225,12 @@ export function NavBar() {
             </nav>
           </div>
 
-          {/* Center: Steam/G2A Style Search Bar with Ctrl+K */}
+          {/* Center: Retro Pop Search Bar with Ctrl+K */}
           <div className="flex-1 max-w-md hidden md:block">
             <form onSubmit={handleSearchSubmit} role="search" className="relative">
-              <div className="relative flex items-center bg-[#12151E] rounded-xl px-3.5 py-2 border border-white/10 hover:border-white/20 focus-within:border-cyan-400/60 focus-within:bg-[#161B26] focus-within:shadow-[0_0_0_3px_rgba(34,211,238,0.12)] transition-all">
+              <div className="relative flex items-center bg-[#FFFFFF] rounded-xl px-3.5 py-2 border border-white/20 focus-within:ring-2 focus-within:ring-[#FFC700] shadow-sm transition-all">
                 <svg
-                  className="w-4 h-4 text-slate-400 mr-2.5 shrink-0"
+                  className="w-4 h-4 text-[#475569] mr-2.5 shrink-0"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -272,21 +251,21 @@ export function NavBar() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Buscar juegos, DLCs, estudios..."
                   aria-label="Buscar videojuegos"
-                  className="w-full bg-transparent text-xs text-white placeholder-slate-400 focus:outline-none"
+                  className="w-full bg-transparent text-xs text-[#0F172A] placeholder-[#94A3B8] focus:outline-none"
                 />
                 {searchTerm && (
                   <button
                     type="button"
                     onClick={() => setSearchTerm('')}
                     aria-label="Limpiar búsqueda"
-                    className="mr-1.5 p-0.5 rounded text-slate-400 hover:text-white transition-colors"
+                    className="mr-1.5 p-0.5 rounded text-[#475569] hover:text-[#FF2A5F] transition-colors"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
                 )}
-                <kbd className="hidden xl:inline-flex items-center text-[10px] font-mono font-semibold text-slate-400 bg-[#1B2030] px-1.5 py-0.5 rounded border border-white/10 shrink-0">
+                <kbd className="hidden xl:inline-flex items-center text-[10px] font-mono font-semibold text-[#475569] bg-[#F4F4F6] px-1.5 py-0.5 rounded border border-[#E2E8F0] shrink-0">
                   Ctrl+K
                 </kbd>
               </div>
@@ -301,7 +280,7 @@ export function NavBar() {
               data-testid="navbar-wishlist-link"
               aria-label="Lista de deseados"
               title="Lista de deseados"
-              className="relative p-2 sm:p-2.5 rounded-xl bg-[#12151E]/80 hover:bg-[#191E2B] text-slate-300 hover:text-white border border-white/[0.07] hover:border-purple-400/40 transition-colors"
+              className="relative p-2 sm:p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/15 transition-colors"
             >
               <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -312,7 +291,7 @@ export function NavBar() {
                 />
               </svg>
               {wishlistCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-purple-500 text-white px-1 text-[10px] font-black shadow-sm">
+                <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#FFC700] text-[#0F172A] px-1 text-[10px] font-black shadow-sm">
                   {wishlistCount}
                 </span>
               )}
@@ -324,9 +303,9 @@ export function NavBar() {
               data-testid="navbar-cart-link"
               aria-label="Ver carrito y compras"
               title="Carrito de compras"
-              className="relative flex items-center gap-2 p-2 sm:px-3 sm:py-2 rounded-xl bg-[#12151E]/80 hover:bg-[#191E2B] text-slate-200 hover:text-white border border-white/[0.07] hover:border-emerald-400/40 transition-colors"
+              className="relative flex items-center gap-2 p-2 sm:px-3 sm:py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/15 transition-colors"
             >
-              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#FFC700]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -336,13 +315,13 @@ export function NavBar() {
               </svg>
               <span className="hidden xl:inline text-xs font-bold tracking-wide">Carrito</span>
               {totalItems > 0 && (
-                <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-400 text-[#0B0C10] px-1 text-[10px] font-black shadow-sm">
+                <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-[#FF2A5F] text-white px-1 text-[10px] font-black shadow-sm">
                   {totalItems}
                 </span>
               )}
             </Link>
 
-            <div className="h-6 w-px bg-white/10 hidden sm:block mx-0.5" />
+            <div className="h-6 w-px bg-white/20 hidden sm:block mx-0.5" />
 
             {/* User Session Profile Widget or Login CTA (preserving button animation) */}
             {currentUser ? (
@@ -353,10 +332,10 @@ export function NavBar() {
                   onClick={() => setIsProfileOpen((open) => !open)}
                   aria-expanded={isProfileOpen}
                   aria-haspopup="menu"
-                  className="flex items-center gap-2.5 p-1 pr-2 rounded-xl bg-[#12151E]/80 hover:bg-[#191E2B] border border-white/[0.08] hover:border-cyan-400/40 transition-colors"
+                  className="flex items-center gap-2.5 p-1 pr-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 transition-colors"
                   title="Ver mi cuenta"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-purple-500 text-[#0B0C10] font-black text-xs flex items-center justify-center shadow-sm">
+                  <div className="w-8 h-8 rounded-lg bg-[#FFC700] text-[#0F172A] font-black text-xs flex items-center justify-center shadow-sm">
                     {initials(currentUser.username)}
                   </div>
 
@@ -364,14 +343,14 @@ export function NavBar() {
                     <span className="text-xs font-bold text-white line-clamp-1 max-w-[110px]">
                       {currentUser.username}
                     </span>
-                    <span className="text-[9px] font-mono font-bold text-cyan-300 uppercase tracking-wider">
+                    <span className="text-[9px] font-mono font-bold text-[#FFC700] uppercase tracking-wider">
                       {currentUser.countryCode || 'CUENTA'}
                     </span>
                   </div>
 
                   <svg
-                    className={`hidden sm:block w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
-                      isProfileOpen ? 'rotate-180 text-cyan-400' : ''
+                    className={`hidden sm:block w-3.5 h-3.5 text-indigo-200 transition-transform duration-200 ${
+                      isProfileOpen ? 'rotate-180 text-[#FFC700]' : ''
                     }`}
                     fill="none"
                     viewBox="0 0 24 24"
@@ -386,11 +365,11 @@ export function NavBar() {
                   <div
                     role="menu"
                     aria-label="Menú de usuario"
-                    className="absolute right-0 top-full mt-2.5 w-56 rounded-2xl bg-[#12151E]/95 border border-white/10 p-2 shadow-[0_20px_48px_rgba(0,0,0,0.85)] backdrop-blur-2xl z-50"
+                    className="absolute right-0 top-full mt-2.5 w-56 rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-2 shadow-[0_20px_48px_rgba(15,23,42,0.2)] z-50"
                   >
-                    <div className="px-3 py-2.5 border-b border-white/[0.06]">
-                      <p className="text-xs font-bold text-white truncate">{currentUser.username}</p>
-                      <p className="text-[11px] text-slate-400 truncate">{currentUser.email}</p>
+                    <div className="px-3 py-2.5 border-b border-[#E2E8F0]">
+                      <p className="text-xs font-bold text-[#0F172A] truncate">{currentUser.username}</p>
+                      <p className="text-[11px] text-[#475569] truncate">{currentUser.email}</p>
                     </div>
 
                     <div className="py-1.5 space-y-0.5">
@@ -398,7 +377,7 @@ export function NavBar() {
                         to={`/users/${currentUser.id}`}
                         role="menuitem"
                         onClick={() => setIsProfileOpen(false)}
-                        className="block px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors"
+                        className="block px-3 py-1.5 rounded-lg text-xs font-semibold text-[#475569] hover:text-[#1E1B4B] hover:bg-[#F4F4F6] transition-colors"
                       >
                         Mi Perfil
                       </Link>
@@ -406,7 +385,7 @@ export function NavBar() {
                         to="/library"
                         role="menuitem"
                         onClick={() => setIsProfileOpen(false)}
-                        className="block px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors"
+                        className="block px-3 py-1.5 rounded-lg text-xs font-semibold text-[#475569] hover:text-[#1E1B4B] hover:bg-[#F4F4F6] transition-colors"
                       >
                         Mi Biblioteca
                       </Link>
@@ -414,7 +393,7 @@ export function NavBar() {
                         to="/wishlist"
                         role="menuitem"
                         onClick={() => setIsProfileOpen(false)}
-                        className="block px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors"
+                        className="block px-3 py-1.5 rounded-lg text-xs font-semibold text-[#475569] hover:text-[#1E1B4B] hover:bg-[#F4F4F6] transition-colors"
                       >
                         Lista de Deseados
                       </Link>
@@ -422,18 +401,18 @@ export function NavBar() {
                         to="/orders"
                         role="menuitem"
                         onClick={() => setIsProfileOpen(false)}
-                        className="block px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors"
+                        className="block px-3 py-1.5 rounded-lg text-xs font-semibold text-[#475569] hover:text-[#1E1B4B] hover:bg-[#F4F4F6] transition-colors"
                       >
                         Historial de Compras
                       </Link>
                     </div>
 
-                    <div className="border-t border-white/[0.06] pt-1.5">
+                    <div className="border-t border-[#E2E8F0] pt-1.5">
                       <button
                         type="button"
                         role="menuitem"
                         onClick={logout}
-                        className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-bold text-rose-400 hover:bg-rose-500/10 transition-colors"
+                        className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-bold text-[#EF4444] hover:bg-[#FEE2E2] transition-colors"
                       >
                         Cerrar Sesión
                       </button>
@@ -446,7 +425,7 @@ export function NavBar() {
                 type="button"
                 data-testid="navbar-login-btn"
                 onClick={() => setIsLoginOpen(true)}
-                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-cyan-400 hover:bg-cyan-300 text-[#0B0C10] shadow-[0_4px_16px_rgba(34,211,238,0.28)] hover:shadow-[0_8px_24px_rgba(34,211,238,0.45)] btn-nintendo-animation btn-nintendo-shine text-[11px] sm:text-xs font-black uppercase tracking-wider whitespace-nowrap group"
+                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#FF2A5F] hover:bg-[#E01E4F] text-white shadow-[0_4px_14px_rgba(255,42,95,0.35)] hover:shadow-[0_8px_22px_rgba(255,42,95,0.5)] btn-nintendo-animation btn-nintendo-shine text-[11px] sm:text-xs font-black uppercase tracking-wider whitespace-nowrap group"
               >
                 <svg
                   className="hidden sm:block w-4 h-4 transition-transform group-hover:translate-x-0.5"
@@ -473,7 +452,7 @@ export function NavBar() {
               aria-label="Abrir menú"
               aria-expanded={isMenuOpen}
               onClick={() => setIsMenuOpen((open) => !open)}
-              className="p-2 rounded-xl bg-[#12151E] border border-white/[0.07] text-slate-300 hover:text-white hover:border-cyan-400/40 transition-colors lg:hidden"
+              className="p-2 rounded-xl bg-white/10 border border-white/15 text-white hover:bg-white/20 transition-colors lg:hidden"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 {isMenuOpen ? (
@@ -489,7 +468,7 @@ export function NavBar() {
 
       {/* MOBILE EXPANDED MENU DRAWER */}
       {isMenuOpen && (
-        <div className="lg:hidden bg-[#0E1118]/95 backdrop-blur-2xl border-t border-white/10 px-4 py-5 space-y-5">
+        <div className="lg:hidden bg-[#1E1B4B] border-t border-white/15 px-4 py-5 space-y-5">
           <form onSubmit={handleSearchSubmit} role="search" className="relative">
             <input
               type="text"
@@ -497,12 +476,12 @@ export function NavBar() {
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Buscar juegos, DLCs, estudios..."
               aria-label="Buscar videojuegos"
-              className="w-full bg-[#12151E] text-xs text-white placeholder-slate-400 px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-cyan-400/60"
+              className="w-full bg-[#FFFFFF] text-xs text-[#0F172A] placeholder-[#94A3B8] px-4 py-2.5 rounded-xl border border-[#E2E8F0] focus:outline-none focus:ring-2 focus:ring-[#FFC700]"
             />
           </form>
 
           <div className="flex flex-col space-y-1">
-            <p className="px-3 text-[10px] font-mono font-bold uppercase tracking-widest text-cyan-400/80">
+            <p className="px-3 text-[10px] font-mono font-bold uppercase tracking-widest text-[#FFC700]">
               Navegación
             </p>
             {MAIN_NAV_LINKS.map((link) => (
@@ -513,8 +492,8 @@ export function NavBar() {
                 className={({ isActive }) =>
                   `px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors ${
                     isActive
-                      ? 'bg-cyan-400/15 text-cyan-300 border border-cyan-400/20'
-                      : 'text-slate-300 hover:bg-white/5'
+                      ? 'bg-[#FFC700] text-[#0F172A]'
+                      : 'text-indigo-100 hover:bg-white/10 hover:text-white'
                   }`
                 }
               >
@@ -523,8 +502,8 @@ export function NavBar() {
             ))}
           </div>
 
-          <div className="space-y-2 border-t border-white/[0.07] pt-3">
-            <p className="px-3 text-[10px] font-mono font-bold uppercase tracking-widest text-purple-300/80">
+          <div className="space-y-2 border-t border-white/15 pt-3">
+            <p className="px-3 text-[10px] font-mono font-bold uppercase tracking-widest text-[#FFC700]">
               Catálogo y Gestión
             </p>
             <div className="grid grid-cols-2 gap-1">
@@ -533,7 +512,7 @@ export function NavBar() {
                   key={link.to}
                   to={link.to}
                   onClick={() => setIsMenuOpen(false)}
-                  className="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-white/5 transition-colors truncate"
+                  className="px-3 py-1.5 rounded-lg text-xs text-indigo-100 hover:text-white hover:bg-white/10 transition-colors truncate"
                 >
                   {link.label}
                 </Link>
@@ -542,12 +521,12 @@ export function NavBar() {
           </div>
 
           {currentUser ? (
-            <div className="border-t border-white/[0.07] pt-3 flex items-center justify-between px-1">
+            <div className="border-t border-white/15 pt-3 flex items-center justify-between px-1">
               <span className="text-xs font-bold text-white">{currentUser.username}</span>
               <button
                 type="button"
                 onClick={logout}
-                className="text-xs font-bold text-rose-400 hover:underline"
+                className="text-xs font-bold text-[#FFC700] hover:underline"
               >
                 Cerrar Sesión
               </button>
@@ -559,7 +538,7 @@ export function NavBar() {
                 setIsMenuOpen(false);
                 setIsLoginOpen(true);
               }}
-              className="w-full py-2.5 rounded-full bg-cyan-400 hover:bg-cyan-300 text-[#0B0C10] shadow-[0_4px_16px_rgba(34,211,238,0.28)] hover:shadow-[0_8px_24px_rgba(34,211,238,0.45)] btn-nintendo-animation btn-nintendo-shine font-black text-xs uppercase tracking-wider"
+              className="w-full py-2.5 rounded-full bg-[#FF2A5F] hover:bg-[#E01E4F] text-white shadow-[0_4px_16px_rgba(255,42,95,0.35)] btn-nintendo-animation btn-nintendo-shine font-black text-xs uppercase tracking-wider"
             >
               Iniciar sesión
             </button>

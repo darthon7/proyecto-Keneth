@@ -9,7 +9,7 @@ describe('Button atom', () => {
     expect(btn).toBeInTheDocument();
     expect(btn.className).toContain('btn-nintendo-animation');
     expect(btn.className).toContain('btn-nintendo-shine');
-    expect(btn.className).toContain('bg-white');
+    expect(btn.className).toContain('bg-[#FF2A5F]');
     expect(btn.className).toContain('rounded-full');
   });
 

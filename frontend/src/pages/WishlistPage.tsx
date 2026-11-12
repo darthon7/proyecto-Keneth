@@ -69,15 +69,15 @@ export function WishlistPage() {
   return (
     <section className="page-container py-16">
       <header>
-        <h1 className="text-heading-sm font-semibold text-white">
+        <h1 className="text-heading-sm font-extrabold text-[#0F172A]">
           Wishlist de {currentUser.username}
         </h1>
-        <p className="mt-2 text-body-sm text-fog">
+        <p className="mt-2 text-body-sm text-[#475569]">
           Guarda tus títulos favoritos y recibe avisos cuando haya ofertas.
         </p>
       </header>
 
-      <div className="mt-8 flex flex-wrap items-end gap-4 rounded-[4px] bg-graphite p-4">
+      <div className="mt-8 flex flex-wrap items-end gap-4 rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-4 shadow-xs">
         <div className="min-w-[240px] flex-1">
           <Select
             label="Añadir videojuego"
@@ -91,12 +91,12 @@ export function WishlistPage() {
             }))}
           />
         </div>
-        <label className="flex items-center gap-2 pb-3 text-body-sm text-white">
+        <label className="flex items-center gap-2 pb-3 text-body-sm font-medium text-[#0F172A]">
           <input
             type="checkbox"
             checked={notifyOnSale}
             onChange={(event) => setNotifyOnSale(event.target.checked)}
-            className="h-4 w-4 accent-white"
+            className="h-4 w-4 accent-[#FF2A5F]"
           />
           Avisarme de ofertas
         </label>
@@ -133,26 +133,26 @@ export function WishlistPage() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((wish) => (
-            <article key={wish.id} className="rounded-[4px] bg-graphite p-4">
+            <article key={wish.id} className="product-card rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] hover:border-[#FF2A5F] p-4 shadow-xs transition-all">
               <div className="flex items-start justify-between gap-3">
-                <h2 className="text-body font-semibold text-white">
+                <h2 className="text-body font-bold text-[#0F172A]">
                   {wish.game?.title ?? 'Videojuego'}
                 </h2>
                 <Badge tone={wish.notifyOnSale ? 'blue' : 'neutral'}>
                   {wish.notifyOnSale ? 'Aviso activo' : 'Sin aviso'}
                 </Badge>
               </div>
-              <p className="mt-1 text-body-sm text-fog">
+              <p className="mt-1 text-body-sm text-[#475569]">
                 {wish.game?.publisher?.name ?? 'Sin publisher'}
               </p>
-              <p className="mt-2 text-caption text-mid-gray">
+              <p className="mt-2 text-caption text-[#94A3B8]">
                 Añadido el {formatDate(wish.addedAt)}
               </p>
               <div className="mt-4 flex flex-wrap items-center gap-4">
                 {wish.game && (
                   <Link
                     to={`/games/${wish.game.id}`}
-                    className="text-body-sm font-semibold text-signal-blue hover:text-white"
+                    className="text-body-sm font-semibold text-[#1E1B4B] hover:text-[#FF2A5F]"
                   >
                     Ver ficha
                   </Link>
@@ -160,14 +160,14 @@ export function WishlistPage() {
                 <button
                   type="button"
                   onClick={() => toggleNotifyMutation.mutate(wish)}
-                  className="text-body-sm text-fog transition-colors hover:text-white"
+                  className="text-body-sm text-[#475569] transition-colors hover:text-[#0F172A]"
                 >
                   {wish.notifyOnSale ? 'Desactivar aviso' : 'Activar aviso de ofertas'}
                 </button>
                 <button
                   type="button"
                   onClick={() => removeMutation.mutate(wish.id)}
-                  className="text-body-sm text-[#ff7b7b] hover:text-white"
+                  className="text-body-sm font-semibold text-[#EF4444] hover:text-[#991B1B]"
                 >
                   Quitar
                 </button>

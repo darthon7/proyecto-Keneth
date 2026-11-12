@@ -9,11 +9,11 @@ interface BadgeProps {
 }
 
 const TONES: Record<BadgeTone, string> = {
-  neutral: 'bg-graphite text-fog',
-  blue: 'bg-graphite text-signal-blue',
-  success: 'bg-graphite text-[#7ddc7d]',
-  warning: 'bg-graphite text-[#e8c37a]',
-  danger: 'bg-graphite text-[#ff7b7b]',
+  neutral: 'bg-[#F4F4F6] text-[#475569] border border-[#E2E8F0]',
+  blue: 'bg-[#EEF2FF] text-[#1E1B4B] border border-[#C7D2FE]',
+  success: 'bg-[#D1FAE5] text-[#065F46] border border-[#A7F3D0]',
+  warning: 'bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]',
+  danger: 'bg-[#FEE2E2] text-[#991B1B] border border-[#FECACA]',
 };
 
 export function Badge({ tone = 'neutral', children, className = '' }: BadgeProps) {

@@ -166,13 +166,13 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     >
       {result ? (
         <div className="flex flex-col items-center gap-3 py-6 text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-jade/20 text-heading-sm font-bold text-jade">
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#D1FAE5] text-heading-sm font-bold text-[#065F46]">
             {initials(result.user.username)}
           </span>
-          <p className="text-body font-semibold text-white">
+          <p className="text-body font-semibold text-[#0F172A]">
             {result.isNewAccount ? '¡Cuenta creada!' : '¡Sesión iniciada!'}
           </p>
-          <p className="max-w-sm text-body-sm text-fog">
+          <p className="max-w-sm text-body-sm text-[#475569]">
             {result.isNewAccount
               ? `Tu cuenta quedó registrada en la base de datos. Bienvenido, ${result.user.username}.`
               : `Bienvenido de nuevo, ${result.user.username}. Esta es tu sesión activa.`}

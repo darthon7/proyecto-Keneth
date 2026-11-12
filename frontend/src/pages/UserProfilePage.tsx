@@ -40,19 +40,19 @@ export function UserProfilePage() {
 
   return (
     <section className="page-container py-16">
-      <Link to="/users" className="text-body-sm text-fog transition-colors hover:text-white">
+      <Link to="/users" className="text-body-sm font-medium text-[#475569] transition-colors hover:text-[#FF2A5F]">
         ← Volver a usuarios
       </Link>
 
       <header className="mt-6">
-        <h1 className="text-heading-sm font-semibold text-white">{user.username}</h1>
-        <p className="mt-2 text-body-sm text-fog">{user.email}</p>
+        <h1 className="text-heading-sm font-extrabold text-[#0F172A]">{user.username}</h1>
+        <p className="mt-2 text-body-sm text-[#475569]">{user.email}</p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Badge tone={user.isActive ? 'success' : 'neutral'}>
             {user.isActive ? 'Activo' : 'Inactivo'}
           </Badge>
           <Badge>{user.countryCode}</Badge>
-          <span className="text-caption text-mid-gray">
+          <span className="text-caption text-[#94A3B8]">
             Registrado el {formatDate(user.createdAt)}
           </span>
         </div>
@@ -60,30 +60,30 @@ export function UserProfilePage() {
 
       <div className="mt-12 grid gap-10 lg:grid-cols-2">
         <div>
-          <h2 className="text-subheading font-semibold text-white">Órdenes</h2>
+          <h2 className="text-subheading font-extrabold text-[#0F172A]">Órdenes</h2>
           <div className="mt-4 flex flex-col gap-2">
-            {orders.length === 0 && <p className="text-body-sm text-fog">Sin órdenes.</p>}
+            {orders.length === 0 && <p className="text-body-sm text-[#475569]">Sin órdenes.</p>}
             {orders.map((order) => (
               <Link
                 key={order.id}
                 to={`/orders/${order.id}`}
-                className="flex items-center justify-between gap-4 rounded-[4px] bg-graphite p-3 transition-colors hover:bg-[#3a3a3a]"
+                className="flex items-center justify-between gap-4 rounded-xl bg-[#FFFFFF] border border-[#E2E8F0] p-3 transition-colors hover:border-[#FF2A5F]"
               >
-                <span className="text-body-sm text-white">{order.orderNumber}</span>
-                <span className="text-body-sm text-fog">{formatCurrency(order.totalAmount)}</span>
+                <span className="text-body-sm font-bold text-[#0F172A]">{order.orderNumber}</span>
+                <span className="text-body-sm font-semibold text-[#475569]">{formatCurrency(order.totalAmount)}</span>
               </Link>
             ))}
           </div>
 
-          <h2 className="mt-10 text-subheading font-semibold text-white">Biblioteca</h2>
+          <h2 className="mt-10 text-subheading font-extrabold text-[#0F172A]">Biblioteca</h2>
           <div className="mt-4 flex flex-col gap-2">
-            {libraries.length === 0 && <p className="text-body-sm text-fog">Sin juegos en la biblioteca.</p>}
+            {libraries.length === 0 && <p className="text-body-sm text-[#475569]">Sin juegos en la biblioteca.</p>}
             {libraries.map((entry) => (
-              <div key={entry.id} className="rounded-[4px] bg-graphite p-3">
-                <p className="text-body-sm text-white">
+              <div key={entry.id} className="rounded-xl bg-[#FFFFFF] border border-[#E2E8F0] p-3">
+                <p className="text-body-sm font-bold text-[#0F172A]">
                   {entry.gameEdition?.game?.title ?? 'Videojuego'}
                 </p>
-                <p className="text-caption text-fog">
+                <p className="text-caption text-[#475569]">
                   {entry.gameEdition?.platform?.name} · {entry.gameEdition?.editionName}
                 </p>
                 {entry.isRevoked && <Badge tone="danger">Revocado</Badge>}
@@ -93,34 +93,34 @@ export function UserProfilePage() {
         </div>
 
         <div>
-          <h2 className="text-subheading font-semibold text-white">Wishlist</h2>
+          <h2 className="text-subheading font-extrabold text-[#0F172A]">Wishlist</h2>
           <div className="mt-4 flex flex-col gap-2">
-            {wishlists.length === 0 && <p className="text-body-sm text-fog">Sin elementos.</p>}
+            {wishlists.length === 0 && <p className="text-body-sm text-[#475569]">Sin elementos.</p>}
             {wishlists.map((wish) => (
               <Link
                 key={wish.id}
                 to={`/games/${wish.game?.id}`}
-                className="flex items-center justify-between gap-4 rounded-[4px] bg-graphite p-3 transition-colors hover:bg-[#3a3a3a]"
+                className="flex items-center justify-between gap-4 rounded-xl bg-[#FFFFFF] border border-[#E2E8F0] p-3 transition-colors hover:border-[#FF2A5F]"
               >
-                <span className="text-body-sm text-white">{wish.game?.title ?? 'Videojuego'}</span>
-                <span className="text-caption text-fog">
+                <span className="text-body-sm font-bold text-[#0F172A]">{wish.game?.title ?? 'Videojuego'}</span>
+                <span className="text-caption text-[#475569]">
                   {wish.notifyOnSale ? 'Aviso de oferta' : 'Sin aviso'}
                 </span>
               </Link>
             ))}
           </div>
 
-          <h2 className="mt-10 text-subheading font-semibold text-white">Reseñas</h2>
+          <h2 className="mt-10 text-subheading font-extrabold text-[#0F172A]">Reseñas</h2>
           <div className="mt-4 flex flex-col gap-3">
-            {reviews.length === 0 && <p className="text-body-sm text-fog">Sin reseñas.</p>}
+            {reviews.length === 0 && <p className="text-body-sm text-[#475569]">Sin reseñas.</p>}
             {reviews.map((review) => (
-              <article key={review.id} className="rounded-[4px] bg-graphite p-3">
+              <article key={review.id} className="rounded-xl bg-[#FFFFFF] border border-[#E2E8F0] p-3">
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-body-sm font-semibold text-white">{review.title}</h3>
+                  <h3 className="text-body-sm font-bold text-[#0F172A]">{review.title}</h3>
                   <RatingStars value={review.rating} size={14} />
                 </div>
-                <p className="mt-1 text-body-sm text-fog">{review.body}</p>
-                <p className="mt-2 text-caption text-mid-gray">
+                <p className="mt-1 text-body-sm text-[#475569]">{review.body}</p>
+                <p className="mt-2 text-caption text-[#94A3B8]">
                   {review.game?.title} · {review.rating} de 5 estrellas
                 </p>
               </article>

@@ -1,50 +1,89 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap');
 @import 'tailwindcss';
 
+:root {
+  /* Sistema de Diseño: Retro Pop / Indie (Regla 60-30-10) */
+  --bg-primary: #F4F4F6;
+  --bg-surface: #FFFFFF;
+  --bg-contrast: #1E1B4B;
+  --border-subtle: #E2E8F0;
+
+  --accent-primary: #FF2A5F;
+  --accent-primary-hover: #E01E4F;
+  --accent-secondary: #FFC700;
+  --accent-secondary-content: #0F172A;
+
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
+  --text-inverted: #FFFFFF;
+
+  --status-success: #10B981;
+  --status-warning: #F59E0B;
+  --status-danger: #EF4444;
+
+  --platform-nintendo: #E60012;
+  --platform-playstation: #0070D1;
+  --platform-xbox: #107C10;
+  --platform-pc: #334155;
+
+  --shadow-card: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+  --shadow-pop: 0 4px 0 0 #E2E8F0;
+}
+
 @theme {
-  /* NexusPlay Core Color Tokens */
-  --color-surface: #10131a;
-  --color-surface-container-lowest: #0b0e15;
-  --color-surface-container-low: #191b23;
-  --color-surface-container: #1d1f27;
-  --color-surface-container-high: #272a32;
-  --color-surface-container-highest: #32353d;
+  /* Retro Pop / Indie Core Tokens */
+  --color-retro-bg: #F4F4F6;
+  --color-retro-surface: #FFFFFF;
+  --color-retro-contrast: #1E1B4B;
+  --color-retro-border: #E2E8F0;
+  --color-retro-primary: #FF2A5F;
+  --color-retro-primary-hover: #E01E4F;
+  --color-retro-secondary: #FFC700;
+  --color-retro-secondary-content: #0F172A;
+  --color-retro-text-primary: #0F172A;
+  --color-retro-text-secondary: #475569;
+  --color-retro-text-muted: #94A3B8;
 
-  --color-primary: #aec6ff;
-  --color-primary-container: #4f8eff;
-  --color-on-primary: #002e6a;
-  --color-on-primary-container: #00275e;
+  /* Semantic Surface & Text Tokens (Light Mode Mapped) */
+  --color-surface: #FFFFFF;
+  --color-surface-container-lowest: #F4F4F6;
+  --color-surface-container-low: #F8FAFC;
+  --color-surface-container: #FFFFFF;
+  --color-surface-container-high: #F1F5F9;
+  --color-surface-container-highest: #E2E8F0;
 
-  --color-secondary: #4edea3;
-  --color-secondary-container: #00a572;
-  --color-on-secondary: #003824;
-  --color-on-secondary-container: #00311f;
+  --color-primary: #FF2A5F;
+  --color-primary-container: #1E1B4B;
+  --color-on-primary: #FFFFFF;
+  --color-on-primary-container: #FFFFFF;
 
-  --color-tertiary: #ffb690;
-  --color-tertiary-container: #ec6a06;
-  --color-on-tertiary: #552100;
-  --color-on-tertiary-container: #4a1c00;
+  --color-secondary: #FFC700;
+  --color-secondary-container: #FEF3C7;
+  --color-on-secondary: #0F172A;
+  --color-on-secondary-container: #0F172A;
 
-  --color-error: #ffb4ab;
-  --color-error-container: #93000a;
+  --color-error: #EF4444;
+  --color-error-container: #FEE2E2;
 
-  --color-on-surface: #e1e2ec;
-  --color-on-surface-variant: #c1c6d7;
-  --color-outline: #8b90a1;
-  --color-outline-variant: #414755;
+  --color-on-surface: #0F172A;
+  --color-on-surface-variant: #475569;
+  --color-outline: #CBD5E1;
+  --color-outline-variant: #E2E8F0;
 
-  /* Backward Compatible Semantic Palette */
-  --color-obsidian: #0b0e15;
-  --color-forest: #0b0e15;
-  --color-forest-deep: #07090e;
-  --color-jade: #aec6ff;
-  --color-mist: #94a3b8;
-  --color-graphite: #1c2130;
-  --color-bone: #f2f2f2;
-  --color-silver: #cccccc;
-  --color-fog: #94a3b8;
-  --color-white: #ffffff;
-  --color-signal-blue: #4f8eff;
+  /* Backward Compatible Utility Aliases Mapped to Light Palette */
+  --color-obsidian: #F4F4F6;
+  --color-forest: #F4F4F6;
+  --color-forest-deep: #1E1B4B;
+  --color-jade: #10B981;
+  --color-mist: #475569;
+  --color-graphite: #FFFFFF;
+  --color-bone: #F4F4F6;
+  --color-silver: #475569;
+  --color-fog: #475569;
+  --color-mid-gray: #94A3B8;
+  --color-white: #FFFFFF;
+  --color-signal-blue: #FF2A5F;
 
   /* Typography */
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
@@ -71,16 +110,16 @@
 
 @layer base {
   html {
-    background-color: #0b0e15;
-    color-scheme: dark;
+    background-color: var(--bg-primary);
+    color-scheme: light;
     scroll-behavior: smooth;
   }
 
   body {
     margin: 0;
     padding: 0;
-    background-color: #0b0e15;
-    color: #e1e2ec;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -103,7 +142,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid #4f8eff;
+    outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
   }
 }
@@ -126,6 +165,23 @@
     .page-container {
       padding-inline: 2rem;
     }
+  }
+
+  .surface-hairline {
+    border: 1px solid var(--border-subtle);
+  }
+
+  .product-card {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-card);
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .product-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent-primary);
+    box-shadow: 0 12px 24px -4px rgba(30, 27, 75, 0.12);
   }
 
   /* ==========================================================================

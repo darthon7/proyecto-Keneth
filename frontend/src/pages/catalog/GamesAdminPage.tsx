@@ -147,8 +147,8 @@ export function GamesAdminPage() {
     <section className="page-container py-16">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-heading-sm font-semibold text-white">Administrar videojuegos</h1>
-          <p className="mt-2 max-w-2xl text-body-sm text-fog">
+          <h1 className="text-heading-sm font-extrabold text-[#0F172A]">Administrar videojuegos</h1>
+          <p className="mt-2 max-w-2xl text-body-sm text-[#475569]">
             Alta y edición de juegos con sus relaciones anidadas: publisher → desarrolladora →
             géneros.
           </p>
@@ -177,40 +177,40 @@ export function GamesAdminPage() {
         )}
 
         {games.length > 0 && (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] shadow-xs px-4 py-2">
             <table className="w-full min-w-[720px] border-collapse text-left">
               <thead>
-                <tr className="border-b border-white/10">
-                  <th scope="col" className="px-3 py-3 text-caption font-semibold uppercase tracking-wider text-fog">
+                <tr className="border-b border-[#E2E8F0]">
+                  <th scope="col" className="px-3 py-3 text-caption font-bold uppercase tracking-wider text-[#475569]">
                     Título
                   </th>
-                  <th scope="col" className="px-3 py-3 text-caption font-semibold uppercase tracking-wider text-fog">
+                  <th scope="col" className="px-3 py-3 text-caption font-bold uppercase tracking-wider text-[#475569]">
                     Publisher
                   </th>
-                  <th scope="col" className="px-3 py-3 text-caption font-semibold uppercase tracking-wider text-fog">
+                  <th scope="col" className="px-3 py-3 text-caption font-bold uppercase tracking-wider text-[#475569]">
                     Desarrolladora
                   </th>
-                  <th scope="col" className="px-3 py-3 text-caption font-semibold uppercase tracking-wider text-fog">
+                  <th scope="col" className="px-3 py-3 text-caption font-bold uppercase tracking-wider text-[#475569]">
                     Géneros
                   </th>
-                  <th scope="col" className="px-3 py-3 text-caption font-semibold uppercase tracking-wider text-fog">
+                  <th scope="col" className="px-3 py-3 text-caption font-bold uppercase tracking-wider text-[#475569]">
                     Lanzamiento
                   </th>
-                  <th scope="col" className="px-3 py-3 text-right text-caption font-semibold uppercase tracking-wider text-fog">
+                  <th scope="col" className="px-3 py-3 text-right text-caption font-bold uppercase tracking-wider text-[#475569]">
                     Acciones
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {games.map((game) => (
-                  <tr key={game.id} className="border-b border-white/5">
-                    <td className="px-3 py-3 text-body-sm text-white">{game.title}</td>
-                    <td className="px-3 py-3 text-body-sm text-fog">{game.publisher?.name ?? '—'}</td>
-                    <td className="px-3 py-3 text-body-sm text-fog">{game.developer?.name ?? '—'}</td>
-                    <td className="px-3 py-3 text-body-sm text-fog">
+                  <tr key={game.id} className="border-b border-[#E2E8F0] last:border-b-0 hover:bg-[#F8FAFC] transition-colors">
+                    <td className="px-3 py-3 text-body-sm font-semibold text-[#0F172A]">{game.title}</td>
+                    <td className="px-3 py-3 text-body-sm text-[#475569]">{game.publisher?.name ?? '—'}</td>
+                    <td className="px-3 py-3 text-body-sm text-[#475569]">{game.developer?.name ?? '—'}</td>
+                    <td className="px-3 py-3 text-body-sm text-[#475569]">
                       {(game.genres ?? []).map((genre) => genre.name).join(', ') || '—'}
                     </td>
-                    <td className="px-3 py-3 text-body-sm text-fog">{formatDate(game.releaseDate)}</td>
+                    <td className="px-3 py-3 text-body-sm text-[#475569]">{formatDate(game.releaseDate)}</td>
                     <td className="px-3 py-3 text-right">
                       <div className="inline-flex items-center gap-3">
                         <button
@@ -219,14 +219,14 @@ export function GamesAdminPage() {
                             setEditingGame(game);
                             setIsModalOpen(true);
                           }}
-                          className="text-body-sm text-signal-blue hover:text-white btn-nintendo-animation"
+                          className="text-body-sm font-semibold text-[#1E1B4B] hover:text-[#FF2A5F] btn-nintendo-animation"
                         >
                           Editar
                         </button>
                         <button
                           type="button"
                           onClick={() => setGameToDelete(game)}
-                          className="text-body-sm text-[#ff7b7b] hover:text-white btn-nintendo-animation"
+                          className="text-body-sm font-semibold text-[#EF4444] hover:text-[#991B1B] btn-nintendo-animation"
                         >
                           Eliminar
                         </button>
@@ -320,7 +320,7 @@ export function GamesAdminPage() {
           </div>
 
           <fieldset className="flex flex-col gap-2">
-            <legend className="text-body-sm font-semibold text-white">Géneros</legend>
+            <legend className="text-body-sm font-semibold text-[#0F172A]">Géneros</legend>
             <div className="flex flex-wrap gap-2">
               {(genresQuery.data ?? []).map((genre) => {
                 const isSelected = selectedGenres.includes(genre.id);
@@ -330,10 +330,10 @@ export function GamesAdminPage() {
                     type="button"
                     onClick={() => toggleGenre(genre.id)}
                     aria-pressed={isSelected}
-                    className={`rounded-[4px] px-3 py-1.5 text-body-sm btn-nintendo-animation ${
+                    className={`rounded-lg px-3 py-1.5 text-body-sm btn-nintendo-animation border ${
                       isSelected
-                        ? 'bg-white font-bold text-obsidian'
-                        : 'bg-graphite text-fog hover:text-white'
+                        ? 'bg-[#FF2A5F] border-[#FF2A5F] font-bold text-white'
+                        : 'bg-[#F4F4F6] border-[#E2E8F0] text-[#475569] hover:text-[#0F172A]'
                     }`}
                   >
                     {genre.name}

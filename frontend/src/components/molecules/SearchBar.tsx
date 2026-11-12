@@ -33,12 +33,12 @@ export function SearchBar({
           onChange={(event) => setTerm(event.target.value)}
           placeholder={placeholder}
           aria-label="Buscar"
-          className="w-full rounded-full border border-white/10 bg-white/10 py-3 pr-11 pl-4 text-body-sm text-white placeholder:text-mist focus:border-white/25 focus:bg-white/15 focus:outline-none"
+          className="w-full rounded-full border border-[#E2E8F0] bg-[#FFFFFF] py-3 pr-11 pl-4 text-body-sm text-[#0F172A] placeholder:text-[#94A3B8] focus:border-[#1E1B4B] focus:outline-none"
         />
         <button
           type="submit"
           aria-label="Buscar"
-          className="absolute top-1/2 right-3 -translate-y-1/2 text-mist transition-colors hover:text-white"
+          className="absolute top-1/2 right-3 -translate-y-1/2 text-[#475569] transition-colors hover:text-[#FF2A5F]"
         >
           <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
             <circle cx="9" cy="9" r="5.5" stroke="currentColor" strokeWidth="1.6" />
@@ -47,7 +47,7 @@ export function SearchBar({
         </button>
       </div>
 
-      <span className="hidden shrink-0 text-body-sm text-mist sm:inline">o</span>
+      <span className="hidden shrink-0 text-body-sm text-[#475569] sm:inline">o</span>
 
       <Button
         type="button"

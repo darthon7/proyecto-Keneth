@@ -76,7 +76,7 @@ export function GameFilters({
         <button
           type="button"
           onClick={onReset}
-          className="text-body-sm text-fog transition-colors hover:text-white"
+          className="text-body-sm font-semibold text-[#475569] transition-colors hover:text-[#FF2A5F]"
         >
           Limpiar filtros
         </button>
