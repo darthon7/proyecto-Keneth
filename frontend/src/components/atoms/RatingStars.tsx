@@ -27,7 +27,7 @@ export function RatingStars({
             fill={filled ? 'currentColor' : 'none'}
             stroke="currentColor"
             strokeWidth="1.4"
-            className={filled ? 'text-white' : 'text-mid-gray'}
+            className={filled ? 'text-[#FFC700]' : 'text-[#CBD5E1]'}
             aria-hidden="true"
           >
             <path d="M10 1.6l2.5 5.1 5.6.8-4 3.9.9 5.6-5-2.6-5 2.6.9-5.6-4-3.9 5.6-.8L10 1.6z" />
@@ -43,7 +43,7 @@ export function RatingStars({
             role="radio"
             aria-checked={starValue === Math.round(value)}
             aria-label={`${starValue} de ${max}`}
-            className="hover:text-white btn-nintendo-animation"
+            className="hover:text-[#F59E0B] btn-nintendo-animation"
             onClick={() => onChange?.(starValue)}
           >
             {star}

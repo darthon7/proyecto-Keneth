@@ -12,7 +12,7 @@ interface CoverSlotProps {
 export function CoverSlot({ game, className = '' }: CoverSlotProps) {
   return (
     <div
-      className={`relative aspect-square w-full overflow-hidden rounded-[18px] bg-[#141824] border border-white/5 ${className}`}
+      className={`relative aspect-square w-full overflow-hidden rounded-[18px] bg-[#F4F4F6] border border-[#E2E8F0] ${className}`}
     >
       {game.coverImageUrl ? (
         <img

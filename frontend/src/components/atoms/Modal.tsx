@@ -44,7 +44,7 @@ export function Modal({
   if (typeof document === 'undefined') return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/80 backdrop-blur-sm p-4 sm:p-6">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[#0F172A]/60 backdrop-blur-sm p-4 sm:p-6">
       <button
         type="button"
         aria-label="Cerrar"
@@ -55,18 +55,18 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`relative z-10 w-full ${SIZES[size]} my-auto rounded-2xl bg-[#141824] border border-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.9)] overflow-hidden`}
+        className={`relative z-10 w-full ${SIZES[size]} my-auto rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] text-[#0F172A] shadow-[0_24px_60px_rgba(15,23,42,0.22)] overflow-hidden`}
       >
-        <header className="flex items-start justify-between gap-4 border-b border-white/10 px-6 py-5 bg-[#171c2a]">
+        <header className="flex items-start justify-between gap-4 border-b border-[#E2E8F0] px-6 py-5 bg-[#F8FAFC]">
           <div>
-            <h2 className="text-lg font-bold text-white tracking-wide">{title}</h2>
-            {description && <p className="mt-1 text-xs text-slate-400">{description}</p>}
+            <h2 className="text-lg font-bold text-[#0F172A] tracking-wide">{title}</h2>
+            {description && <p className="mt-1 text-xs text-[#475569]">{description}</p>}
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Cerrar modal"
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 btn-nintendo-animation"
+            className="p-1 rounded-lg text-[#475569] hover:text-[#0F172A] hover:bg-[#E2E8F0]/70 btn-nintendo-animation"
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <path
@@ -82,7 +82,7 @@ export function Modal({
         <div className="px-6 py-5">{children}</div>
 
         {footer && (
-          <footer className="flex flex-wrap justify-end gap-3 border-t border-white/10 px-6 py-4 bg-[#10141f]">
+          <footer className="flex flex-wrap justify-end gap-3 border-t border-[#E2E8F0] px-6 py-4 bg-[#F4F4F6]">
             {footer}
           </footer>
         )}

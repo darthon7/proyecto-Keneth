@@ -7,10 +7,10 @@ export function ErrorBanner({ message, onRetry }: ErrorBannerProps) {
   return (
     <div
       role="alert"
-      className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#2a1318] border border-rose-500/30 px-4 py-3 text-xs sm:text-sm text-rose-300 shadow-md"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#FEE2E2] border border-[#FECACA] px-4 py-3 text-xs sm:text-sm text-[#991B1B] shadow-sm"
     >
       <div className="flex items-center gap-2">
-        <svg className="w-5 h-5 text-rose-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-5 h-5 text-[#EF4444] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -25,7 +25,7 @@ export function ErrorBanner({ message, onRetry }: ErrorBannerProps) {
         <button
           type="button"
           onClick={onRetry}
-          className="font-bold text-white hover:text-rose-200 underline underline-offset-4 text-xs btn-nintendo-animation"
+          className="font-bold text-[#991B1B] hover:text-[#FF2A5F] underline underline-offset-4 text-xs btn-nintendo-animation"
         >
           Reintentar
         </button>

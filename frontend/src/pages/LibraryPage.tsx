@@ -33,9 +33,9 @@ export function LibraryPage() {
   return (
     <section className="page-container py-16">
       <header>
-        <h1 className="text-heading-sm font-semibold text-white">Biblioteca de {currentUser.username}</h1>
-        <p className="mt-2 text-body-sm text-fog">
-          Juegos acquisitionados a través de órdenes completadas.
+        <h1 className="text-heading-sm font-extrabold text-[#0F172A]">Biblioteca de {currentUser.username}</h1>
+        <p className="mt-2 text-body-sm text-[#475569]">
+          Juegos adquiridos a través de órdenes completadas.
         </p>
       </header>
 
@@ -54,7 +54,7 @@ export function LibraryPage() {
             action={
               <Link
                 to="/games"
-                className="rounded-[4px] bg-white px-4 py-2 text-body-sm font-bold text-obsidian"
+                className="rounded-lg bg-[#FF2A5F] hover:bg-[#E01E4F] px-4 py-2 text-body-sm font-bold text-white transition-colors"
               >
                 Explorar juegos
               </Link>
@@ -64,25 +64,25 @@ export function LibraryPage() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {entries.map((entry) => (
-            <article key={entry.id} className="rounded-[4px] bg-graphite p-4">
+            <article key={entry.id} className="product-card rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] hover:border-[#FF2A5F] p-4 shadow-xs transition-all">
               <div className="flex items-start justify-between gap-3">
-                <h2 className="text-body font-semibold text-white">
+                <h2 className="text-body font-bold text-[#0F172A]">
                   {entry.gameEdition?.game?.title ?? 'Videojuego'}
                 </h2>
                 {entry.isRevoked && <Badge tone="danger">Revocado</Badge>}
               </div>
-              <p className="mt-1 text-body-sm text-fog">
+              <p className="mt-1 text-body-sm text-[#475569]">
                 {entry.gameEdition?.editionName} · {entry.gameEdition?.platform?.name}
               </p>
-              <p className="mt-2 text-caption text-mid-gray">
+              <p className="mt-2 text-caption text-[#94A3B8]">
                 Adquirido el {formatDate(entry.acquiredAt)}
               </p>
               {entry.gameEdition?.game && (
                 <Link
                   to={`/games/${entry.gameEdition.game.id}`}
-                  className="mt-3 inline-block text-body-sm font-semibold text-signal-blue hover:text-white"
+                  className="mt-3 inline-block text-body-sm font-semibold text-[#1E1B4B] hover:text-[#FF2A5F]"
                 >
-                  Ver ficha
+                  Ver ficha →
                 </Link>
               )}
             </article>

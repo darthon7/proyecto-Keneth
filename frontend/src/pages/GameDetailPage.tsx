@@ -108,7 +108,7 @@ export function GameDetailPage() {
       <button
         type="button"
         onClick={() => navigate(-1)}
-        className="text-body-sm text-fog transition-colors hover:text-white"
+        className="text-body-sm font-medium text-[#475569] transition-colors hover:text-[#FF2A5F]"
       >
         ← Volver
       </button>
@@ -117,25 +117,25 @@ export function GameDetailPage() {
         <div>
           <CoverSlot game={game} />
 
-          <dl className="mt-6 flex flex-col gap-3 text-body-sm">
+          <dl className="mt-6 flex flex-col gap-3 rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-4 text-body-sm shadow-xs">
             <div className="flex justify-between gap-4">
-              <dt className="text-fog">Publisher</dt>
-              <dd className="text-right text-white">{game.publisher?.name ?? '—'}</dd>
+              <dt className="text-[#475569]">Publisher</dt>
+              <dd className="text-right font-semibold text-[#0F172A]">{game.publisher?.name ?? '—'}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-fog">Desarrolladora</dt>
-              <dd className="text-right text-white">{game.developer?.name ?? '—'}</dd>
+              <dt className="text-[#475569]">Desarrolladora</dt>
+              <dd className="text-right font-semibold text-[#0F172A]">{game.developer?.name ?? '—'}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-fog">Lanzamiento</dt>
-              <dd className="text-right text-white">{formatDate(game.releaseDate)}</dd>
+              <dt className="text-[#475569]">Lanzamiento</dt>
+              <dd className="text-right font-semibold text-[#0F172A]">{formatDate(game.releaseDate)}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-fog">Clasificación</dt>
-              <dd className="text-right text-white">{game.esrbRating}</dd>
+              <dt className="text-[#475569]">Clasificación</dt>
+              <dd className="text-right font-semibold text-[#0F172A]">{game.esrbRating}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-fog">Género</dt>
+              <dt className="text-[#475569]">Género</dt>
               <dd className="flex flex-wrap justify-end gap-1">
                 {(game.genres ?? []).map((genre) => (
                   <Badge key={genre.id} tone="blue">
@@ -148,7 +148,7 @@ export function GameDetailPage() {
         </div>
 
         <div>
-          <h1 className="text-heading-sm font-semibold text-white">{game.title}</h1>
+          <h1 className="text-heading-sm font-extrabold text-[#0F172A]">{game.title}</h1>
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <Button
@@ -181,16 +181,16 @@ export function GameDetailPage() {
             </div>
           )}
 
-          <div className="mt-10 flex gap-6 border-b border-white/10">
+          <div className="mt-10 flex gap-6 border-b border-[#E2E8F0]">
             {TABS.map((tab) => (
               <button
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`-mb-px border-b-2 pb-3 text-body-sm transition-colors ${
+                className={`-mb-px border-b-2 pb-3 text-body-sm font-semibold transition-colors ${
                   activeTab === tab
-                    ? 'border-white text-white'
-                    : 'border-transparent text-fog hover:text-white'
+                    ? 'border-[#FF2A5F] text-[#FF2A5F]'
+                    : 'border-transparent text-[#475569] hover:text-[#0F172A]'
                 }`}
               >
                 {tab}
@@ -200,8 +200,8 @@ export function GameDetailPage() {
 
           <div className="mt-6">
             {activeTab === 'Descripción' && (
-              <div className="max-w-2xl">
-                <p className="text-body text-white">
+              <div className="max-w-2xl rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-5 shadow-xs">
+                <p className="text-body text-[#0F172A]">
                   {game.synopsis ?? 'Este videojuego todavía no tiene descripción.'}
                 </p>
               </div>
@@ -213,17 +213,17 @@ export function GameDetailPage() {
                   <EmptyState title="Sin ediciones" description="Publica ediciones para este juego." />
                 )}
                 {editions.map((edition) => (
-                  <article key={edition.id} className="rounded-[4px] bg-graphite p-4">
+                  <article key={edition.id} className="product-card rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] hover:border-[#FF2A5F] p-4 shadow-xs transition-all">
                     <div className="flex items-start justify-between gap-3">
-                      <h3 className="text-body font-semibold text-white">{edition.editionName}</h3>
+                      <h3 className="text-body font-bold text-[#0F172A]">{edition.editionName}</h3>
                       <Badge tone={edition.format === 'DIGITAL' ? 'blue' : 'neutral'}>
                         {humanizeEnum(edition.format)}
                       </Badge>
                     </div>
-                    <p className="mt-1 text-body-sm text-fog">
+                    <p className="mt-1 text-body-sm font-semibold text-[#0F172A]">
                       {edition.platform?.name} · {formatCurrency(edition.basePrice)}
                     </p>
-                    <p className="mt-1 text-caption text-mid-gray">
+                    <p className="mt-1 text-caption text-[#475569]">
                       {edition.format === 'PHYSICAL'
                         ? `Stock físico: ${edition.stockPhysical}`
                         : 'Entrega digital inmediata'}
@@ -249,14 +249,14 @@ export function GameDetailPage() {
                   <EmptyState title="Sin reseñas" description="Sé la primera persona en opinar." />
                 )}
                 {reviews.map((review) => (
-                  <article key={review.id} className="rounded-[4px] bg-graphite p-4">
+                  <article key={review.id} className="rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-4 shadow-xs">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <h3 className="text-body font-semibold text-white">{review.title}</h3>
+                      <h3 className="text-body font-bold text-[#0F172A]">{review.title}</h3>
                       <RatingStars value={review.rating} />
                     </div>
-                    <p className="mt-2 text-body-sm text-fog">{review.body}</p>
-                    <div className="mt-3 flex flex-wrap items-center gap-3 text-caption text-mid-gray">
-                      <span>{review.user?.username ?? 'Usuario'}</span>
+                    <p className="mt-2 text-body-sm text-[#475569]">{review.body}</p>
+                    <div className="mt-3 flex flex-wrap items-center gap-3 text-caption text-[#94A3B8]">
+                      <span className="font-medium text-[#475569]">{review.user?.username ?? 'Usuario'}</span>
                       {review.isVerifiedPurchase && (
                         <Badge tone="success">Compra verificada</Badge>
                       )}
@@ -276,35 +276,35 @@ export function GameDetailPage() {
                   />
                 )}
                 {requirements.map((requirement) => (
-                  <article key={requirement.id} className="rounded-[4px] bg-graphite p-4">
-                    <h3 className="text-body font-semibold text-white">
+                  <article key={requirement.id} className="rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-4 shadow-xs">
+                    <h3 className="text-body font-bold text-[#0F172A]">
                       {humanizeEnum(requirement.tier)}
                     </h3>
                     <dl className="mt-3 flex flex-col gap-2 text-body-sm">
                       <div className="flex justify-between gap-4">
-                        <dt className="text-fog">Sistema operativo</dt>
-                        <dd className="text-right text-white">{requirement.os}</dd>
+                        <dt className="text-[#475569]">Sistema operativo</dt>
+                        <dd className="text-right font-medium text-[#0F172A]">{requirement.os}</dd>
                       </div>
                       <div className="flex justify-between gap-4">
-                        <dt className="text-fog">Procesador</dt>
-                        <dd className="text-right text-white">{requirement.processor}</dd>
+                        <dt className="text-[#475569]">Procesador</dt>
+                        <dd className="text-right font-medium text-[#0F172A]">{requirement.processor}</dd>
                       </div>
                       <div className="flex justify-between gap-4">
-                        <dt className="text-fog">Memoria RAM</dt>
-                        <dd className="text-right text-white">{requirement.ramGb} GB</dd>
+                        <dt className="text-[#475569]">Memoria RAM</dt>
+                        <dd className="text-right font-medium text-[#0F172A]">{requirement.ramGb} GB</dd>
                       </div>
                       <div className="flex justify-between gap-4">
-                        <dt className="text-fog">Tarjeta de video</dt>
-                        <dd className="text-right text-white">{requirement.graphicsCard}</dd>
+                        <dt className="text-[#475569]">Tarjeta de video</dt>
+                        <dd className="text-right font-medium text-[#0F172A]">{requirement.graphicsCard}</dd>
                       </div>
                       <div className="flex justify-between gap-4">
-                        <dt className="text-fog">Almacenamiento</dt>
-                        <dd className="text-right text-white">{requirement.storageGb} GB</dd>
+                        <dt className="text-[#475569]">Almacenamiento</dt>
+                        <dd className="text-right font-medium text-[#0F172A]">{requirement.storageGb} GB</dd>
                       </div>
                       {requirement.directxVersion && (
                         <div className="flex justify-between gap-4">
-                          <dt className="text-fog">DirectX</dt>
-                          <dd className="text-right text-white">{requirement.directxVersion}</dd>
+                          <dt className="text-[#475569]">DirectX</dt>
+                          <dd className="text-right font-medium text-[#0F172A]">{requirement.directxVersion}</dd>
                         </div>
                       )}
                     </dl>
@@ -314,8 +314,8 @@ export function GameDetailPage() {
             )}
           </div>
 
-          <p className="mt-10 text-caption text-mid-gray">
-            Identificador interno: <Link to="/catalog/games" className="text-signal-blue">#{game.id}</Link>
+          <p className="mt-10 text-caption text-[#94A3B8]">
+            Identificador interno: <Link to="/catalog/games" className="text-[#1E1B4B] font-semibold hover:text-[#FF2A5F]">#{game.id}</Link>
           </p>
         </div>
       </div>
@@ -347,7 +347,7 @@ export function GameDetailPage() {
           {formError && <ErrorBanner message={formError} />}
 
           <div className="flex flex-col gap-2">
-            <span className="text-body-sm font-semibold text-white">Calificación</span>
+            <span className="text-body-sm font-semibold text-[#0F172A]">Calificación</span>
             <RatingStars value={rating} interactive onChange={setRating} />
           </div>
 

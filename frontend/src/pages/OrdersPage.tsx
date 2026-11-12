@@ -108,18 +108,18 @@ export function OrdersPage() {
 
   return (
     <section className="page-container py-16">
-      <h1 className="text-heading-sm font-semibold text-white">Carrito y órdenes</h1>
-      <p className="mt-2 text-body-sm text-fog">
+      <h1 className="text-heading-sm font-extrabold text-[#0F172A]">Carrito y órdenes</h1>
+      <p className="mt-2 text-body-sm text-[#475569]">
         El backend valida el stock, descuenta las llaves digitales disponibles y agrega las
         ediciones a tu biblioteca.
       </p>
 
       {successMessage && (
         <div className="mt-6">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[4px] bg-graphite px-4 py-3 text-body-sm text-white surface-hairline">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#D1FAE5] border border-[#10B981]/30 px-4 py-3 text-body-sm text-[#065F46] font-medium">
             <span>{successMessage}</span>
-            <Link to="/library" className="text-signal-blue hover:text-white">
-              Ver mi biblioteca
+            <Link to="/library" className="font-bold text-[#1E1B4B] hover:text-[#FF2A5F]">
+              Ver mi biblioteca →
             </Link>
           </div>
         </div>
@@ -148,17 +148,17 @@ export function OrdersPage() {
               {cartLines.map((line) => (
                 <article
                   key={line.edition.id}
-                  className="flex flex-wrap items-center justify-between gap-4 rounded-[4px] bg-graphite p-4"
+                  className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-4 shadow-xs"
                 >
                   <div className="min-w-[200px]">
-                    <h3 className="text-body font-semibold text-white">
+                    <h3 className="text-body font-bold text-[#0F172A]">
                       {line.edition.game?.title ?? 'Videojuego'}
                     </h3>
-                    <p className="text-body-sm text-fog">
+                    <p className="text-body-sm text-[#475569]">
                       {line.edition.editionName} · {line.edition.platform?.name} ·{' '}
                       {humanizeEnum(line.edition.format)}
                     </p>
-                    <p className="mt-1 text-caption text-mid-gray">
+                    <p className="mt-1 text-caption text-[#94A3B8]">
                       {formatCurrency(line.edition.basePrice)} c/u
                     </p>
                   </div>
@@ -174,29 +174,29 @@ export function OrdersPage() {
                             Math.max(1, line.quantity - 1),
                           )
                         }
-                        className="h-7 w-7 rounded-[4px] bg-obsidian text-white"
+                        className="h-7 w-7 rounded-lg bg-[#F4F4F6] border border-[#E2E8F0] font-bold text-[#0F172A] hover:border-[#FF2A5F]"
                       >
                         −
                       </button>
-                      <span className="w-6 text-center text-body-sm text-white">
+                      <span className="w-6 text-center text-body-sm font-semibold text-[#0F172A]">
                         {line.quantity}
                       </span>
                       <button
                         type="button"
                         aria-label="Agregar una unidad"
                         onClick={() => setQuantity(line.edition.id, line.quantity + 1)}
-                        className="h-7 w-7 rounded-[4px] bg-obsidian text-white"
+                        className="h-7 w-7 rounded-lg bg-[#F4F4F6] border border-[#E2E8F0] font-bold text-[#0F172A] hover:border-[#FF2A5F]"
                       >
                         +
                       </button>
                     </div>
-                    <span className="w-24 text-right text-body-sm font-semibold text-white">
+                    <span className="w-24 text-right text-body-sm font-bold text-[#0F172A]">
                       {formatCurrency(line.lineTotal)}
                     </span>
                     <button
                       type="button"
                       onClick={() => removeItem(line.edition.id)}
-                      className="text-body-sm text-[#ff7b7b] hover:text-white"
+                      className="text-body-sm font-semibold text-[#EF4444] hover:text-[#991B1B]"
                     >
                       Quitar
                     </button>
@@ -217,7 +217,7 @@ export function OrdersPage() {
                 />
               )}
               {userOrders.length === 0 && !ordersQuery.isLoading && (
-                <p className="text-body-sm text-fog">Todavía no tienes órdenes registradas.</p>
+                <p className="text-body-sm text-[#475569]">Todavía no tienes órdenes registradas.</p>
               )}
 
               <div className="flex flex-col gap-3">
@@ -225,17 +225,17 @@ export function OrdersPage() {
                   <Link
                     key={order.id}
                     to={`/orders/${order.id}`}
-                    className="flex flex-wrap items-center justify-between gap-4 rounded-[4px] bg-graphite p-4 transition-colors hover:bg-[#3a3a3a]"
+                    className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-4 shadow-xs transition-all hover:border-[#FF2A5F]"
                   >
                     <div>
-                      <p className="text-body font-semibold text-white">{order.orderNumber}</p>
-                      <p className="text-body-sm text-fog">{formatDate(order.createdAt)}</p>
+                      <p className="text-body font-bold text-[#0F172A]">{order.orderNumber}</p>
+                      <p className="text-body-sm text-[#475569]">{formatDate(order.createdAt)}</p>
                     </div>
                     <div className="flex items-center gap-4">
                       <Badge tone={order.paymentStatus === 'COMPLETED' ? 'success' : 'warning'}>
                         {humanizeEnum(order.paymentStatus)}
                       </Badge>
-                      <span className="text-body-sm font-semibold text-white">
+                      <span className="text-body-sm font-bold text-[#0F172A]">
                         {formatCurrency(order.totalAmount)}
                       </span>
                     </div>
@@ -247,23 +247,23 @@ export function OrdersPage() {
         </div>
 
         <aside className="lg:sticky lg:top-24 lg:self-start">
-          <div className="rounded-[4px] bg-graphite p-5">
-            <h2 className="text-subheading font-semibold text-white">Resumen</h2>
+          <div className="rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-5 shadow-sm">
+            <h2 className="text-subheading font-extrabold text-[#0F172A]">Resumen</h2>
 
             <dl className="mt-5 flex flex-col gap-2 text-body-sm">
               <div className="flex justify-between gap-4">
-                <dt className="text-fog">Subtotal</dt>
-                <dd className="text-white">{formatCurrency(subtotal)}</dd>
+                <dt className="text-[#475569]">Subtotal</dt>
+                <dd className="font-medium text-[#0F172A]">{formatCurrency(subtotal)}</dd>
               </div>
               <div className="flex justify-between gap-4">
-                <dt className="text-fog">Descuento</dt>
-                <dd className="text-white">
+                <dt className="text-[#475569]">Descuento</dt>
+                <dd className="font-medium text-[#0F172A]">
                   {discountPercentage > 0 ? `− ${formatCurrency(discount)}` : formatCurrency(0)}
                 </dd>
               </div>
-              <div className="mt-2 flex justify-between gap-4 border-t border-white/10 pt-3 text-subheading font-semibold">
-                <dt className="text-white">Total</dt>
-                <dd className="text-white">{formatCurrency(total)}</dd>
+              <div className="mt-2 flex justify-between gap-4 border-t border-[#E2E8F0] pt-3 text-subheading font-bold">
+                <dt className="text-[#0F172A]">Total</dt>
+                <dd className="text-[#0F172A]">{formatCurrency(total)}</dd>
               </div>
             </dl>
 
@@ -275,7 +275,7 @@ export function OrdersPage() {
                 placeholder="EJEMPLO20"
               />
               {activePromotion && (
-                <p className="mt-2 text-caption text-[#7ddc7d]">
+                <p className="mt-2 text-caption font-semibold text-[#065F46]">
                   Cupón aplicado: {activePromotion.name} ({discountPercentage}%)
                 </p>
               )}
@@ -288,7 +288,7 @@ export function OrdersPage() {
             )}
 
             <Button
-              variant="success"
+              variant="brand"
               size="lg"
               className="mt-5 w-full"
               disabled={cartLines.length === 0 || !currentUser}
@@ -299,7 +299,7 @@ export function OrdersPage() {
             </Button>
 
             {!currentUser && (
-              <p className="mt-3 text-caption text-fog">
+              <p className="mt-3 text-caption text-[#475569]">
                 Inicia sesión en la barra superior para completar la compra.
               </p>
             )}

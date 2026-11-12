@@ -56,14 +56,14 @@ export function OrderDetailPage() {
 
   return (
     <section className="page-container py-16">
-      <Link to="/orders" className="text-body-sm text-fog transition-colors hover:text-white">
+      <Link to="/orders" className="text-body-sm font-medium text-[#475569] transition-colors hover:text-[#FF2A5F]">
         ← Volver a órdenes
       </Link>
 
       <header className="mt-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-heading-sm font-semibold text-white">{order.orderNumber}</h1>
-          <p className="mt-2 text-body-sm text-fog">
+          <h1 className="text-heading-sm font-extrabold text-[#0F172A]">{order.orderNumber}</h1>
+          <p className="mt-2 text-body-sm text-[#475569]">
             {formatDate(order.createdAt)} · {order.user?.username ?? 'Usuario'}
           </p>
         </div>
@@ -75,26 +75,26 @@ export function OrderDetailPage() {
       <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_320px]">
         <div className="flex flex-col gap-3">
           {(order.items ?? []).map((item) => (
-            <article key={item.id} className="rounded-[4px] bg-graphite p-4">
+            <article key={item.id} className="rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-4 shadow-xs">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <h2 className="text-body font-semibold text-white">
+                  <h2 className="text-body font-bold text-[#0F172A]">
                     {item.gameEdition?.game?.title ?? 'Videojuego'}
                   </h2>
-                  <p className="text-body-sm text-fog">
+                  <p className="text-body-sm text-[#475569]">
                     {item.gameEdition?.editionName} · {item.gameEdition?.platform?.name}
                   </p>
-                  <p className="mt-1 text-caption text-mid-gray">
+                  <p className="mt-1 text-caption text-[#94A3B8]">
                     Precio unitario {formatCurrency(item.unitPrice)} · Descuento{' '}
                     {formatCurrency(item.discountApplied)}
                   </p>
                   {item.digitalKey && (
-                    <p className="mt-2 font-mono text-caption text-signal-blue">
+                    <p className="mt-2 inline-block rounded bg-[#EEF2FF] px-2 py-0.5 font-mono text-caption font-semibold text-[#1E1B4B]">
                       Llave: {item.digitalKey.code}
                     </p>
                   )}
                 </div>
-                <span className="text-body-sm font-semibold text-white">
+                <span className="text-body-sm font-bold text-[#0F172A]">
                   {formatCurrency(item.subtotal)}
                 </span>
               </div>
@@ -103,13 +103,13 @@ export function OrderDetailPage() {
         </div>
 
         <aside className="lg:self-start">
-          <div className="rounded-[4px] bg-graphite p-5">
-            <h2 className="text-subheading font-semibold text-white">Total</h2>
-            <p className="mt-3 text-heading-sm font-semibold text-white">
+          <div className="rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-5 shadow-sm">
+            <h2 className="text-subheading font-extrabold text-[#0F172A]">Total</h2>
+            <p className="mt-3 text-heading-sm font-black text-[#0F172A]">
               {formatCurrency(order.totalAmount)}
             </p>
             {order.paymentGatewayRef && (
-              <p className="mt-1 text-caption text-fog">Referencia: {order.paymentGatewayRef}</p>
+              <p className="mt-1 text-caption text-[#475569]">Referencia: {order.paymentGatewayRef}</p>
             )}
 
             <div className="mt-6 flex flex-col gap-3">

@@ -133,21 +133,17 @@ export function GamesPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#0b0e15] text-[#e1e2ec] font-sans antialiased py-10">
-      {/* Ambient background glow blobs */}
-      <div className="absolute top-10 left-1/3 w-[450px] h-[450px] bg-blue-500/10 rounded-full blur-[140px] pointer-events-none -z-10" />
-      <div className="absolute top-96 -right-20 w-[400px] h-[400px] bg-emerald-500/10 rounded-full blur-[130px] pointer-events-none -z-10" />
-
+    <div className="relative min-h-screen bg-[#F4F4F6] text-[#0F172A] font-sans antialiased py-10">
       <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         {/* Header Strip */}
-        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/10">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#E2E8F0]">
           <div className="flex items-center gap-3">
-            <span className="w-2.5 h-6 bg-blue-400 rounded-full shadow-[0_0_12px_#60a5fa]" />
+            <span className="w-2.5 h-6 bg-[#FF2A5F] rounded-full" />
             <div>
-              <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-wider text-white">
+              <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-wider text-[#0F172A]">
                 Catálogo de Videojuegos
               </h1>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-[#475569]">
                 {gamesQuery.isSuccess
                   ? `${filtered.length} títulos disponibles en la plataforma`
                   : 'Cargando catálogo…'}
@@ -166,11 +162,11 @@ export function GamesPage() {
         </header>
 
         {/* Search & Filters Card */}
-        <section className="bg-[#141824] rounded-2xl border border-white/10 p-5 sm:p-6 shadow-xl space-y-6">
+        <section className="bg-[#FFFFFF] rounded-2xl border border-[#E2E8F0] p-5 sm:p-6 shadow-sm space-y-6">
           <form onSubmit={handleSearchSubmit} className="relative max-w-2xl">
-            <div className="relative flex items-center bg-[#1c2232] rounded-xl px-4 py-2.5 border border-white/10 focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-400/30 transition-all">
+            <div className="relative flex items-center bg-[#F4F4F6] rounded-xl px-4 py-2.5 border border-[#E2E8F0] focus-within:bg-[#FFFFFF] focus-within:border-[#FF2A5F] focus-within:ring-2 focus-within:ring-[#FF2A5F]/20 transition-all">
               <svg
-                className="w-4 h-4 text-slate-400 mr-3 shrink-0"
+                className="w-4 h-4 text-[#94A3B8] mr-3 shrink-0"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -187,11 +183,11 @@ export function GamesPage() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Busca por título, publisher o desarrolladora..."
-                className="w-full bg-transparent text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none"
+                className="w-full bg-transparent text-xs sm:text-sm text-[#0F172A] placeholder-[#94A3B8] focus:outline-none"
               />
               <button
                 type="submit"
-                className="ml-2 px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold text-white transition-colors"
+                className="ml-2 px-3 py-1 rounded-lg bg-[#FF2A5F] hover:bg-[#E01E4F] text-xs font-bold text-white transition-colors"
               >
                 Buscar
               </button>
@@ -199,7 +195,7 @@ export function GamesPage() {
           </form>
 
           {/* Filters Selects */}
-          <div className="border-t border-white/5 pt-4">
+          <div className="border-t border-[#E2E8F0] pt-4">
             <GameFilters
               value={filters}
               onChange={updateFilters}

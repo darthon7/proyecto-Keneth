@@ -11,17 +11,17 @@ export function Checkbox({ label, error, id, className = '', ...rest }: Checkbox
     <div className="flex flex-col gap-1">
       <label
         htmlFor={checkboxId}
-        className="flex cursor-pointer items-center gap-2 text-body-sm text-white select-none"
+        className="flex cursor-pointer items-center gap-2 text-body-sm text-[#0F172A] select-none"
       >
         <input
           id={checkboxId}
           type="checkbox"
-          className={`h-4 w-4 shrink-0 cursor-pointer appearance-none rounded-[4px] bg-graphite checked:bg-white checked:border-white focus:outline-none ${className}`}
+          className={`h-4 w-4 shrink-0 cursor-pointer rounded-[4px] border border-[#E2E8F0] bg-[#FFFFFF] accent-[#FF2A5F] focus:outline-none ${className}`}
           {...rest}
         />
         {label}
       </label>
-      {error && <p className="text-caption text-[#ff7b7b]">{error}</p>}
+      {error && <p className="text-caption text-[#EF4444]">{error}</p>}
     </div>
   );
 }

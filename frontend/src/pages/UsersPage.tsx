@@ -35,7 +35,7 @@ export function UsersPage() {
         {
           header: 'Usuario',
           render: (user) => (
-            <Link to={`/users/${user.id}`} className="text-signal-blue hover:text-white">
+            <Link to={`/users/${user.id}`} className="font-semibold text-[#1E1B4B] hover:text-[#FF2A5F]">
               {user.username}
             </Link>
           ),
@@ -45,7 +45,7 @@ export function UsersPage() {
         {
           header: 'Estado',
           render: (user) => (
-            <span className={user.isActive ? 'text-white' : 'text-mid-gray'}>
+            <span className={user.isActive ? 'font-semibold text-[#065F46]' : 'text-[#94A3B8]'}>
               {user.isActive ? 'Activo' : 'Inactivo'}
             </span>
           ),

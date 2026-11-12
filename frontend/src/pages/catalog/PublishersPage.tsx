@@ -33,7 +33,7 @@ export function PublishersPage() {
                 href={publisher.websiteUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="text-signal-blue hover:text-white"
+                className="text-[#1E1B4B] font-medium hover:text-[#FF2A5F] underline-offset-2 hover:underline"
               >
                 {publisher.websiteUrl}
               </a>

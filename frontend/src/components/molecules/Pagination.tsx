@@ -22,7 +22,7 @@ export function Pagination({
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage <= 1}
         aria-label="Página anterior"
-        className="rounded-xl px-4 py-2 text-xs font-bold bg-[#161a24] border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 btn-nintendo-animation disabled:opacity-30 disabled:pointer-events-none"
+        className="rounded-xl px-4 py-2 text-xs font-bold bg-[#FFFFFF] border border-[#E2E8F0] text-[#0F172A] hover:border-[#1E1B4B] hover:bg-[#F4F4F6] btn-nintendo-animation disabled:opacity-40 disabled:pointer-events-none"
       >
         Anterior
       </button>
@@ -36,8 +36,8 @@ export function Pagination({
             aria-current={page === currentPage ? 'page' : undefined}
             className={`h-9 w-9 rounded-xl text-xs font-bold btn-nintendo-animation ${
               page === currentPage
-                ? 'bg-[#4f8eff] font-black text-[#00275e] shadow-[0_0_12px_rgba(79,142,255,0.4)]'
-                : 'bg-[#161a24] border border-white/5 text-slate-400 hover:text-white hover:bg-white/10'
+                ? 'bg-[#FF2A5F] font-black text-white shadow-[0_4px_12px_rgba(255,42,95,0.3)]'
+                : 'bg-[#FFFFFF] border border-[#E2E8F0] text-[#475569] hover:text-[#0F172A] hover:border-[#1E1B4B]'
             }`}
           >
             {page}
@@ -50,7 +50,7 @@ export function Pagination({
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage >= totalPages}
         aria-label="Página siguiente"
-        className="rounded-xl px-4 py-2 text-xs font-bold bg-[#161a24] border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 btn-nintendo-animation disabled:opacity-30 disabled:pointer-events-none"
+        className="rounded-xl px-4 py-2 text-xs font-bold bg-[#FFFFFF] border border-[#E2E8F0] text-[#0F172A] hover:border-[#1E1B4B] hover:bg-[#F4F4F6] btn-nintendo-animation disabled:opacity-40 disabled:pointer-events-none"
       >
         Siguiente
       </button>

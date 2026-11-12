@@ -10,13 +10,27 @@ import { EditionFormat } from '@/types';
 import type { Game, GameEdition, Genre, Platform, Promotion } from '@/types';
 
 const GENRE_ACCENTS = [
-  { border: 'border-cyan-400/25 hover:border-cyan-400/60', text: 'text-cyan-300', dot: 'bg-cyan-400' },
-  { border: 'border-purple-400/25 hover:border-purple-400/60', text: 'text-purple-300', dot: 'bg-purple-400' },
-  { border: 'border-emerald-400/25 hover:border-emerald-400/60', text: 'text-emerald-300', dot: 'bg-emerald-400' },
-  { border: 'border-amber-400/25 hover:border-amber-400/60', text: 'text-amber-300', dot: 'bg-amber-400' },
-  { border: 'border-sky-400/25 hover:border-sky-400/60', text: 'text-sky-300', dot: 'bg-sky-400' },
-  { border: 'border-fuchsia-400/25 hover:border-fuchsia-400/60', text: 'text-fuchsia-300', dot: 'bg-fuchsia-400' },
+  { border: 'border-[#E2E8F0] hover:border-[#FF2A5F]', text: 'text-[#0F172A] group-hover:text-[#FF2A5F]', dot: 'bg-[#FF2A5F]' },
+  { border: 'border-[#E2E8F0] hover:border-[#1E1B4B]', text: 'text-[#0F172A] group-hover:text-[#1E1B4B]', dot: 'bg-[#1E1B4B]' },
+  { border: 'border-[#E2E8F0] hover:border-[#FFC700]', text: 'text-[#0F172A] group-hover:text-[#1E1B4B]', dot: 'bg-[#FFC700]' },
+  { border: 'border-[#E2E8F0] hover:border-[#10B981]', text: 'text-[#0F172A] group-hover:text-[#065F46]', dot: 'bg-[#10B981]' },
+  { border: 'border-[#E2E8F0] hover:border-[#0070D1]', text: 'text-[#0F172A] group-hover:text-[#0070D1]', dot: 'bg-[#0070D1]' },
+  { border: 'border-[#E2E8F0] hover:border-[#E60012]', text: 'text-[#0F172A] group-hover:text-[#E60012]', dot: 'bg-[#E60012]' },
 ];
+
+function getPlatformAccent(nameOrCode: string): string {
+  const lower = nameOrCode.toLowerCase();
+  if (lower.includes('nintendo') || lower.includes('switch')) {
+    return 'bg-[#E60012] text-white';
+  }
+  if (lower.includes('playstation') || lower.includes('ps')) {
+    return 'bg-[#0070D1] text-white';
+  }
+  if (lower.includes('xbox')) {
+    return 'bg-[#107C10] text-white';
+  }
+  return 'bg-[#334155] text-white';
+}
 
 function releaseTime(value: string | null | undefined): number {
   if (!value) return 0;
@@ -49,6 +63,9 @@ function isNintendoTitle(game?: Game): boolean {
   );
 }
 
+const ZELDA_BANNER_REMOTE_URL = 'https://media.vandal.net/i/1280x720/11-2026/20261128195549_1.jpg.webp';
+const ZELDA_BANNER_FALLBACK_URL = '/Banner__Zelda_Ocarina_Vandal.webp';
+
 export function HomePage() {
   const navigate = useNavigate();
   const { addItem } = useCart();
@@ -59,6 +76,7 @@ export function HomePage() {
   const [rankingTab, setRankingTab] = useState<'new' | 'cheapest' | 'alpha' | 'all'>('new');
   const [addedGameId, setAddedGameId] = useState<number | null>(null);
   const [failedCoverIds, setFailedCoverIds] = useState<Set<number>>(() => new Set());
+  const [zeldaBannerSrc, setZeldaBannerSrc] = useState(ZELDA_BANNER_REMOTE_URL);
 
   const markCoverFailed = (gameId: number) => {
     setFailedCoverIds((prev) => {
@@ -237,59 +255,80 @@ export function HomePage() {
   }, [games, rankingTab]);
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#0B0C10] text-[#e1e2ec] font-sans antialiased selection:bg-cyan-400 selection:text-[#0B0C10]">
-      {/* Subtle Controlled Dark Cyberpunk Ambient Backdrop */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -top-36 left-1/4 w-[520px] h-[520px] bg-cyan-500/[0.06] rounded-full blur-[160px] -z-10"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute top-[540px] -right-28 w-[460px] h-[460px] bg-purple-600/[0.06] rounded-full blur-[160px] -z-10"
-      />
-
+    <div className="relative min-h-screen overflow-x-hidden bg-[#F4F4F6] text-[#0F172A] font-sans antialiased selection:bg-[#FF2A5F] selection:text-white">
       <main className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-14">
         {/* HERO BANNER PRINCIPAL: ZELDA OCARINA OF TIME PANORAMIC SPOTLIGHT */}
         <section
           aria-labelledby="hero-zelda-heading"
           data-testid="hero-zelda-banner"
-          className="relative rounded-2xl overflow-hidden bg-[#12151E] border border-white/10 hover:border-cyan-400/35 shadow-[0_24px_60px_rgba(0,0,0,0.75)] transition-colors duration-300"
+          className="relative rounded-2xl overflow-hidden bg-[#1E1B4B] border border-[#1E1B4B] hover:border-[#FF2A5F] shadow-[0_14px_34px_rgba(30,27,75,0.16)] transition-colors duration-300"
         >
-          {/* Controlled Top HUD Accent */}
+          {/* Retro Pop Top Accent Hairline */}
           <div
             aria-hidden="true"
-            className="h-[2px] w-full bg-gradient-to-r from-cyan-400/80 via-purple-400/60 to-transparent"
+            className="h-[3px] w-full bg-gradient-to-r from-[#FF2A5F] via-[#FFC700] to-[#FF2A5F]"
           />
 
-          {/* Panoramic Banner Artwork (exact crop hiding outer white canvas margins) */}
-          <div className="relative w-full aspect-[916/246] overflow-hidden bg-[#0E1119]">
+          {/* Panoramic Banner Artwork with Coordinate-Locked "YA DISPONIBLE" Lockup */}
+          <div className="relative w-full overflow-hidden bg-[#0F122E] lg:h-[440px] flex items-center justify-center">
+            {/* Ambient edge extension for wide viewports */}
             <img
-              src="/Banner__Zelda_Disponible_MVK-scaled.jpg"
-              alt="The Legend of Zelda: Ocarina of Time — Ya Disponible"
-              className="absolute max-w-none select-none pointer-events-none"
-              style={{
-                width: '111.79%',
-                height: '142.28%',
-                left: '-5.90%',
-                top: '-21.14%',
-              }}
+              src={zeldaBannerSrc}
+              alt=""
+              aria-hidden="true"
+              referrerPolicy="no-referrer"
+              className="hidden lg:block absolute inset-0 w-full h-full object-cover scale-125 blur-2xl opacity-80 brightness-75 select-none pointer-events-none"
             />
             <div
               aria-hidden="true"
-              className="absolute inset-0 bg-gradient-to-t from-[#12151E] via-transparent to-[#0B0C10]/20 pointer-events-none"
+              className="hidden lg:block absolute inset-0 bg-gradient-to-r from-[#1E1B4B]/70 via-transparent to-[#1E1B4B]/70 pointer-events-none"
+            />
+
+            {/* Coordinate-locked 16:9 visual stage */}
+            <div className="relative w-full aspect-video lg:h-full lg:w-auto max-w-full shrink-0">
+              <img
+                src={zeldaBannerSrc}
+                alt="The Legend of Zelda: Ocarina of Time — Ya Disponible"
+                referrerPolicy="no-referrer"
+                onError={() => {
+                  if (zeldaBannerSrc !== ZELDA_BANNER_FALLBACK_URL) {
+                    setZeldaBannerSrc(ZELDA_BANNER_FALLBACK_URL);
+                  }
+                }}
+                className="w-full h-full object-cover select-none pointer-events-none lg:[mask-image:linear-gradient(to_right,transparent,black_9%,black_91%,transparent)] lg:[-webkit-mask-image:linear-gradient(to_right,transparent,black_9%,black_91%,transparent)]"
+              />
+
+              {/* Classic Zelda Gold Serif "YA DISPONIBLE" directly beneath the logo */}
+              <div
+                className="absolute left-[9.5%] w-[38%] top-[61%] flex justify-center pointer-events-none select-none"
+                style={{ filter: 'drop-shadow(0 3px 10px rgba(0, 0, 0, 0.96))' }}
+              >
+                <span
+                  className="font-serif font-semibold uppercase tracking-[0.12em] whitespace-nowrap bg-gradient-to-b from-[#FCE892] via-[#D8A634] to-[#946416] bg-clip-text text-transparent text-[clamp(0.7rem,2.45vw,1.5rem)] lg:text-[1.45rem]"
+                  style={{ fontFamily: "Georgia, 'Palatino Linotype', 'Book Antiqua', serif" }}
+                >
+                  <span className="text-[1.22em]">Y</span>A{' '}
+                  <span className="text-[1.22em]">D</span>ISPONIBLE
+                </span>
+              </div>
+            </div>
+
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 bg-gradient-to-t from-[#1E1B4B]/85 via-transparent to-[#1E1B4B]/20 pointer-events-none"
             />
           </div>
 
-          {/* Integrated High-Conversion Action Bar */}
-          <div className="px-5 sm:px-8 py-5 bg-[#12151E] border-t border-white/[0.07] flex flex-col md:flex-row md:items-center justify-between gap-4">
+          {/* Integrated High-Conversion Action Bar (Retro Pop Indigo Contrast Zone) */}
+          <div className="px-5 sm:px-8 py-5 bg-[#1E1B4B] border-t border-white/15 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="space-y-1.5">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-cyan-400/10 text-cyan-300 border border-cyan-400/25 text-[10px] font-mono font-bold uppercase tracking-widest">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[#FFC700] text-[#0F172A] text-[10px] font-mono font-bold uppercase tracking-widest">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#FF2A5F] animate-pulse" />
                   Destacado Oficial
                 </span>
                 {activePromotions[0] && (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-purple-500/15 text-purple-300 border border-purple-400/30 text-[10px] font-mono font-bold uppercase tracking-wider">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-[#10B981] text-[#0F172A] text-[10px] font-mono font-bold uppercase tracking-wider">
                     Promo Activa -{activePromotions[0].discountPercentage}%
                   </span>
                 )}
@@ -301,7 +340,7 @@ export function HomePage() {
               >
                 The Legend of Zelda: Ocarina of Time &amp; Colección Destacada
               </h1>
-              <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
+              <p className="text-xs sm:text-sm text-indigo-200 max-w-2xl">
                 Claves digitales de activación instantánea, ediciones de colección y catálogo verificado.
               </p>
             </div>
@@ -309,7 +348,7 @@ export function HomePage() {
             <div className="flex flex-wrap items-center gap-3 shrink-0">
               <Link
                 to="/catalog/promotions"
-                className="px-4 py-2.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-slate-200 hover:text-white border border-white/10 text-xs font-bold uppercase tracking-wider transition-colors"
+                className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-bold uppercase tracking-wider transition-colors"
               >
                 Ver Ofertas
               </Link>
@@ -317,7 +356,7 @@ export function HomePage() {
               <Link
                 to={zeldaTargetPath}
                 data-testid="hero-zelda-cta"
-                className="px-6 py-2.5 rounded-full bg-cyan-400 hover:bg-cyan-300 text-[#0B0C10] shadow-[0_4px_18px_rgba(34,211,238,0.28)] hover:shadow-[0_8px_24px_rgba(34,211,238,0.45)] btn-nintendo-animation btn-nintendo-shine text-xs font-black uppercase tracking-wider inline-flex items-center gap-2"
+                className="px-6 py-2.5 rounded-full bg-[#FF2A5F] hover:bg-[#E01E4F] text-white shadow-[0_4px_16px_rgba(255,42,95,0.35)] btn-nintendo-animation btn-nintendo-shine text-xs font-black uppercase tracking-wider inline-flex items-center gap-2"
               >
                 <span>Explorar Catálogo</span>
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -342,20 +381,20 @@ export function HomePage() {
           />
         )}
 
-        {/* SECTION 2: CATÁLOGO / GRID DE PRODUCTOS (ESTILO G2A / STEAM) */}
+        {/* SECTION 2: CATÁLOGO / GRID DE PRODUCTOS */}
         {!gamesQuery.isLoading && !gamesQuery.isError && (
           <section aria-labelledby="catalog-grid-title" className="space-y-6">
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 border-b border-white/[0.07] pb-4">
+            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 border-b border-[#E2E8F0] pb-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-1.5 h-5 rounded-full bg-cyan-400" />
-                  <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-cyan-400">
+                  <span className="w-1.5 h-5 rounded-full bg-[#FF2A5F]" />
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#FF2A5F]">
                     Marketplace Digital
                   </span>
                 </div>
                 <h2
                   id="catalog-grid-title"
-                  className="text-xl sm:text-2xl font-black uppercase tracking-wide text-white"
+                  className="text-xl sm:text-2xl font-black uppercase tracking-wide text-[#0F172A]"
                 >
                   Catálogo de Videojuegos
                 </h2>
@@ -366,7 +405,7 @@ export function HomePage() {
                 <div
                   role="group"
                   aria-label="Ordenar catálogo"
-                  className="flex flex-wrap items-center gap-1 bg-[#12151E] p-1 rounded-xl border border-white/[0.08] text-xs font-bold max-w-full"
+                  className="flex flex-wrap items-center gap-1 bg-[#FFFFFF] p-1 rounded-xl border border-[#E2E8F0] text-xs font-bold max-w-full shadow-xs"
                 >
                   {(
                     [
@@ -383,8 +422,8 @@ export function HomePage() {
                       onClick={() => setRankingTab(tab.key)}
                       className={`px-3 py-1.5 rounded-lg uppercase tracking-wider transition-colors whitespace-nowrap ${
                         rankingTab === tab.key
-                          ? 'bg-cyan-400/15 text-cyan-300 border border-cyan-400/30'
-                          : 'text-slate-400 hover:text-white border border-transparent'
+                          ? 'bg-[#1E1B4B] text-white border border-[#1E1B4B]'
+                          : 'text-[#475569] hover:text-[#0F172A] border border-transparent'
                       }`}
                     >
                       {tab.label}
@@ -394,7 +433,7 @@ export function HomePage() {
 
                 <Link
                   to="/games"
-                  className="text-xs font-bold uppercase tracking-wider text-cyan-300 hover:text-white transition-colors inline-flex items-center gap-1"
+                  className="text-xs font-bold uppercase tracking-wider text-[#1E1B4B] hover:text-[#FF2A5F] transition-colors inline-flex items-center gap-1"
                 >
                   <span>Ver todo</span>
                   <span aria-hidden="true">→</span>
@@ -424,24 +463,24 @@ export function HomePage() {
                         : 'AGOTADO';
 
                   const availabilityStyle = !lowest
-                    ? 'text-slate-300 border-white/15 bg-[#0B0C10]/80'
+                    ? 'text-[#475569] border-[#E2E8F0] bg-[#F4F4F6]/95'
                     : lowest.format === EditionFormat.DIGITAL
-                      ? 'text-cyan-300 border-cyan-400/35 bg-[#0B0C10]/85'
+                      ? 'text-[#1E1B4B] border-[#C7D2FE] bg-[#EEF2FF]/95'
                       : physicalStock > 0
-                        ? 'text-emerald-300 border-emerald-400/35 bg-[#0B0C10]/85'
-                        : 'text-rose-300 border-rose-400/35 bg-[#0B0C10]/85';
+                        ? 'text-[#065F46] border-[#A7F3D0] bg-[#D1FAE5]/95'
+                        : 'text-[#991B1B] border-[#FECACA] bg-[#FEE2E2]/95';
 
                   return (
                     <article
                       key={game.id}
                       data-testid={`game-card-${game.id}`}
-                      className="group flex flex-col justify-between rounded-2xl overflow-hidden bg-[#12151E] hover:bg-[#161B26] border border-white/[0.08] hover:border-cyan-400/40 shadow-[0_12px_32px_rgba(0,0,0,0.55)] hover:shadow-[0_18px_42px_rgba(0,0,0,0.75)] transition-all duration-300"
+                      className="product-card group flex flex-col justify-between rounded-2xl overflow-hidden bg-[#FFFFFF] border border-[#E2E8F0] hover:border-[#FF2A5F] hover:-translate-y-0.5 shadow-[0_6px_18px_rgba(15,23,42,0.06)] hover:shadow-[0_12px_28px_rgba(30,27,75,0.12)] transition-all duration-200"
                     >
-                      {/* Clean 16:10 Key-Art Header */}
+                      {/* Clean 16:10 Key-Art Header (No dark invasive overlays over artwork) */}
                       <div>
                         <Link
                           to={`/games/${game.id}`}
-                          className="relative block aspect-[16/10] w-full overflow-hidden bg-[#0E1118]"
+                          className="relative block aspect-[16/10] w-full overflow-hidden bg-[#F4F4F6] border-b border-[#E2E8F0]"
                         >
                           {game.coverImageUrl && !failedCoverIds.has(game.id) ? (
                             <img
@@ -452,23 +491,17 @@ export function HomePage() {
                               className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
                             />
                           ) : (
-                            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#191F2E] to-[#0B0C10] px-4 text-center">
-                              <span className="text-lg font-black uppercase tracking-widest text-slate-500">
+                            <div className="w-full h-full flex flex-col items-center justify-center bg-[#F4F4F6] px-4 text-center">
+                              <span className="text-lg font-black uppercase tracking-widest text-[#94A3B8]">
                                 {game.title.slice(0, 3)}
                               </span>
                             </div>
                           )}
 
-                          {/* Bottom Subtle Edge Blend */}
-                          <div
-                            aria-hidden="true"
-                            className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#12151E] to-transparent pointer-events-none"
-                          />
-
                           {/* Top Micro-Badges */}
                           <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between gap-2 pointer-events-none">
                             {game.genres?.[0] ? (
-                              <span className="px-2 py-0.5 rounded-md bg-[#0B0C10]/80 backdrop-blur-md text-[10px] font-bold uppercase tracking-wider text-slate-200 border border-white/10 truncate max-w-[50%]">
+                              <span className="px-2 py-0.5 rounded-md bg-[#FFC700] text-[10px] font-extrabold uppercase tracking-wider text-[#0F172A] shadow-xs truncate max-w-[50%]">
                                 {game.genres[0].name}
                               </span>
                             ) : (
@@ -476,7 +509,7 @@ export function HomePage() {
                             )}
 
                             <span
-                              className={`px-2 py-0.5 rounded-md backdrop-blur-md text-[10px] font-mono font-bold uppercase tracking-wider border ${availabilityStyle}`}
+                              className={`px-2 py-0.5 rounded-md backdrop-blur-sm text-[10px] font-mono font-bold uppercase tracking-wider border ${availabilityStyle}`}
                             >
                               {availabilityLabel}
                             </span>
@@ -487,14 +520,14 @@ export function HomePage() {
                         <div className="px-4 pt-3 pb-2 space-y-2">
                           <div className="flex items-start justify-between gap-2">
                             <Link to={`/games/${game.id}`} className="min-w-0 flex-1">
-                              <h3 className="text-[15px] font-bold text-white group-hover:text-cyan-300 transition-colors line-clamp-1">
+                              <h3 className="text-[15px] font-extrabold text-[#0F172A] group-hover:text-[#FF2A5F] transition-colors line-clamp-1">
                                 {game.title}
                               </h3>
                             </Link>
 
                             {reviewStats && (
                               <span
-                                className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-400/25 text-[10px] font-bold text-emerald-300"
+                                className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#FFC700] text-[10px] font-black text-[#0F172A]"
                                 title={`${reviewStats.total} reseñas`}
                               >
                                 ★ {reviewStats.percent}%
@@ -502,23 +535,23 @@ export function HomePage() {
                             )}
                           </div>
 
-                          <div className="flex items-center justify-between gap-2 text-xs text-slate-400">
+                          <div className="flex items-center justify-between gap-2 text-xs text-[#475569]">
                             <span className="truncate">
                               {game.developer?.name || game.publisher?.name || 'Estudio verificado'}
                             </span>
                             {game.esrbRating && (
-                              <span className="shrink-0 text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.08] text-slate-300">
+                              <span className="shrink-0 text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#F4F4F6] border border-[#E2E8F0] text-[#475569] font-semibold">
                                 {game.esrbRating}
                               </span>
                             )}
                           </div>
 
-                          <div className="flex items-center justify-between text-[11px] text-slate-400">
+                          <div className="flex items-center justify-between text-[11px] text-[#94A3B8]">
                             <span className="truncate">
                               {lowest ? lowest.editionName : 'Ficha informativa'}
                             </span>
                             {editionCount > 1 && (
-                              <span className="shrink-0 text-purple-300 font-semibold">
+                              <span className="shrink-0 text-[#1E1B4B] font-bold">
                                 +{editionCount - 1} ed.
                               </span>
                             )}
@@ -527,12 +560,12 @@ export function HomePage() {
                       </div>
 
                       {/* Conversion Price & Action Footer */}
-                      <div className="px-4 py-3.5 mt-1 border-t border-white/[0.06] bg-[#0F121A]/70 flex items-center justify-between gap-3">
+                      <div className="px-4 py-3.5 mt-1 border-t border-[#E2E8F0] bg-[#FFFFFF] flex items-center justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                          <p className="text-[10px] font-mono uppercase tracking-wider text-[#94A3B8]">
                             {lowest ? 'Desde' : 'Precio'}
                           </p>
-                          <p className="text-lg font-black text-emerald-400 tabular-nums leading-tight">
+                          <p className="text-lg font-black text-[#0F172A] tabular-nums leading-tight">
                             {lowest ? formatCurrency(lowest.basePrice) : 'Consultar'}
                           </p>
                         </div>
@@ -543,10 +576,10 @@ export function HomePage() {
                           onClick={() => handleAddToCart(game, lowest)}
                           className={`px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 shrink-0 btn-nintendo-animation btn-nintendo-shine ${
                             isAdded
-                              ? 'bg-emerald-400 text-[#0B0C10] shadow-[0_4px_16px_rgba(52,211,153,0.4)]'
+                              ? 'bg-[#10B981] text-[#0F172A] shadow-[0_4px_14px_rgba(16,185,129,0.35)]'
                               : isNintendo
-                                ? 'bg-[#e60012] hover:bg-[#ff1a1a] text-white shadow-[0_4px_14px_rgba(230,0,18,0.35)] hover:shadow-[0_8px_20px_rgba(230,0,18,0.5)]'
-                                : 'bg-cyan-400 hover:bg-cyan-300 text-[#0B0C10] shadow-[0_4px_14px_rgba(34,211,238,0.24)] hover:shadow-[0_8px_20px_rgba(34,211,238,0.42)]'
+                                ? 'bg-[#E60012] hover:bg-[#cc0010] text-white shadow-[0_4px_14px_rgba(230,0,18,0.3)] hover:shadow-[0_8px_20px_rgba(230,0,18,0.45)]'
+                                : 'bg-[#FF2A5F] hover:bg-[#E01E4F] text-white shadow-[0_4px_14px_rgba(255,42,95,0.28)] hover:shadow-[0_8px_20px_rgba(255,42,95,0.42)]'
                           }`}
                         >
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -565,9 +598,9 @@ export function HomePage() {
                 })}
               </div>
             ) : (
-              <div className="p-10 rounded-2xl bg-[#12151E] border border-white/[0.08] text-center space-y-2">
-                <p className="text-sm font-bold text-white">Aún no hay videojuegos registrados en el catálogo</p>
-                <p className="text-xs text-slate-400">
+              <div className="p-10 rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] text-center space-y-2 shadow-xs">
+                <p className="text-sm font-bold text-[#0F172A]">Aún no hay videojuegos registrados en el catálogo</p>
+                <p className="text-xs text-[#475569]">
                   Agrega títulos desde el módulo de gestión para verlos aquí.
                 </p>
               </div>
@@ -575,20 +608,20 @@ export function HomePage() {
           </section>
         )}
 
-        {/* SECTION 3: DESTACADOS Y RECOMENDADOS (STEAM SPLIT SPOTLIGHT) */}
+        {/* SECTION 3: DESTACADOS Y RECOMENDADOS */}
         {activeSpotlight && (
           <section aria-labelledby="hero-carousel-title" className="space-y-4">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <span className="w-1.5 h-6 bg-purple-400 rounded-full" />
+                <span className="w-1.5 h-6 bg-[#1E1B4B] rounded-full" />
                 <div>
                   <h2
                     id="hero-carousel-title"
-                    className="text-xl sm:text-2xl font-black uppercase tracking-wide text-white"
+                    className="text-xl sm:text-2xl font-black uppercase tracking-wide text-[#0F172A]"
                   >
                     Destacados y Recomendados
                   </h2>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-[#475569]">
                     Comparativa rápida de ediciones, reseñas y disponibilidad
                   </p>
                 </div>
@@ -601,7 +634,7 @@ export function HomePage() {
                     type="button"
                     onClick={handlePrevSpotlight}
                     aria-label="Juego anterior"
-                    className="p-2 rounded-xl bg-[#161B26] text-slate-300 hover:text-white hover:bg-[#1E2535] btn-nintendo-animation border border-white/10"
+                    className="p-2 rounded-xl bg-[#FFFFFF] text-[#475569] hover:text-[#0F172A] hover:border-[#FF2A5F] btn-nintendo-animation border border-[#E2E8F0] shadow-xs"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
@@ -620,8 +653,8 @@ export function HomePage() {
                         aria-label={`Ver destacado ${game.title}`}
                         className={`h-1.5 rounded-full transition-all duration-300 ${
                           idx === safeSpotlightIndex
-                            ? 'w-6 bg-cyan-400'
-                            : 'w-2 bg-slate-700 hover:bg-slate-500'
+                            ? 'w-6 bg-[#FF2A5F]'
+                            : 'w-2 bg-[#CBD5E1] hover:bg-[#94A3B8]'
                         }`}
                       />
                     ))}
@@ -631,7 +664,7 @@ export function HomePage() {
                     type="button"
                     onClick={handleNextSpotlight}
                     aria-label="Siguiente juego"
-                    className="p-2 rounded-xl bg-[#161B26] text-slate-300 hover:text-white hover:bg-[#1E2535] btn-nintendo-animation border border-white/10"
+                    className="p-2 rounded-xl bg-[#FFFFFF] text-[#475569] hover:text-[#0F172A] hover:border-[#FF2A5F] btn-nintendo-animation border border-[#E2E8F0] shadow-xs"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
@@ -642,9 +675,9 @@ export function HomePage() {
             </div>
 
             {/* Split Spotlight Container */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 rounded-2xl overflow-hidden bg-[#12151E] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.75)] group">
+            <div className="grid grid-cols-1 lg:grid-cols-12 rounded-2xl overflow-hidden bg-[#FFFFFF] border border-[#E2E8F0] shadow-[0_10px_28px_rgba(15,23,42,0.08)] group">
               {/* Main Visual Column (Col 1-8) */}
-              <div className="lg:col-span-8 relative min-h-[380px] lg:min-h-[460px] flex flex-col justify-between p-6 sm:p-8 overflow-hidden bg-[#0E1118]">
+              <div className="lg:col-span-8 relative min-h-[380px] lg:min-h-[460px] flex flex-col justify-between p-6 sm:p-8 overflow-hidden bg-[#1E1B4B]">
                 {activeSpotlight.coverImageUrl && !failedCoverIds.has(activeSpotlight.id) ? (
                   <img
                     src={activeSpotlight.coverImageUrl}
@@ -653,8 +686,8 @@ export function HomePage() {
                     className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
                   />
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#161C2C] via-[#10131C] to-[#0B0C10]">
-                    <p className="text-2xl font-black text-slate-500 tracking-wider uppercase">
+                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#1E1B4B] via-[#312E81] to-[#1E1B4B]">
+                    <p className="text-2xl font-black text-indigo-200 tracking-wider uppercase">
                       {activeSpotlight.title}
                     </p>
                   </div>
@@ -662,23 +695,23 @@ export function HomePage() {
 
                 <div
                   aria-hidden="true"
-                  className="absolute inset-0 bg-gradient-to-t from-[#0B0C10] via-[#0B0C10]/65 to-[#0B0C10]/20"
+                  className="absolute inset-0 bg-gradient-to-t from-[#1E1B4B]/95 via-[#1E1B4B]/55 to-[#1E1B4B]/20"
                 />
                 <div
                   aria-hidden="true"
-                  className="absolute inset-0 bg-gradient-to-r from-[#0B0C10]/85 via-transparent to-[#12151E]/90 hidden lg:block"
+                  className="absolute inset-0 bg-gradient-to-r from-[#1E1B4B]/80 via-transparent to-transparent hidden lg:block"
                 />
 
                 {/* Top Metatags */}
                 <div className="relative z-10 flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] font-mono uppercase tracking-widest px-2.5 py-1 rounded-md bg-cyan-400 text-[#0B0C10] font-black">
+                  <span className="text-[10px] font-mono uppercase tracking-widest px-2.5 py-1 rounded-md bg-[#FFC700] text-[#0F172A] font-black">
                     Lanzamiento Destacado
                   </span>
-                  <span className="text-[11px] uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-[#0B0C10]/75 backdrop-blur-md text-slate-100 border border-white/10 font-bold">
+                  <span className="text-[11px] uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-[#1E1B4B]/85 backdrop-blur-md text-white border border-white/20 font-bold">
                     ESRB: {activeSpotlight.esrbRating || 'Pendiente'}
                   </span>
                   {activeSpotlight.developer && (
-                    <span className="text-[11px] uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-[#0B0C10]/75 backdrop-blur-md text-cyan-300 border border-white/10 font-bold">
+                    <span className="text-[11px] uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-[#1E1B4B]/85 backdrop-blur-md text-[#FFC700] border border-white/20 font-bold">
                       Desarrollo: {activeSpotlight.developer.name}
                     </span>
                   )}
@@ -690,7 +723,7 @@ export function HomePage() {
                     {activeSpotlight.title}
                   </h3>
 
-                  <p className="text-xs sm:text-sm text-slate-200 line-clamp-2">
+                  <p className="text-xs sm:text-sm text-indigo-100 line-clamp-2">
                     {activeSpotlight.synopsis || 'Sin descripción disponible para este título.'}
                   </p>
 
@@ -699,13 +732,13 @@ export function HomePage() {
                       <Link
                         key={genre.id}
                         to={`/games?genreId=${genre.id}`}
-                        className="text-xs px-2.5 py-1 rounded-lg bg-[#0B0C10]/70 hover:bg-cyan-400/20 text-slate-200 hover:text-cyan-200 border border-white/10 hover:border-cyan-400/40 transition-colors font-medium backdrop-blur-md"
+                        className="text-xs px-2.5 py-1 rounded-lg bg-[#1E1B4B]/80 hover:bg-[#FF2A5F] text-white border border-white/20 hover:border-[#FF2A5F] transition-colors font-medium backdrop-blur-md"
                       >
                         {genre.name}
                       </Link>
                     ))}
                     {activeSpotlight.releaseDate && (
-                      <span className="text-xs px-2.5 py-1 rounded-lg bg-[#161B26]/90 text-slate-300 border border-white/10">
+                      <span className="text-xs px-2.5 py-1 rounded-lg bg-[#1E1B4B]/85 text-indigo-100 border border-white/20">
                         Lanzamiento: {formatDate(activeSpotlight.releaseDate)}
                       </span>
                     )}
@@ -714,17 +747,17 @@ export function HomePage() {
               </div>
 
               {/* Side Edition & Checkout Panel (Col 9-12) */}
-              <div className="lg:col-span-4 bg-[#12151E] border-t lg:border-t-0 lg:border-l border-white/[0.08] flex flex-col justify-between p-6 sm:p-7 space-y-5">
+              <div className="lg:col-span-4 bg-[#FFFFFF] border-t lg:border-t-0 lg:border-l border-[#E2E8F0] flex flex-col justify-between p-6 sm:p-7 space-y-5">
                 <div className="space-y-4">
                   <div className="space-y-1">
-                    <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-400 font-bold flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-[11px] font-mono uppercase tracking-wider text-[#065F46] font-bold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
                       Disponible en Catálogo
                     </span>
-                    <h4 className="text-lg font-bold text-white">
+                    <h4 className="text-lg font-extrabold text-[#0F172A]">
                       {currentEdition?.editionName ?? 'Edición Principal'}
                     </h4>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-[#475569]">
                       {activeSpotlight.publisher
                         ? `Publisher oficial: ${activeSpotlight.publisher.name}`
                         : 'Publisher independiente'}
@@ -734,7 +767,7 @@ export function HomePage() {
 
                   {/* Dynamic Editions Selector */}
                   <div className="space-y-2">
-                    <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">
+                    <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#94A3B8]">
                       Ediciones Registradas
                     </p>
                     {activeSpotlight.editions && activeSpotlight.editions.length > 0 ? (
@@ -748,19 +781,19 @@ export function HomePage() {
                               onClick={() => setSelectedEditionId(edition.id)}
                               className={`p-2.5 rounded-xl text-left border transition-all flex items-center justify-between ${
                                 isSelected
-                                  ? 'bg-[#192030] border-cyan-400/70 shadow-[0_0_0_1px_rgba(34,211,238,0.2)]'
-                                  : 'bg-[#0E1118] border-white/[0.06] hover:border-white/20'
+                                  ? 'bg-[#FFF1F2] border-[#FF2A5F] shadow-[0_0_0_1px_rgba(255,42,95,0.18)]'
+                                  : 'bg-[#F8FAFC] border-[#E2E8F0] hover:border-[#1E1B4B]'
                               }`}
                             >
                               <div className="truncate pr-2">
-                                <p className="text-xs font-bold text-white truncate">
+                                <p className="text-xs font-bold text-[#0F172A] truncate">
                                   {edition.editionName}
                                 </p>
-                                <p className="text-[10px] text-slate-400">
+                                <p className="text-[10px] text-[#475569]">
                                   {edition.format} {edition.platform ? `· ${edition.platform.name}` : ''}
                                 </p>
                               </div>
-                              <span className="text-xs font-black text-emerald-400 tabular-nums shrink-0">
+                              <span className="text-xs font-black text-[#0F172A] tabular-nums shrink-0">
                                 {formatCurrency(edition.basePrice)}
                               </span>
                             </button>
@@ -768,30 +801,30 @@ export function HomePage() {
                         })}
                       </div>
                     ) : (
-                      <div className="p-3 rounded-xl bg-[#0E1118] text-xs text-slate-400 border border-white/[0.06]">
+                      <div className="p-3 rounded-xl bg-[#F4F4F6] text-xs text-[#475569] border border-[#E2E8F0]">
                         Sin ediciones registradas para este título
                       </div>
                     )}
                   </div>
 
                   {/* Reviews & Platforms */}
-                  <div className="space-y-2 pt-3 border-t border-white/[0.06] text-xs">
+                  <div className="space-y-2 pt-3 border-t border-[#E2E8F0] text-xs">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-400">Reseñas:</span>
+                      <span className="text-[#475569]">Reseñas:</span>
                       {spotlightReviewStats ? (
-                        <span className="text-emerald-400 font-bold flex items-center gap-1">
+                        <span className="px-2 py-0.5 rounded bg-[#FFC700] text-[#0F172A] font-bold flex items-center gap-1">
                           ★ {spotlightReviewStats.avg} · {spotlightReviewStats.percent}% positivas (
                           {spotlightReviewStats.total}{' '}
                           {spotlightReviewStats.total === 1 ? 'opinión' : 'opiniones'})
                         </span>
                       ) : (
-                        <span className="text-slate-500 font-medium">Sin reseñas registradas</span>
+                        <span className="text-[#94A3B8] font-medium">Sin reseñas registradas</span>
                       )}
                     </div>
 
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-400">Plataformas:</span>
-                      <div className="text-slate-300 font-medium truncate max-w-[190px]">
+                      <span className="text-[#475569]">Plataformas:</span>
+                      <div className="text-[#0F172A] font-semibold truncate max-w-[190px]">
                         {activeSpotlight.editions && activeSpotlight.editions.length > 0 ? (
                           Array.from(
                             new Set(
@@ -801,7 +834,7 @@ export function HomePage() {
                             ),
                           ).join(' · ') || 'Ver ficha'
                         ) : (
-                          <span className="text-slate-500">A definir</span>
+                          <span className="text-[#94A3B8]">A definir</span>
                         )}
                       </div>
                     </div>
@@ -809,18 +842,18 @@ export function HomePage() {
                 </div>
 
                 {/* Price and Action Module */}
-                <div className="pt-4 border-t border-white/[0.08] space-y-3">
-                  <div className="flex items-center justify-between bg-[#0B0C10]/70 p-3 rounded-xl border border-white/[0.07]">
+                <div className="pt-4 border-t border-[#E2E8F0] space-y-3">
+                  <div className="flex items-center justify-between bg-[#F4F4F6] p-3 rounded-xl border border-[#E2E8F0]">
                     <div>
-                      <p className="text-[10px] font-mono uppercase text-slate-400">Precio actual</p>
-                      <p className="text-xl font-black text-emerald-400 tabular-nums">
+                      <p className="text-[10px] font-mono uppercase text-[#475569]">Precio actual</p>
+                      <p className="text-xl font-black text-[#0F172A] tabular-nums">
                         {currentEdition ? formatCurrency(currentEdition.basePrice) : 'Consultar'}
                       </p>
                     </div>
 
                     <Link
                       to={`/games/${activeSpotlight.id}`}
-                      className="text-xs text-cyan-300 hover:text-white px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.1] border border-white/[0.07] transition-colors font-semibold"
+                      className="text-xs text-[#1E1B4B] hover:text-[#FF2A5F] px-3 py-1.5 rounded-lg bg-[#FFFFFF] border border-[#E2E8F0] hover:border-[#FF2A5F] transition-colors font-bold"
                     >
                       Ver Ficha →
                     </Link>
@@ -832,10 +865,10 @@ export function HomePage() {
                     onClick={() => handleAddToCart(activeSpotlight, currentEdition)}
                     className={`w-full py-3 px-4 rounded-full font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 btn-nintendo-animation btn-nintendo-shine ${
                       addedGameId === activeSpotlight.id
-                        ? 'bg-emerald-400 text-[#0B0C10] shadow-[0_0_20px_rgba(52,211,153,0.45)]'
+                        ? 'bg-[#10B981] text-[#0F172A] shadow-[0_6px_18px_rgba(16,185,129,0.35)]'
                         : isNintendoSpotlight
-                          ? 'bg-[#e60012] hover:bg-[#ff1a1a] text-white shadow-[0_4px_14px_rgba(230,0,18,0.35)] hover:shadow-[0_8px_20px_rgba(230,0,18,0.5)]'
-                          : 'bg-cyan-400 hover:bg-cyan-300 text-[#0B0C10] shadow-[0_4px_16px_rgba(34,211,238,0.28)] hover:shadow-[0_8px_24px_rgba(34,211,238,0.45)]'
+                          ? 'bg-[#E60012] hover:bg-[#cc0010] text-white shadow-[0_4px_14px_rgba(230,0,18,0.3)] hover:shadow-[0_8px_20px_rgba(230,0,18,0.45)]'
+                          : 'bg-[#FF2A5F] hover:bg-[#E01E4F] text-white shadow-[0_4px_16px_rgba(255,42,95,0.28)] hover:shadow-[0_8px_24px_rgba(255,42,95,0.42)]'
                     }`}
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -856,19 +889,19 @@ export function HomePage() {
           </section>
         )}
 
-        {/* SECTION 4: PROMOCIONES Y DESCUENTOS (100% DATABASE DRIVEN) */}
+        {/* SECTION 4: PROMOCIONES Y DESCUENTOS */}
         <section aria-labelledby="promotions-title" className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
             <div className="space-y-1">
               <div className="flex items-center gap-2.5">
-                <span className="w-1.5 h-5 bg-amber-400 rounded-full" />
-                <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-amber-300">
+                <span className="w-1.5 h-5 bg-[#FFC700] rounded-full" />
+                <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#1E1B4B]">
                   Campañas Activas
                 </span>
               </div>
               <h2
                 id="promotions-title"
-                className="text-xl sm:text-2xl font-black uppercase tracking-wide text-white"
+                className="text-xl sm:text-2xl font-black uppercase tracking-wide text-[#0F172A]"
               >
                 Promociones y Descuentos
               </h2>
@@ -876,7 +909,7 @@ export function HomePage() {
 
             <Link
               to="/catalog/promotions"
-              className="text-xs font-bold uppercase tracking-wider text-cyan-300 hover:text-white transition-colors inline-flex items-center gap-1"
+              className="text-xs font-bold uppercase tracking-wider text-[#1E1B4B] hover:text-[#FF2A5F] transition-colors inline-flex items-center gap-1"
             >
               <span>Administrar promociones</span>
               <span aria-hidden="true">→</span>
@@ -888,34 +921,34 @@ export function HomePage() {
               {activePromotions.map((promo: Promotion) => (
                 <article
                   key={promo.id}
-                  className="relative rounded-2xl overflow-hidden bg-[#12151E] border border-white/[0.08] hover:border-amber-400/40 p-6 shadow-xl flex flex-col justify-between space-y-5 transition-colors"
+                  className="product-card relative rounded-2xl overflow-hidden bg-[#FFFFFF] border border-[#E2E8F0] hover:border-[#FF2A5F] hover:-translate-y-0.5 p-6 shadow-sm flex flex-col justify-between space-y-5 transition-all"
                 >
                   <div
                     aria-hidden="true"
-                    className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400/80 via-purple-400/40 to-transparent"
+                    className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#FFC700] via-[#FF2A5F] to-[#1E1B4B]"
                   />
 
                   <div className="space-y-2.5">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-black uppercase px-2.5 py-1 rounded-md bg-amber-400 text-[#0B0C10]">
+                      <span className="text-xs font-black uppercase px-2.5 py-1 rounded-md bg-[#FFC700] text-[#0F172A]">
                         -{promo.discountPercentage}% OFF
                       </span>
                       {promo.couponCode && (
-                        <span className="text-[11px] font-mono px-2.5 py-1 rounded-md bg-[#0B0C10] text-cyan-300 border border-cyan-400/25">
+                        <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-md bg-[#F4F4F6] text-[#1E1B4B] border border-[#E2E8F0]">
                           Cupón: {promo.couponCode}
                         </span>
                       )}
                     </div>
 
-                    <h3 className="text-lg font-bold text-white">{promo.name}</h3>
-                    <p className="text-xs text-slate-400">
+                    <h3 className="text-lg font-extrabold text-[#0F172A]">{promo.name}</h3>
+                    <p className="text-xs text-[#475569]">
                       Válido desde {formatDate(promo.startDate)} hasta {formatDate(promo.endDate)}.
                     </p>
                   </div>
 
                   <Link
                     to="/games"
-                    className="w-full py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-white font-bold text-xs uppercase tracking-wider text-center transition-colors"
+                    className="w-full py-2.5 rounded-xl bg-[#1E1B4B] hover:bg-[#FF2A5F] text-white font-bold text-xs uppercase tracking-wider text-center transition-colors"
                   >
                     Ver Juegos Aplicables
                   </Link>
@@ -923,15 +956,15 @@ export function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="rounded-2xl bg-[#12151E] border border-white/[0.08] p-6 text-center space-y-2">
-              <p className="text-sm font-bold text-white">No hay promociones activas en este momento</p>
-              <p className="text-xs text-slate-400 max-w-md mx-auto">
+            <div className="rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-6 text-center space-y-2 shadow-xs">
+              <p className="text-sm font-bold text-[#0F172A]">No hay promociones activas en este momento</p>
+              <p className="text-xs text-[#475569] max-w-md mx-auto">
                 Los títulos del catálogo están disponibles con su precio estándar. Puedes consultar todas las ediciones o crear una nueva promoción desde el panel de catálogo.
               </p>
               <div className="pt-2">
                 <Link
                   to="/games"
-                  className="inline-block px-4 py-2 rounded-xl bg-white/[0.07] hover:bg-white/[0.14] border border-white/10 text-xs font-bold text-white transition-colors"
+                  className="inline-block px-4 py-2 rounded-xl bg-[#F4F4F6] hover:bg-[#FF2A5F] border border-[#E2E8F0] hover:border-[#FF2A5F] text-xs font-bold text-[#0F172A] hover:text-white transition-colors"
                 >
                   Explorar Catálogo Completo
                 </Link>
@@ -945,14 +978,14 @@ export function HomePage() {
           <div className="flex items-end justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2.5">
-                <span className="w-1.5 h-5 bg-emerald-400 rounded-full" />
-                <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-emerald-300">
+                <span className="w-1.5 h-5 bg-[#10B981] rounded-full" />
+                <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#065F46]">
                   Categorías
                 </span>
               </div>
               <h2
                 id="genres-title"
-                className="text-xl sm:text-2xl font-black uppercase tracking-wide text-white"
+                className="text-xl sm:text-2xl font-black uppercase tracking-wide text-[#0F172A]"
               >
                 Explorar por Género
               </h2>
@@ -960,7 +993,7 @@ export function HomePage() {
 
             <Link
               to="/catalog/genres"
-              className="text-xs font-bold uppercase tracking-wider text-cyan-300 hover:text-white transition-colors"
+              className="text-xs font-bold uppercase tracking-wider text-[#1E1B4B] hover:text-[#FF2A5F] transition-colors"
             >
               Ver todos los géneros →
             </Link>
@@ -976,20 +1009,20 @@ export function HomePage() {
                   <Link
                     key={genre.id}
                     to={`/games?genreId=${genre.id}`}
-                    className={`rounded-2xl p-4 flex flex-col justify-between h-36 bg-[#12151E] hover:bg-[#161B26] border ${accent.border} transition-colors group`}
+                    className={`product-card rounded-2xl p-4 flex flex-col justify-between h-36 bg-[#FFFFFF] border ${accent.border} hover:-translate-y-0.5 shadow-xs transition-all group`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className={`w-2 h-2 rounded-full ${accent.dot}`} />
-                      <span className="text-[10px] font-mono uppercase text-slate-500 group-hover:text-slate-300 transition-colors">
+                      <span className={`w-2.5 h-2.5 rounded-full ${accent.dot}`} />
+                      <span className="text-[10px] font-mono uppercase text-[#94A3B8] group-hover:text-[#475569] transition-colors">
                         {genre.slug}
                       </span>
                     </div>
 
                     <div>
-                      <h3 className={`text-sm font-black uppercase ${accent.text} line-clamp-1`}>
+                      <h3 className={`text-sm font-black uppercase ${accent.text} transition-colors line-clamp-1`}>
                         {genre.name}
                       </h3>
-                      <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">
+                      <p className="text-[11px] text-[#475569] mt-0.5 line-clamp-1">
                         {genre.description || (count !== null ? `${count} ${count === 1 ? 'juego' : 'juegos'}` : 'Explorar')}
                       </p>
                     </div>
@@ -998,28 +1031,28 @@ export function HomePage() {
               })}
             </div>
           ) : (
-            <div className="p-6 rounded-2xl bg-[#12151E] border border-white/[0.08] text-center text-xs text-slate-400">
+            <div className="p-6 rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] text-center text-xs text-[#475569]">
               No hay géneros creados aún en la base de datos.
             </div>
           )}
         </section>
 
         {/* SECTION 6: PLATAFORMAS SOPORTADAS */}
-        <section className="rounded-2xl overflow-hidden bg-[#12151E] border border-white/[0.08] p-6 sm:p-8 space-y-6">
+        <section className="rounded-2xl overflow-hidden bg-[#FFFFFF] border border-[#E2E8F0] shadow-xs p-6 sm:p-8 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
-              <span className="text-[10px] font-mono uppercase px-2.5 py-0.5 rounded bg-cyan-400/15 text-cyan-300 border border-cyan-400/25 font-bold tracking-widest">
+              <span className="text-[10px] font-mono uppercase px-2.5 py-0.5 rounded bg-[#FFC700] text-[#0F172A] font-bold tracking-widest">
                 Compatibilidad
               </span>
-              <h2 className="text-xl sm:text-2xl font-black text-white">Plataformas Soportadas</h2>
-              <p className="text-xs text-slate-400">
+              <h2 className="text-xl sm:text-2xl font-black text-[#0F172A]">Plataformas Soportadas</h2>
+              <p className="text-xs text-[#475569]">
                 Consulta los videojuegos agrupados por plataforma y ediciones de lanzamiento
               </p>
             </div>
 
             <Link
               to="/catalog/platforms"
-              className="text-xs font-bold uppercase tracking-wider text-cyan-300 hover:text-white transition-colors"
+              className="text-xs font-bold uppercase tracking-wider text-[#1E1B4B] hover:text-[#FF2A5F] transition-colors"
             >
               Ver todas las plataformas →
             </Link>
@@ -1031,50 +1064,58 @@ export function HomePage() {
                 <Link
                   key={platform.id}
                   to={`/games?platformId=${platform.id}`}
-                  className="p-4 rounded-xl bg-[#161B26] hover:bg-[#1B2230] border border-white/[0.06] hover:border-cyan-400/35 transition-colors flex items-center justify-between group"
+                  className="p-4 rounded-xl bg-[#F4F4F6] hover:bg-[#FFFFFF] border border-[#E2E8F0] hover:border-[#FF2A5F] transition-all flex items-center justify-between group"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    {platform.iconUrl && (
+                    {platform.iconUrl ? (
                       <img
                         src={platform.iconUrl}
                         alt=""
                         aria-hidden="true"
-                        className="w-5 h-5 object-contain shrink-0 opacity-85"
+                        className="w-5 h-5 object-contain shrink-0"
+                      />
+                    ) : (
+                      <span
+                        className={`w-2.5 h-2.5 rounded-full shrink-0 ${getPlatformAccent(platform.name || platform.code)}`}
                       />
                     )}
                     <div className="min-w-0">
-                      <p className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors truncate">
+                      <p className="text-sm font-bold text-[#0F172A] group-hover:text-[#FF2A5F] transition-colors truncate">
                         {platform.name}
                       </p>
-                      <p className="text-[11px] text-slate-400 font-mono">{platform.code}</p>
+                      <span
+                        className={`inline-block mt-0.5 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${getPlatformAccent(platform.name || platform.code)}`}
+                      >
+                        {platform.code}
+                      </span>
                     </div>
                   </div>
-                  <span className="text-xs text-slate-400 shrink-0">
+                  <span className="text-xs text-[#475569] font-medium shrink-0">
                     {platform.editions?.length ? `${platform.editions.length} ed.` : 'Explorar'}
                   </span>
                 </Link>
               ))}
             </div>
           ) : (
-            <div className="p-5 rounded-xl bg-[#161B26] border border-white/[0.06] text-center text-xs text-slate-400">
+            <div className="p-5 rounded-xl bg-[#F4F4F6] border border-[#E2E8F0] text-center text-xs text-[#475569]">
               No hay plataformas registradas en este momento.
             </div>
           )}
 
-          <div className="pt-4 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-4">
-            <p className="text-xs text-slate-400">
+          <div className="pt-4 border-t border-[#E2E8F0] flex flex-wrap items-center justify-between gap-4">
+            <p className="text-xs text-[#475569]">
               ¿Gestionas nuevos títulos o ediciones? Accede a los módulos de administración.
             </p>
             <div className="flex items-center gap-3">
               <Link
                 to="/catalog/games"
-                className="px-4 py-2 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-[#0B0C10] font-bold text-xs uppercase tracking-wider transition-colors"
+                className="px-4 py-2 rounded-xl bg-[#FF2A5F] hover:bg-[#E01E4F] text-white font-bold text-xs uppercase tracking-wider transition-colors"
               >
                 Administrar Videojuegos
               </Link>
               <Link
                 to="/library"
-                className="px-4 py-2 rounded-xl bg-white/[0.07] hover:bg-white/[0.14] border border-white/10 text-white font-bold text-xs uppercase tracking-wider transition-colors"
+                className="px-4 py-2 rounded-xl bg-[#F4F4F6] hover:bg-[#1E1B4B] border border-[#E2E8F0] text-[#0F172A] hover:text-white font-bold text-xs uppercase tracking-wider transition-colors"
               >
                 Mi Biblioteca
               </Link>
