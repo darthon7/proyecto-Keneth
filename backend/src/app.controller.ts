@@ -9,4 +9,14 @@ export class AppController {
   getHello(): string {
     return this.appService.getHello();
   }
+
+  @Get('seed')
+  async triggerSeed() {
+    const result = await this.appService.manualSeed();
+    return {
+      success: true,
+      message: 'Base de datos poblada exitosamente con el catálogo completo',
+      result,
+    };
+  }
 }

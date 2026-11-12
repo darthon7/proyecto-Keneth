@@ -644,11 +644,7 @@ function generateDigitalKeyCode(): string {
   return `${segment()}-${segment()}-${segment()}-${segment()}`;
 }
 
-async function runSeed() {
-  console.log('🚀 Conectando a la base de datos...');
-  await dataSource.initialize();
-  console.log('✅ Conexión establecida con éxito.');
-
+export async function executeSeed(dataSource: DataSource): Promise<{ createdCount: number; updatedCount: number; totalCount: number }> {
   // Repositorios
   const platformRepo = dataSource.getRepository(Platform);
   const genreRepo = dataSource.getRepository(Genre);
@@ -844,10 +840,20 @@ async function runSeed() {
   console.log(`   - Xbox Series X|S: 5 juegos`);
   console.log(`   - PC: 10 juegos`);
 
+  return { createdCount, updatedCount, totalCount: GAMES_DATA.length };
+}
+
+export async function runSeed() {
+  console.log('🚀 Conectando a la base de datos...');
+  await dataSource.initialize();
+  console.log('✅ Conexión establecida con éxito.');
+  await executeSeed(dataSource);
   await dataSource.destroy();
 }
 
-runSeed().catch((err) => {
-  console.error('❌ Error durante la ejecución del seeder:', err);
-  process.exit(1);
-});
+if (process.argv[1]?.includes('seed.js') || process.argv[1]?.includes('seed.ts')) {
+  runSeed().catch((err) => {
+    console.error('❌ Error durante la ejecución del seeder:', err);
+    process.exit(1);
+  });
+}
