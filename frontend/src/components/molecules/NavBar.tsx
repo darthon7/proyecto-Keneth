@@ -123,7 +123,7 @@ export function NavBar() {
               </div>
 
               <span className="text-base sm:text-lg font-black tracking-wider uppercase text-white font-sans">
-                NEXUS<span className="text-[#aec6ff] drop-shadow-[0_0_10px_#aec6ff]">PLAY</span>
+                EL <span className="text-[#aec6ff] drop-shadow-[0_0_10px_#aec6ff]">PIBES</span>
               </span>
             </Link>
 

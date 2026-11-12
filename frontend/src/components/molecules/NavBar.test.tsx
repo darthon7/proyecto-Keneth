@@ -45,6 +45,16 @@ describe('NavBar', () => {
     window.localStorage.clear();
   });
 
+  it('muestra el nombre de la tienda "EL PIBES" en la barra de navegación', () => {
+    vi.mocked(usersApi.list).mockResolvedValue([]);
+    vi.mocked(wishlistsExtraApi.byUser).mockResolvedValue([]);
+
+    renderNavBar();
+
+    expect(screen.getByText(/EL/i)).toBeInTheDocument();
+    expect(screen.getByText(/PIBES/i)).toBeInTheDocument();
+  });
+
   it('muestra "Iniciar sesión" y no un usuario mock hardcodeado (Aura_Kid / US$ 45.20) cuando no hay sesión activa', async () => {
     vi.mocked(usersApi.list).mockResolvedValue([]);
     vi.mocked(wishlistsExtraApi.byUser).mockResolvedValue([]);
