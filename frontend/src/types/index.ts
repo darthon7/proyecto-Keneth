@@ -23,6 +23,11 @@ export enum RequirementTier {
   ULTRA_RAYTRACING = 'ULTRA_RAYTRACING',
 }
 
+export enum UserRole {
+  ADMIN = 'ADMIN',
+  CUSTOMER = 'CUSTOMER',
+}
+
 export interface Publisher {
   id: number;
   name: string;
@@ -125,6 +130,7 @@ export interface User {
   password: string;
   username: string;
   countryCode: string;
+  role: UserRole;
   isActive: boolean;
   createdAt: string;
   orders?: Order[];

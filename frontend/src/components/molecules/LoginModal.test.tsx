@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LoginModal } from '@/components/molecules/LoginModal';
-import type { User } from '@/types';
+import { UserRole, type User } from '@/types';
 
 const { createUser, selectUser, session } = vi.hoisted(() => ({
   createUser: vi.fn(),
@@ -33,6 +33,7 @@ const existingUser: User = {
   password: 'secreto123',
   username: 'ElPibes',
   countryCode: 'MX',
+  role: UserRole.CUSTOMER,
   isActive: true,
   createdAt: '2026-01-01T00:00:00.000Z',
 };

@@ -11,7 +11,7 @@ import { Game } from '../games/entities/game.entity.js';
 import { GameEdition, EditionFormat } from '../game-editions/entities/game-edition.entity.js';
 import { DigitalKey, KeyStatus } from '../digital-keys/entities/digital-key.entity.js';
 import { SystemRequirement, RequirementTier } from '../system-requirements/entities/system-requirement.entity.js';
-import { User } from '../users/entities/user.entity.js';
+import { User, UserRole } from '../users/entities/user.entity.js';
 import { Order } from '../orders/entities/order.entity.js';
 import { OrderItem } from '../orders/entities/order-item.entity.js';
 import { UserLibrary } from '../user-libraries/entities/user-library.entity.js';
@@ -654,6 +654,68 @@ export async function executeSeed(dataSource: DataSource): Promise<{ createdCoun
   const editionRepo = dataSource.getRepository(GameEdition);
   const keyRepo = dataSource.getRepository(DigitalKey);
   const sysReqRepo = dataSource.getRepository(SystemRequirement);
+  const userRepo = dataSource.getRepository(User);
+
+  // 0. Sembrar Usuarios Base (Administrador y Cliente de prueba)
+  console.log('👤 Sembrando Usuarios...');
+  const isProduction = process.env.NODE_ENV === 'production';
+  const adminEmail =
+    process.env.SEED_ADMIN_EMAIL || 'admin@tiendavideojuegos.local';
+  const adminUsername = process.env.SEED_ADMIN_USERNAME || 'admin';
+  const adminPassword =
+    process.env.SEED_ADMIN_PASSWORD ||
+    (isProduction ? undefined : 'AdminDev123!');
+
+  const seedUsersData: Array<{
+    email: string;
+    username: string;
+    password: string;
+    countryCode: string;
+    isActive: boolean;
+    role: UserRole;
+  }> = [];
+
+  if (!adminPassword) {
+    console.warn(
+      '⚠️ SEED_ADMIN_PASSWORD no está definido en producción; se omite la creación del usuario administrador por seguridad.',
+    );
+  } else {
+    seedUsersData.push({
+      email: adminEmail,
+      username: adminUsername,
+      password: adminPassword,
+      countryCode: 'MX',
+      isActive: true,
+      role: UserRole.ADMIN,
+    });
+  }
+
+  const customerEmail = 'customer@tiendavideojuegos.local';
+  if (adminEmail.toLowerCase() !== customerEmail.toLowerCase()) {
+    seedUsersData.push({
+      email: customerEmail,
+      username: 'gamer_mx',
+      password: 'CustomerDev123!',
+      countryCode: 'MX',
+      isActive: true,
+      role: UserRole.CUSTOMER,
+    });
+  } else {
+    console.warn(
+      `⚠️ SEED_ADMIN_EMAIL coincide con ${customerEmail}; se omite el usuario CUSTOMER de prueba para evitar colisión de email.`,
+    );
+  }
+
+  for (const seedUser of seedUsersData) {
+    const existingUser = await userRepo.findOne({
+      where: { email: seedUser.email },
+    });
+
+    if (!existingUser) {
+      const newUser = userRepo.create(seedUser);
+      await userRepo.save(newUser);
+    }
+  }
 
   // 1. Sembrar Plataformas
   console.log('📦 Sembrando Plataformas...');

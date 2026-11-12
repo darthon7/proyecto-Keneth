@@ -6,6 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity.js';
+import { UserRole } from './entities/user-role.enum.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 
@@ -24,12 +25,16 @@ export class UsersService {
       throw new BadRequestException('El correo ya está registrado');
     }
 
-    const user = this.userRepository.create(createUserDto);
+    const user = this.userRepository.create({
+      ...createUserDto,
+      role: UserRole.CUSTOMER,
+    });
     return await this.userRepository.save(user);
   }
 
-  async findAll() {
+  async findAll(role?: UserRole) {
     return await this.userRepository.find({
+      where: role ? { role } : undefined,
       relations: {
         userLibraries: { gameEdition: { game: true } },
         wishlists: { game: true },
@@ -56,7 +61,18 @@ export class UsersService {
 
   async update(id: number, updateUserDto: UpdateUserDto) {
     const user = await this.findOne(id);
-    this.userRepository.merge(user, updateUserDto);
+    const safeUpdateData: UpdateUserDto = { ...updateUserDto };
+    delete (safeUpdateData as Record<string, unknown>).role;
+    this.userRepository.merge(user, safeUpdateData);
+    return await this.userRepository.save(user);
+  }
+
+  async updateRole(id: number, role: UserRole) {
+    const user = await this.userRepository.findOneBy({ id });
+    if (!user) {
+      throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
+    }
+    user.role = role;
     return await this.userRepository.save(user);
   }
 

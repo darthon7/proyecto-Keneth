@@ -10,6 +10,9 @@ import { Order } from '../../orders/entities/order.entity.js';
 import { UserLibrary } from '../../user-libraries/entities/user-library.entity.js';
 import { Wishlist } from '../../wishlists/entities/wishlist.entity.js';
 import { Review } from '../../reviews/entities/review.entity.js';
+import { UserRole } from './user-role.enum.js';
+
+export { UserRole };
 
 @Entity('users')
 export class User {
@@ -30,6 +33,14 @@ export class User {
 
   @Column({ default: true })
   isActive: boolean;
+
+  @Column({
+    type: 'enum',
+    enum: UserRole,
+    default: UserRole.CUSTOMER,
+    nullable: false,
+  })
+  role: UserRole;
 
   @CreateDateColumn()
   createdAt: Date;
