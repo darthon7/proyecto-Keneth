@@ -24,29 +24,29 @@ export function Select({
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label htmlFor={selectId} className="text-body-sm font-semibold text-white">
+        <label htmlFor={selectId} className="text-xs font-bold uppercase tracking-wider text-slate-300">
           {label}
         </label>
       )}
       <select
         id={selectId}
-        className={`w-full appearance-none rounded-[4px] bg-graphite px-4 py-3 text-body-sm text-white focus:bg-[#3a3a3a] focus:outline-none ${
-          error ? 'border border-[#ff7b7b]' : ''
+        className={`w-full rounded-xl bg-[#1c2232] border border-white/10 px-3.5 py-2.5 text-xs text-white focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400/30 transition-all ${
+          error ? 'border-rose-500' : ''
         } ${className}`}
         {...rest}
       >
-        {placeholder && <option value="">{placeholder}</option>}
+        {placeholder && <option value="" className="bg-[#141824] text-slate-400">{placeholder}</option>}
         {options?.map((option) => (
-          <option key={String(option.value)} value={option.value}>
+          <option key={String(option.value)} value={option.value} className="bg-[#141824] text-white">
             {option.label}
           </option>
         ))}
         {children}
       </select>
       {error ? (
-        <p className="text-caption text-[#ff7b7b]">{error}</p>
+        <p className="text-[11px] text-rose-400">{error}</p>
       ) : hint ? (
-        <p className="text-caption text-fog">{hint}</p>
+        <p className="text-[11px] text-slate-400">{hint}</p>
       ) : null}
     </div>
   );

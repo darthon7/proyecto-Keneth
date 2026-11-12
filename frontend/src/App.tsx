@@ -58,7 +58,7 @@ const PromotionsPage = lazy(() =>
 
 export function App() {
   return (
-    <div className="flex min-h-screen flex-col bg-forest">
+    <div className="flex min-h-screen flex-col bg-[#0b0e15] text-[#e1e2ec]">
       <NavBar />
 
       <main className="flex-1">

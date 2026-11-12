@@ -13,7 +13,7 @@ const VARIANTS: Record<ButtonVariant, string> = {
   primary:
     'bg-white text-obsidian hover:bg-bone disabled:bg-mid-gray disabled:text-fog',
   brand:
-    'bg-forest-deep text-white hover:bg-forest disabled:bg-mid-gray disabled:text-fog',
+    'bg-[#4f8eff] text-[#00275e] hover:bg-blue-400 disabled:bg-slate-700 disabled:text-slate-400',
   ghost: 'bg-transparent text-fog hover:text-white disabled:text-mid-gray',
   outline:
     'bg-transparent text-white surface-hairline hover:bg-graphite disabled:text-mid-gray',

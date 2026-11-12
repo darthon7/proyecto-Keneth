@@ -22,18 +22,20 @@ export function GameCard({ game, onAddToCart, variant = 'cover' }: GameCardProps
 
   if (variant === 'typographic') {
     return (
-      <article className="group flex flex-col">
+      <article className="group flex flex-col rounded-2xl overflow-hidden bg-[#161a24] hover:bg-[#1a202d] border border-white/10 hover:border-blue-400/30 shadow-lg hover:shadow-[0_12px_32px_rgba(0,0,0,0.6)] transition-all duration-300 p-4">
         <Link to={`/games/${game.id}`} className="flex flex-col">
-          <CoverSlot game={game} />
-          <h3 className="mt-5 line-clamp-2 text-subheading font-semibold text-white transition-colors group-hover:text-jade">
+          <div className="overflow-hidden rounded-xl">
+            <CoverSlot game={game} />
+          </div>
+          <h3 className="mt-4 line-clamp-2 text-lg font-bold text-white transition-colors group-hover:text-[#aec6ff]">
             {game.title}
           </h3>
           {price !== null && (
-            <p className="mt-3 text-body-sm font-semibold text-white tabular-nums">
+            <p className="mt-2 text-base font-extrabold text-emerald-400 tabular-nums">
               {formatCurrency(price)}
             </p>
           )}
-          <p className="mt-1 text-body-sm text-mist">
+          <p className="mt-1 text-xs text-slate-400">
             {game.publisher?.name ?? 'Sin publisher'}
           </p>
         </Link>
@@ -42,33 +44,50 @@ export function GameCard({ game, onAddToCart, variant = 'cover' }: GameCardProps
   }
 
   return (
-    <article className="group flex flex-col">
-      <Link to={`/games/${game.id}`} className="block">
+    <article className="group flex flex-col justify-between rounded-2xl overflow-hidden bg-[#161a24] hover:bg-[#1c2230] border border-white/10 hover:border-blue-400/40 shadow-xl hover:shadow-[0_16px_36px_rgba(0,0,0,0.7)] transition-all duration-300 hover:-translate-y-1 p-4">
+      <Link to={`/games/${game.id}`} className="block relative overflow-hidden rounded-xl aspect-[16/10] bg-black/40">
         <CoverSlot game={game} />
+        {game.genres?.[0] && (
+          <span className="absolute top-2.5 left-2.5 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-black/75 backdrop-blur-md text-[#aec6ff] border border-white/10">
+            {game.genres[0].name}
+          </span>
+        )}
       </Link>
 
-      <div className="mt-4 flex flex-col gap-1">
-        <Link to={`/games/${game.id}`}>
-          <h3 className="text-body-sm font-semibold text-white transition-colors group-hover:text-jade">
-            {game.title}
-          </h3>
-        </Link>
-        <p className="text-body-sm text-mist">{game.publisher?.name ?? 'Sin publisher'}</p>
-        {price !== null && (
-          <p className="text-body-sm font-semibold text-white tabular-nums">
-            {formatCurrency(price)}
-          </p>
-        )}
-        <p className="text-caption text-mist">{formatDate(game.releaseDate)}</p>
-        {onAddToCart && (
-          <button
-            type="button"
-            onClick={() => onAddToCart(game)}
-            className="mt-1 self-start text-body-sm font-semibold text-jade transition-colors hover:text-white"
-          >
-            Comprar
-          </button>
-        )}
+      <div className="mt-4 flex flex-col gap-2">
+        <div className="space-y-1">
+          <Link to={`/games/${game.id}`}>
+            <h3 className="text-sm sm:text-base font-black text-white transition-colors group-hover:text-[#aec6ff] line-clamp-1">
+              {game.title}
+            </h3>
+          </Link>
+          <div className="flex items-center justify-between text-xs text-slate-400">
+            <span className="truncate">{game.publisher?.name ?? 'Sin publisher'}</span>
+            <span className="text-[11px] text-slate-500">{formatDate(game.releaseDate)}</span>
+          </div>
+        </div>
+
+        <div className="pt-2 border-t border-white/5 flex items-center justify-between">
+          <div>
+            {price !== null ? (
+              <p className="text-sm sm:text-base font-black text-emerald-400 tabular-nums">
+                {formatCurrency(price)}
+              </p>
+            ) : (
+              <span className="text-xs text-slate-500 font-semibold">Consultar</span>
+            )}
+          </div>
+
+          {onAddToCart && (
+            <button
+              type="button"
+              onClick={() => onAddToCart(game)}
+              className="py-1.5 px-3 rounded-lg bg-[#4f8eff] hover:bg-blue-400 text-[#00275e] hover:text-black text-xs font-black uppercase tracking-wider transition-all duration-200 shadow-sm flex items-center gap-1.5"
+            >
+              Comprar
+            </button>
+          )}
+        </div>
       </div>
     </article>
   );
