@@ -1,15 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Button } from '@/components/atoms/Button';
 import { ErrorBanner } from '@/components/atoms/ErrorBanner';
 import { EmptyState } from '@/components/atoms/EmptyState';
 import { Spinner } from '@/components/atoms/Spinner';
 import { Pagination } from '@/components/molecules/Pagination';
 import { GameFilters } from '@/components/molecules/GameFilters';
 import type { GameFilterValues } from '@/components/molecules/GameFilters';
-import { SearchBar } from '@/components/molecules/SearchBar';
-import { GameGrid } from '@/components/organisms/GameGrid';
+import { GameCard } from '@/components/molecules/GameCard';
+import { useCart } from '@/context/CartContext';
 import {
   developersApi,
   errorMessage,
@@ -19,13 +18,16 @@ import {
   platformsApi,
   publishersApi,
 } from '@/api';
+import type { Game } from '@/types';
 
 const PAGE_SIZE = 12;
 
 export function GamesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { addItem } = useCart();
   const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('q') ?? '');
 
   const filters: GameFilterValues = {
     genreId: searchParams.get('genreId') ?? '',
@@ -44,7 +46,6 @@ export function GamesPage() {
     queryKey: ['game-editions'],
     queryFn: () => gameEditionsApi.list(),
   });
-
 
   const gameIdsByPlatform = useMemo(() => {
     const map = new Map<string, Set<number>>();
@@ -112,76 +113,146 @@ export function GamesPage() {
     setPage(1);
   };
 
-  const handleSearch = (value: string) => {
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     const params = new URLSearchParams(searchParams);
-    if (value) params.set('q', value);
+    if (searchInput.trim()) params.set('q', searchInput.trim());
     else params.delete('q');
     setSearchParams(params);
     setPage(1);
   };
 
+  const handleAddToCart = (game: Game) => {
+    const firstEdition = game.editions?.[0];
+    if (firstEdition) {
+      addItem(firstEdition.id, 1);
+    } else {
+      navigate(`/games/${game.id}`);
+    }
+  };
+
   return (
-    <section className="page-container py-16">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-heading-sm font-semibold text-white">Videojuegos</h1>
-          <p className="mt-2 text-body-sm text-fog">
-            {gamesQuery.isSuccess ? `${filtered.length} títulos disponibles` : 'Cargando catálogo…'}
-          </p>
-        </div>
-        <Button variant="primary" onClick={() => navigate('/catalog/games')}>
-          Administrar juegos
-        </Button>
-      </header>
+    <div className="relative min-h-screen bg-[#0b0e15] text-[#e1e2ec] font-sans antialiased py-10">
+      {/* Ambient background glow blobs */}
+      <div className="absolute top-10 left-1/3 w-[450px] h-[450px] bg-blue-500/10 rounded-full blur-[140px] pointer-events-none -z-10" />
+      <div className="absolute top-96 -right-20 w-[400px] h-[400px] bg-emerald-500/10 rounded-full blur-[130px] pointer-events-none -z-10" />
 
-      <div className="mt-8 max-w-3xl">
-        <SearchBar
-          onSearch={handleSearch}
-          initialValue={term}
-          placeholder="Busca por título, publisher o desarrolladora"
-          actionLabel="Publica el tuyo"
-          onAction={() => navigate('/catalog/games')}
-        />
-      </div>
+      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        {/* Header Strip */}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <span className="w-2.5 h-6 bg-blue-400 rounded-full shadow-[0_0_12px_#60a5fa]" />
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-wider text-white">
+                Catálogo de Videojuegos
+              </h1>
+              <p className="text-xs text-slate-400">
+                {gamesQuery.isSuccess
+                  ? `${filtered.length} títulos disponibles en la plataforma`
+                  : 'Cargando catálogo…'}
+              </p>
+            </div>
+          </div>
 
-      <div className="mt-8">
-        <GameFilters
-          value={filters}
-          onChange={updateFilters}
-          genres={genresQuery.data ?? []}
-          platforms={platformsQuery.data ?? []}
-          publishers={publishersQuery.data ?? []}
-          developers={developersQuery.data ?? []}
-          onReset={() => {
-            setSearchParams(new URLSearchParams());
-            setPage(1);
-          }}
-        />
-      </div>
+          <button
+            type="button"
+            onClick={() => navigate('/catalog/games')}
+            className="px-5 py-2.5 rounded-xl bg-[#4f8eff] hover:bg-blue-400 text-[#00275e] hover:text-black font-black text-xs uppercase tracking-wider shadow-[0_0_15px_rgba(79,142,255,0.4)] transition-all self-start sm:self-auto"
+          >
+            Administrar Juegos
+          </button>
+        </header>
 
-      <div className="mt-10">
-        {gamesQuery.isLoading && <Spinner />}
-        {gamesQuery.isError && (
-          <ErrorBanner
-            message={errorMessage(gamesQuery.error)}
-            onRetry={() => void gamesQuery.refetch()}
+        {/* Search & Filters Card */}
+        <section className="bg-[#141824] rounded-2xl border border-white/10 p-5 sm:p-6 shadow-xl space-y-6">
+          <form onSubmit={handleSearchSubmit} className="relative max-w-2xl">
+            <div className="relative flex items-center bg-[#1c2232] rounded-xl px-4 py-2.5 border border-white/10 focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-400/30 transition-all">
+              <svg
+                className="w-4 h-4 text-slate-400 mr-3 shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Busca por título, publisher o desarrolladora..."
+                className="w-full bg-transparent text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none"
+              />
+              <button
+                type="submit"
+                className="ml-2 px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold text-white transition-colors"
+              >
+                Buscar
+              </button>
+            </div>
+          </form>
+
+          {/* Filters Selects */}
+          <div className="border-t border-white/5 pt-4">
+            <GameFilters
+              value={filters}
+              onChange={updateFilters}
+              genres={genresQuery.data ?? []}
+              platforms={platformsQuery.data ?? []}
+              publishers={publishersQuery.data ?? []}
+              developers={developersQuery.data ?? []}
+              onReset={() => {
+                setSearchParams(new URLSearchParams());
+                setSearchInput('');
+                setPage(1);
+              }}
+            />
+          </div>
+        </section>
+
+        {/* Content Section */}
+        <section className="space-y-6">
+          {gamesQuery.isLoading && (
+            <div className="py-24 text-center">
+              <Spinner label="Sincronizando catálogo con la base de datos…" />
+            </div>
+          )}
+
+          {gamesQuery.isError && (
+            <ErrorBanner
+              message={errorMessage(gamesQuery.error)}
+              onRetry={() => void gamesQuery.refetch()}
+            />
+          )}
+
+          {gamesQuery.isSuccess && visible.length === 0 && (
+            <EmptyState
+              title="Sin resultados"
+              description="No encontramos videojuegos con esos filtros. Prueba con otros criterios de búsqueda."
+            />
+          )}
+
+          {visible.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {visible.map((game) => (
+                <GameCard key={game.id} game={game} onAddToCart={handleAddToCart} />
+              ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            className="mt-12"
           />
-        )}
-        {gamesQuery.isSuccess && visible.length === 0 && (
-          <EmptyState
-            title="Sin resultados"
-            description="No encontramos videojuegos con esos filtros. Prueba con otros criterios."
-          />
-        )}
-        {visible.length > 0 && <GameGrid games={visible} />}
+        </section>
       </div>
-
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setPage}
-        className="mt-12"
-      />
-    </section>
+    </div>
   );
 }
