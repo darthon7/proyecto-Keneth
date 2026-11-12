@@ -1,0 +1,169 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Colors — SoundCloud dark */
+  --color-obsidian: #121212;
+  --color-graphite: #303030;
+  --color-mid-gray: #94a8a1;
+  --color-fog: #b6c7c1;
+  --color-silver: #cccccc;
+  --color-bone: #f2f2f2;
+  --color-white: #ffffff;
+  --color-signal-blue: #699fff;
+
+  /* Brand — El Pibes green */
+  --color-forest: #00674f;
+  --color-forest-deep: #004b3a;
+  --color-jade: #7ff0c4;
+  --color-mist: #cfe3dc;
+
+  /* Typography */
+  --font-sans:
+    'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, sans-serif;
+
+  --text-caption: 12px;
+  --leading-caption: 1.41;
+  --text-body-sm: 14px;
+  --leading-body-sm: 1.43;
+  --text-body: 17px;
+  --leading-body: 1.41;
+  --text-subheading: 22px;
+  --leading-subheading: 1.27;
+  --text-heading-sm: 28px;
+  --leading-heading-sm: 1.29;
+  --text-heading: 36px;
+  --leading-heading: 1.33;
+  --text-display: 60px;
+  --leading-display: 1;
+
+  /* Spacing */
+  --spacing-4: 4px;
+  --spacing-8: 8px;
+  --spacing-12: 12px;
+  --spacing-16: 16px;
+  --spacing-20: 20px;
+  --spacing-24: 24px;
+  --spacing-32: 32px;
+  --spacing-40: 40px;
+  --spacing-48: 48px;
+  --spacing-64: 64px;
+  --spacing-96: 96px;
+
+  /* Layout */
+  --container-page: 1200px;
+  --spacing-section: 64px;
+  --spacing-card: 16px;
+  --spacing-element: 8px;
+
+  /* Radius */
+  --radius-md: 4px;
+  --radius-image: 4px;
+  --radius-input: 4px;
+  --radius-button: 4px;
+  --radius-badge: 4px;
+
+  /* Elevation */
+  --shadow-subtle: rgba(18, 18, 18, 0.1) 0px 0px 0px 1px inset;
+  --shadow-hairline: rgba(255, 255, 255, 0.08) 0px 0px 0px 1px inset;
+}
+
+@layer base {
+  html {
+    background-color: var(--color-forest);
+    color-scheme: dark;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-forest);
+    color: var(--color-white);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--leading-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    margin: 0;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button {
+    font-family: inherit;
+  }
+
+  input,
+  textarea,
+  select {
+    font-family: inherit;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-signal-blue);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .page-container {
+    width: 100%;
+    max-width: var(--container-page);
+    margin-inline: auto;
+    padding-inline: 16px;
+  }
+
+  .surface-hairline {
+    box-shadow: var(--shadow-hairline);
+  }
+
+  .text-display {
+    font-size: var(--text-display);
+    line-height: var(--leading-display);
+    font-weight: 100;
+    letter-spacing: -0.03em;
+  }
+
+  .text-heading {
+    font-size: var(--text-heading);
+    line-height: var(--leading-heading);
+  }
+
+  .text-heading-sm {
+    font-size: var(--text-heading-sm);
+    line-height: var(--leading-heading-sm);
+  }
+
+  .text-subheading {
+    font-size: var(--text-subheading);
+    line-height: var(--leading-subheading);
+  }
+
+  .text-body-sm {
+    font-size: var(--text-body-sm);
+    line-height: var(--leading-body-sm);
+  }
+
+  .text-caption {
+    font-size: var(--text-caption);
+    line-height: var(--leading-caption);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

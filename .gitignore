@@ -22,3 +22,7 @@ dist/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Local artifacts
+skills-lock.json
+backend/package-lock.json
