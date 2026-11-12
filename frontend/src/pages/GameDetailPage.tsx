@@ -93,6 +93,16 @@ export function GameDetailPage() {
   const requirements = game.systemRequirements ?? [];
   const reviews = game.reviews ?? [];
 
+  const isNintendoGame = Boolean(
+    game.publisher?.name?.toLowerCase().includes('nintendo') ||
+    game.developer?.name?.toLowerCase().includes('nintendo') ||
+    editions.some(
+      (e) =>
+        e.platform?.name?.toLowerCase().includes('switch') ||
+        e.platform?.name?.toLowerCase().includes('nintendo'),
+    ),
+  );
+
   return (
     <section className="page-container py-16">
       <button
@@ -142,7 +152,7 @@ export function GameDetailPage() {
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <Button
-              variant="primary"
+              variant={isNintendoGame ? 'nintendo' : 'brand'}
               disabled={editions.length === 0}
               onClick={() => {
                 const first = editions[0];
@@ -220,7 +230,7 @@ export function GameDetailPage() {
                       {edition.isDlc ? ' · DLC' : ''}
                     </p>
                     <Button
-                      variant="primary"
+                      variant={isNintendoGame || Boolean(edition.platform?.name?.toLowerCase().includes('switch')) ? 'nintendo' : 'brand'}
                       size="sm"
                       className="mt-4"
                       onClick={() => addItem(edition.id, 1)}
@@ -321,6 +331,7 @@ export function GameDetailPage() {
               Cancelar
             </Button>
             <Button
+              variant="brand"
               isLoading={reviewMutation.isPending}
               onClick={() => {
                 setFormError(null);

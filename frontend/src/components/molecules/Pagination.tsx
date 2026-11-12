@@ -22,7 +22,7 @@ export function Pagination({
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage <= 1}
         aria-label="Página anterior"
-        className="rounded-xl px-4 py-2 text-xs font-bold bg-[#161a24] border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-30 disabled:pointer-events-none"
+        className="rounded-xl px-4 py-2 text-xs font-bold bg-[#161a24] border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 btn-nintendo-animation disabled:opacity-30 disabled:pointer-events-none"
       >
         Anterior
       </button>
@@ -34,7 +34,7 @@ export function Pagination({
             type="button"
             onClick={() => onPageChange(page)}
             aria-current={page === currentPage ? 'page' : undefined}
-            className={`h-9 w-9 rounded-xl text-xs font-bold transition-all ${
+            className={`h-9 w-9 rounded-xl text-xs font-bold btn-nintendo-animation ${
               page === currentPage
                 ? 'bg-[#4f8eff] font-black text-[#00275e] shadow-[0_0_12px_rgba(79,142,255,0.4)]'
                 : 'bg-[#161a24] border border-white/5 text-slate-400 hover:text-white hover:bg-white/10'
@@ -50,7 +50,7 @@ export function Pagination({
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage >= totalPages}
         aria-label="Página siguiente"
-        className="rounded-xl px-4 py-2 text-xs font-bold bg-[#161a24] border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-30 disabled:pointer-events-none"
+        className="rounded-xl px-4 py-2 text-xs font-bold bg-[#161a24] border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 btn-nintendo-animation disabled:opacity-30 disabled:pointer-events-none"
       >
         Siguiente
       </button>

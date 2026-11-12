@@ -43,7 +43,7 @@ export function RatingStars({
             role="radio"
             aria-checked={starValue === Math.round(value)}
             aria-label={`${starValue} de ${max}`}
-            className="transition-colors hover:text-white"
+            className="hover:text-white btn-nintendo-animation"
             onClick={() => onChange?.(starValue)}
           >
             {star}

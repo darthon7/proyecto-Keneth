@@ -66,7 +66,7 @@ export function Modal({
             type="button"
             onClick={onClose}
             aria-label="Cerrar modal"
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 btn-nintendo-animation"
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <path

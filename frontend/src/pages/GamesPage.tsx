@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ErrorBanner } from '@/components/atoms/ErrorBanner';
 import { EmptyState } from '@/components/atoms/EmptyState';
 import { Spinner } from '@/components/atoms/Spinner';
+import { Button } from '@/components/atoms/Button';
 import { Pagination } from '@/components/molecules/Pagination';
 import { GameFilters } from '@/components/molecules/GameFilters';
 import type { GameFilterValues } from '@/components/molecules/GameFilters';
@@ -154,13 +155,14 @@ export function GamesPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <Button
+            variant="brand"
+            size="sm"
             onClick={() => navigate('/catalog/games')}
-            className="px-5 py-2.5 rounded-xl bg-[#4f8eff] hover:bg-blue-400 text-[#00275e] hover:text-black font-black text-xs uppercase tracking-wider shadow-[0_0_15px_rgba(79,142,255,0.4)] transition-all self-start sm:self-auto"
+            className="self-start sm:self-auto uppercase tracking-wider font-black"
           >
             Administrar Juegos
-          </button>
+          </Button>
         </header>
 
         {/* Search & Filters Card */}

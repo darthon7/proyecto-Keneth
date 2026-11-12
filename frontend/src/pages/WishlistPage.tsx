@@ -101,7 +101,7 @@ export function WishlistPage() {
           Avisarme de ofertas
         </label>
         <Button
-          variant="primary"
+          variant="brand"
           disabled={!gameId}
           isLoading={addMutation.isPending}
           onClick={() => addMutation.mutate()}

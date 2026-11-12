@@ -138,7 +138,7 @@ export function OrdersPage() {
                 description="Agrega ediciones desde la ficha de un videojuego."
                 action={
                   <Link to="/games">
-                    <Button variant="primary">Explorar juegos</Button>
+                    <Button variant="brand">Explorar juegos</Button>
                   </Link>
                 }
               />
@@ -288,7 +288,7 @@ export function OrdersPage() {
             )}
 
             <Button
-              variant="primary"
+              variant="success"
               size="lg"
               className="mt-5 w-full"
               disabled={cartLines.length === 0 || !currentUser}
