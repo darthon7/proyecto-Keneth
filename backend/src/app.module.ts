@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
@@ -29,15 +29,35 @@ import { ReviewsModule } from './reviews/reviews.module.js';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: process.env.APP_HOST || 'localhost',
-      port: Number(process.env.APP_PORT) || 3306,
-      username: process.env.APP_USERNAME || 'root',
-      password: process.env.APP_PASSWORD || '1111',
-      database: process.env.APP_DATABASE || 'tienda_videojuegos',
-      autoLoadEntities: true,
-      synchronize: true, // Ideal para proyectos escolares: sincroniza automáticamente el esquema
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const databaseUrl = config.get<string>('DATABASE_URL');
+        if (databaseUrl) {
+          // Conexión Serverless Neon PostgreSQL (Producción / Render)
+          return {
+            type: 'postgres',
+            url: databaseUrl,
+            ssl: { rejectUnauthorized: false },
+            autoLoadEntities: true,
+            synchronize: true,
+          };
+        }
+
+        // Conexión por variables individuales (MySQL local o PostgreSQL)
+        const dbType = (config.get<string>('APP_TYPE') || 'mysql') as 'mysql' | 'postgres';
+        return {
+          type: dbType,
+          host: config.get<string>('APP_HOST', 'localhost'),
+          port: Number(config.get<number>('APP_PORT', dbType === 'postgres' ? 5432 : 3306)),
+          username: config.get<string>('APP_USERNAME', 'root'),
+          password: config.get<string>('APP_PASSWORD', '1111'),
+          database: config.get<string>('APP_DATABASE', 'tienda_videojuegos'),
+          ssl: dbType === 'postgres' ? { rejectUnauthorized: false } : false,
+          autoLoadEntities: true,
+          synchronize: true,
+        };
+      },
     }),
     PublishersModule,
     DevelopersModule,
