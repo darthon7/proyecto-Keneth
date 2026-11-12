@@ -149,13 +149,15 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
       size="md"
       footer={
         result ? (
-          <Button onClick={handleClose}>Continuar</Button>
+          <Button variant="brand" onClick={handleClose}>
+            Continuar
+          </Button>
         ) : (
           <>
             <Button variant="ghost" onClick={handleClose}>
               Cancelar
             </Button>
-            <Button onClick={submit} isLoading={accessMutation.isPending}>
+            <Button variant="brand" onClick={submit} isLoading={accessMutation.isPending}>
               Iniciar sesión
             </Button>
           </>

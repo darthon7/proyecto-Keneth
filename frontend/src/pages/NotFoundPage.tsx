@@ -10,7 +10,7 @@ export function NotFoundPage() {
         El enlace que buscas no está disponible en la tienda.
       </p>
       <Link to="/">
-        <Button variant="primary">Volver al inicio</Button>
+        <Button variant="brand">Volver al inicio</Button>
       </Link>
     </section>
   );

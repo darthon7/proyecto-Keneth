@@ -127,4 +127,74 @@
       padding-inline: 2rem;
     }
   }
+
+  /* ==========================================================================
+     Nintendo Button Animations & Micro-interactions
+     Extracted from Nintendo Store / eShop interactive guidelines:
+     - Spring curve: cubic-bezier(0.175, 0.885, 0.32, 1.275) / stiffness ~600
+     - Hover: scale 1.05 + translateY(-2px) elevation + deep glow shadow
+     - Active / Tap: scale 0.98 + translateY(0) snappy tactile compression
+     - Sheen sweep effect on hover
+     ========================================================================== */
+  @keyframes nintendo-shine {
+    0% {
+      left: -120%;
+    }
+    100% {
+      left: 220%;
+    }
+  }
+
+  .btn-nintendo-animation {
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+                box-shadow 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+                background-color 0.2s ease,
+                color 0.2s ease,
+                border-color 0.2s ease;
+    will-change: transform;
+  }
+
+  .btn-nintendo-animation:hover:not(:disabled) {
+    transform: scale(1.05) translateY(-2px);
+  }
+
+  .btn-nintendo-animation:active:not(:disabled) {
+    transform: scale(0.98) translateY(0);
+    transition-duration: 0.1s;
+  }
+
+  /* Shimmer / light sweep overlay */
+  .btn-nintendo-shine::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -120%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.28) 50%,
+      transparent 100%
+    );
+    transform: skewX(-20deg);
+    pointer-events: none;
+  }
+
+  .btn-nintendo-shine:hover:not(:disabled)::after {
+    animation: nintendo-shine 0.75s ease-out;
+  }
+
+  /* Accessibility: Respect users with reduced-motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .btn-nintendo-animation {
+      transition: none !important;
+      transform: none !important;
+    }
+    .btn-nintendo-shine::after {
+      display: none !important;
+    }
+  }
 }

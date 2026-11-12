@@ -119,7 +119,7 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
           <h1 className="text-heading-sm font-semibold text-white">{title}</h1>
           {description && <p className="mt-2 max-w-2xl text-body-sm text-fog">{description}</p>}
         </div>
-        <Button variant="primary" onClick={openCreate}>
+        <Button variant="brand" onClick={openCreate}>
           Nuevo registro
         </Button>
       </header>
@@ -138,7 +138,7 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
           <EmptyState
             title="Sin registros"
             description={emptyMessage}
-            action={<Button onClick={openCreate}>Crear el primero</Button>}
+            action={<Button variant="brand" onClick={openCreate}>Crear el primero</Button>}
           />
         )}
 
@@ -205,7 +205,7 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
             <Button variant="ghost" onClick={() => setModalState(null)}>
               Cancelar
             </Button>
-            <Button onClick={submit} isLoading={saveMutation.isPending}>
+            <Button variant="brand" onClick={submit} isLoading={saveMutation.isPending}>
               Guardar
             </Button>
           </>

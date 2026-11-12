@@ -154,7 +154,7 @@ export function GamesAdminPage() {
           </p>
         </div>
         <Button
-          variant="primary"
+          variant="brand"
           onClick={() => {
             setEditingGame(null);
             setIsModalOpen(true);
@@ -219,14 +219,14 @@ export function GamesAdminPage() {
                             setEditingGame(game);
                             setIsModalOpen(true);
                           }}
-                          className="text-body-sm text-signal-blue transition-colors hover:text-white"
+                          className="text-body-sm text-signal-blue hover:text-white btn-nintendo-animation"
                         >
                           Editar
                         </button>
                         <button
                           type="button"
                           onClick={() => setGameToDelete(game)}
-                          className="text-body-sm text-[#ff7b7b] transition-colors hover:text-white"
+                          className="text-body-sm text-[#ff7b7b] hover:text-white btn-nintendo-animation"
                         >
                           Eliminar
                         </button>
@@ -250,7 +250,7 @@ export function GamesAdminPage() {
             <Button variant="ghost" onClick={() => setIsModalOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={submit} isLoading={saveMutation.isPending}>
+            <Button variant="brand" onClick={submit} isLoading={saveMutation.isPending}>
               Guardar
             </Button>
           </>
@@ -330,7 +330,7 @@ export function GamesAdminPage() {
                     type="button"
                     onClick={() => toggleGenre(genre.id)}
                     aria-pressed={isSelected}
-                    className={`rounded-[4px] px-3 py-1.5 text-body-sm transition-colors ${
+                    className={`rounded-[4px] px-3 py-1.5 text-body-sm btn-nintendo-animation ${
                       isSelected
                         ? 'bg-white font-bold text-obsidian'
                         : 'bg-graphite text-fog hover:text-white'

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Button } from '@/components/atoms/Button';
 import { CoverSlot } from '@/components/atoms/CoverSlot';
 import type { Game } from '@/types';
 import { formatCurrency, formatDate } from '@/utils/format';
@@ -19,6 +20,14 @@ function priceFromEditions(game: Game): number | null {
 
 export function GameCard({ game, onAddToCart, variant = 'cover' }: GameCardProps) {
   const price = priceFromEditions(game);
+  const isNintendo =
+    game.publisher?.name?.toLowerCase().includes('nintendo') ||
+    game.developer?.name?.toLowerCase().includes('nintendo') ||
+    (game.editions ?? []).some(
+      (e) =>
+        e.platform?.name?.toLowerCase().includes('switch') ||
+        e.platform?.name?.toLowerCase().includes('nintendo'),
+    );
 
   if (variant === 'typographic') {
     return (
@@ -79,13 +88,13 @@ export function GameCard({ game, onAddToCart, variant = 'cover' }: GameCardProps
           </div>
 
           {onAddToCart && (
-            <button
-              type="button"
+            <Button
+              variant={isNintendo ? 'nintendo' : 'brand'}
+              size="sm"
               onClick={() => onAddToCart(game)}
-              className="py-1.5 px-3 rounded-lg bg-[#4f8eff] hover:bg-blue-400 text-[#00275e] hover:text-black text-xs font-black uppercase tracking-wider transition-all duration-200 shadow-sm flex items-center gap-1.5"
             >
               Comprar
-            </button>
+            </Button>
           )}
         </div>
       </div>

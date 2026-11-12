@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ErrorBanner } from '@/components/atoms/ErrorBanner';
@@ -6,15 +6,16 @@ import { Spinner } from '@/components/atoms/Spinner';
 import { gamesApi, genresApi, platformsApi, promotionsApi, reviewsApi } from '@/api';
 import { useCart } from '@/context/CartContext';
 import { formatCurrency, formatDate } from '@/utils/format';
+import { EditionFormat } from '@/types';
 import type { Game, GameEdition, Genre, Platform, Promotion } from '@/types';
 
 const GENRE_ACCENTS = [
-  { border: 'border-blue-500/30', text: 'text-blue-400', bg: 'from-blue-600/20 via-[#141824] to-[#0b0e15]' },
-  { border: 'border-emerald-500/30', text: 'text-emerald-400', bg: 'from-emerald-600/20 via-[#141824] to-[#0b0e15]' },
-  { border: 'border-amber-500/30', text: 'text-amber-400', bg: 'from-amber-600/20 via-[#141824] to-[#0b0e15]' },
-  { border: 'border-purple-500/30', text: 'text-purple-400', bg: 'from-purple-600/20 via-[#141824] to-[#0b0e15]' },
-  { border: 'border-rose-500/30', text: 'text-rose-400', bg: 'from-rose-600/20 via-[#141824] to-[#0b0e15]' },
-  { border: 'border-sky-500/30', text: 'text-sky-400', bg: 'from-sky-600/20 via-[#141824] to-[#0b0e15]' },
+  { border: 'border-cyan-400/25 hover:border-cyan-400/60', text: 'text-cyan-300', dot: 'bg-cyan-400' },
+  { border: 'border-purple-400/25 hover:border-purple-400/60', text: 'text-purple-300', dot: 'bg-purple-400' },
+  { border: 'border-emerald-400/25 hover:border-emerald-400/60', text: 'text-emerald-300', dot: 'bg-emerald-400' },
+  { border: 'border-amber-400/25 hover:border-amber-400/60', text: 'text-amber-300', dot: 'bg-amber-400' },
+  { border: 'border-sky-400/25 hover:border-sky-400/60', text: 'text-sky-300', dot: 'bg-sky-400' },
+  { border: 'border-fuchsia-400/25 hover:border-fuchsia-400/60', text: 'text-fuchsia-300', dot: 'bg-fuchsia-400' },
 ];
 
 function releaseTime(value: string | null | undefined): number {
@@ -25,18 +26,56 @@ function releaseTime(value: string | null | undefined): number {
 
 function getLowestEdition(game: Game): GameEdition | null {
   if (!game.editions || game.editions.length === 0) return null;
-  const sorted = [...game.editions].sort((a, b) => Number(a.basePrice) - Number(b.basePrice));
+  const sorted = [...game.editions].sort((a, b) => {
+    const priceA = Number(a.basePrice);
+    const priceB = Number(b.basePrice);
+    const safeA = Number.isFinite(priceA) ? priceA : Number.MAX_SAFE_INTEGER;
+    const safeB = Number.isFinite(priceB) ? priceB : Number.MAX_SAFE_INTEGER;
+    return safeA - safeB;
+  });
   return sorted[0] ?? null;
+}
+
+function isNintendoTitle(game?: Game): boolean {
+  if (!game) return false;
+  return Boolean(
+    game.publisher?.name?.toLowerCase().includes('nintendo') ||
+      game.developer?.name?.toLowerCase().includes('nintendo') ||
+      game.editions?.some(
+        (edition) =>
+          edition.platform?.name?.toLowerCase().includes('switch') ||
+          edition.platform?.name?.toLowerCase().includes('nintendo'),
+      ),
+  );
 }
 
 export function HomePage() {
   const navigate = useNavigate();
   const { addItem } = useCart();
+  const addedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [spotlightIndex, setSpotlightIndex] = useState(0);
   const [selectedEditionId, setSelectedEditionId] = useState<number | null>(null);
   const [rankingTab, setRankingTab] = useState<'new' | 'cheapest' | 'alpha' | 'all'>('new');
   const [addedGameId, setAddedGameId] = useState<number | null>(null);
+  const [failedCoverIds, setFailedCoverIds] = useState<Set<number>>(() => new Set());
+
+  const markCoverFailed = (gameId: number) => {
+    setFailedCoverIds((prev) => {
+      if (prev.has(gameId)) return prev;
+      const next = new Set(prev);
+      next.add(gameId);
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    return () => {
+      if (addedTimerRef.current !== null) {
+        clearTimeout(addedTimerRef.current);
+      }
+    };
+  }, []);
 
   // Queries fetching real backend entities
   const gamesQuery = useQuery({
@@ -70,7 +109,7 @@ export function HomePage() {
   const promotions = useMemo(() => promotionsQuery.data ?? [], [promotionsQuery.data]);
   const allReviews = useMemo(() => reviewsQuery.data ?? [], [reviewsQuery.data]);
 
-  // Active promotion (if any)
+  // Active promotions from backend
   const activePromotions = useMemo(() => {
     return promotions.filter((p) => p.isActive);
   }, [promotions]);
@@ -80,7 +119,21 @@ export function HomePage() {
     return [...games].slice(0, 5);
   }, [games]);
 
-  const activeSpotlight: Game | undefined = featuredGames[spotlightIndex] ?? featuredGames[0];
+  // Resolve real Zelda catalog link if a Zelda game exists in the backend
+  const zeldaTargetPath = useMemo(() => {
+    const exactOcarina = games.find((g) => g.title.toLowerCase().includes('ocarina'));
+    if (exactOcarina) return `/games/${exactOcarina.id}`;
+    const anyZelda = games.find(
+      (g) => g.title.toLowerCase().includes('zelda') || g.slug.toLowerCase().includes('zelda'),
+    );
+    if (anyZelda) return `/games/${anyZelda.id}`;
+    return '/games';
+  }, [games]);
+
+  const safeSpotlightIndex =
+    featuredGames.length > 0 ? Math.min(spotlightIndex, featuredGames.length - 1) : 0;
+  const activeSpotlight: Game | undefined = featuredGames[safeSpotlightIndex];
+  const isNintendoSpotlight = isNintendoTitle(activeSpotlight);
 
   // Selected edition for spotlight game
   const currentEdition: GameEdition | null = useMemo(() => {
@@ -92,7 +145,7 @@ export function HomePage() {
     return getLowestEdition(activeSpotlight);
   }, [activeSpotlight, selectedEditionId]);
 
-  // Review statistics calculated dynamically from real reviews for the active spotlight
+  // Review statistics for active spotlight
   const spotlightReviewStats = useMemo(() => {
     if (!activeSpotlight) return null;
     const gameReviews = allReviews.filter((r) => r.game?.id === activeSpotlight.id);
@@ -107,17 +160,27 @@ export function HomePage() {
     };
   }, [activeSpotlight, allReviews]);
 
-  // Review statistics helper for any game
-  const getGameReviewStats = (gameId: number) => {
-    const gameReviews = allReviews.filter((r) => r.game?.id === gameId);
-    if (gameReviews.length === 0) return null;
-    const positiveCount = gameReviews.filter((r) => r.rating >= 4).length;
-    const percent = Math.round((positiveCount / gameReviews.length) * 100);
-    return {
-      total: gameReviews.length,
-      percent,
-    };
-  };
+  const reviewStatsByGame = useMemo(() => {
+    const map = new Map<number, { total: number; percent: number }>();
+    const grouped = new Map<number, { total: number; positive: number }>();
+
+    for (const review of allReviews) {
+      const gameId = review.game?.id;
+      if (typeof gameId !== 'number') continue;
+      const entry = grouped.get(gameId) ?? { total: 0, positive: 0 };
+      entry.total += 1;
+      if (review.rating >= 4) entry.positive += 1;
+      grouped.set(gameId, entry);
+    }
+
+    for (const [gameId, counts] of grouped.entries()) {
+      map.set(gameId, {
+        total: counts.total,
+        percent: Math.round((counts.positive / counts.total) * 100),
+      });
+    }
+    return map;
+  }, [allReviews]);
 
   const handlePrevSpotlight = () => {
     if (featuredGames.length === 0) return;
@@ -136,7 +199,13 @@ export function HomePage() {
     if (targetEdition) {
       addItem(targetEdition.id, 1);
       setAddedGameId(game.id);
-      setTimeout(() => setAddedGameId(null), 2000);
+      if (addedTimerRef.current !== null) {
+        clearTimeout(addedTimerRef.current);
+      }
+      addedTimerRef.current = setTimeout(() => {
+        setAddedGameId(null);
+        addedTimerRef.current = null;
+      }, 2000);
     } else {
       navigate(`/games/${game.id}`);
     }
@@ -148,35 +217,120 @@ export function HomePage() {
     const copy = [...games];
     switch (rankingTab) {
       case 'new':
-        return copy.sort((a, b) => releaseTime(b.releaseDate) - releaseTime(a.releaseDate)).slice(0, 6);
+        return copy.sort((a, b) => releaseTime(b.releaseDate) - releaseTime(a.releaseDate)).slice(0, 8);
       case 'cheapest':
         return copy
           .sort((a, b) => {
-            const priceA = getLowestEdition(a)?.basePrice ?? 999999;
-            const priceB = getLowestEdition(b)?.basePrice ?? 999999;
-            return Number(priceA) - Number(priceB);
+            const rawA = Number(getLowestEdition(a)?.basePrice);
+            const rawB = Number(getLowestEdition(b)?.basePrice);
+            const priceA = Number.isFinite(rawA) ? rawA : Number.MAX_SAFE_INTEGER;
+            const priceB = Number.isFinite(rawB) ? rawB : Number.MAX_SAFE_INTEGER;
+            return priceA - priceB;
           })
-          .slice(0, 6);
+          .slice(0, 8);
       case 'alpha':
-        return copy.sort((a, b) => a.title.localeCompare(b.title)).slice(0, 6);
+        return copy.sort((a, b) => a.title.localeCompare(b.title)).slice(0, 8);
       case 'all':
       default:
-        return copy.slice(0, 6);
+        return copy.slice(0, 8);
     }
   }, [games, rankingTab]);
 
   return (
-    <div className="relative min-h-screen bg-[#0b0e15] text-[#e1e2ec] font-sans antialiased selection:bg-[#4f8eff] selection:text-[#00275e]">
-      {/* Ambient Atmospheric Backdrop */}
-      <div className="absolute -top-32 left-1/4 w-[520px] h-[520px] bg-blue-500/10 rounded-full blur-[140px] pointer-events-none -z-10" />
-      <div className="absolute top-[480px] -right-24 w-[460px] h-[460px] bg-emerald-500/10 rounded-full blur-[130px] pointer-events-none -z-10" />
-      <div className="absolute top-[1100px] -left-32 w-[580px] h-[580px] bg-amber-500/10 rounded-full blur-[150px] pointer-events-none -z-10" />
+    <div className="relative min-h-screen overflow-x-hidden bg-[#0B0C10] text-[#e1e2ec] font-sans antialiased selection:bg-cyan-400 selection:text-[#0B0C10]">
+      {/* Subtle Controlled Dark Cyberpunk Ambient Backdrop */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-36 left-1/4 w-[520px] h-[520px] bg-cyan-500/[0.06] rounded-full blur-[160px] -z-10"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-[540px] -right-28 w-[460px] h-[460px] bg-purple-600/[0.06] rounded-full blur-[160px] -z-10"
+      />
 
-      {/* Main Container */}
-      <main className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-16">
-        {/* Loading and Error States */}
+      <main className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-14">
+        {/* HERO BANNER PRINCIPAL: ZELDA OCARINA OF TIME PANORAMIC SPOTLIGHT */}
+        <section
+          aria-labelledby="hero-zelda-heading"
+          data-testid="hero-zelda-banner"
+          className="relative rounded-2xl overflow-hidden bg-[#12151E] border border-white/10 hover:border-cyan-400/35 shadow-[0_24px_60px_rgba(0,0,0,0.75)] transition-colors duration-300"
+        >
+          {/* Controlled Top HUD Accent */}
+          <div
+            aria-hidden="true"
+            className="h-[2px] w-full bg-gradient-to-r from-cyan-400/80 via-purple-400/60 to-transparent"
+          />
+
+          {/* Panoramic Banner Artwork (exact crop hiding outer white canvas margins) */}
+          <div className="relative w-full aspect-[916/246] overflow-hidden bg-[#0E1119]">
+            <img
+              src="/Banner__Zelda_Disponible_MVK-scaled.jpg"
+              alt="The Legend of Zelda: Ocarina of Time — Ya Disponible"
+              className="absolute max-w-none select-none pointer-events-none"
+              style={{
+                width: '111.79%',
+                height: '142.28%',
+                left: '-5.90%',
+                top: '-21.14%',
+              }}
+            />
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 bg-gradient-to-t from-[#12151E] via-transparent to-[#0B0C10]/20 pointer-events-none"
+            />
+          </div>
+
+          {/* Integrated High-Conversion Action Bar */}
+          <div className="px-5 sm:px-8 py-5 bg-[#12151E] border-t border-white/[0.07] flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-cyan-400/10 text-cyan-300 border border-cyan-400/25 text-[10px] font-mono font-bold uppercase tracking-widest">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Destacado Oficial
+                </span>
+                {activePromotions[0] && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-purple-500/15 text-purple-300 border border-purple-400/30 text-[10px] font-mono font-bold uppercase tracking-wider">
+                    Promo Activa -{activePromotions[0].discountPercentage}%
+                  </span>
+                )}
+              </div>
+
+              <h1
+                id="hero-zelda-heading"
+                className="text-lg sm:text-2xl font-black text-white tracking-tight"
+              >
+                The Legend of Zelda: Ocarina of Time &amp; Colección Destacada
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
+                Claves digitales de activación instantánea, ediciones de colección y catálogo verificado.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 shrink-0">
+              <Link
+                to="/catalog/promotions"
+                className="px-4 py-2.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-slate-200 hover:text-white border border-white/10 text-xs font-bold uppercase tracking-wider transition-colors"
+              >
+                Ver Ofertas
+              </Link>
+
+              <Link
+                to={zeldaTargetPath}
+                data-testid="hero-zelda-cta"
+                className="px-6 py-2.5 rounded-full bg-cyan-400 hover:bg-cyan-300 text-[#0B0C10] shadow-[0_4px_18px_rgba(34,211,238,0.28)] hover:shadow-[0_8px_24px_rgba(34,211,238,0.45)] btn-nintendo-animation btn-nintendo-shine text-xs font-black uppercase tracking-wider inline-flex items-center gap-2"
+              >
+                <span>Explorar Catálogo</span>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Loading & Error States */}
         {gamesQuery.isLoading && (
-          <div className="py-24 text-center">
+          <div className="py-20 text-center">
             <Spinner label="Consultando videojuegos en la base de datos…" />
           </div>
         )}
@@ -188,18 +342,256 @@ export function HomePage() {
           />
         )}
 
-        {/* SECTION 1: DESTACADOS Y RECOMENDADOS (HERO SHOWCASE) */}
+        {/* SECTION 2: CATÁLOGO / GRID DE PRODUCTOS (ESTILO G2A / STEAM) */}
+        {!gamesQuery.isLoading && !gamesQuery.isError && (
+          <section aria-labelledby="catalog-grid-title" className="space-y-6">
+            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 border-b border-white/[0.07] pb-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-1.5 h-5 rounded-full bg-cyan-400" />
+                  <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-cyan-400">
+                    Marketplace Digital
+                  </span>
+                </div>
+                <h2
+                  id="catalog-grid-title"
+                  className="text-xl sm:text-2xl font-black uppercase tracking-wide text-white"
+                >
+                  Catálogo de Videojuegos
+                </h2>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full lg:w-auto min-w-0">
+                {/* Filter Buttons */}
+                <div
+                  role="group"
+                  aria-label="Ordenar catálogo"
+                  className="flex flex-wrap items-center gap-1 bg-[#12151E] p-1 rounded-xl border border-white/[0.08] text-xs font-bold max-w-full"
+                >
+                  {(
+                    [
+                      { key: 'new', label: 'Novedades' },
+                      { key: 'cheapest', label: 'Más Económicos' },
+                      { key: 'alpha', label: 'Alfabético' },
+                      { key: 'all', label: 'Todos' },
+                    ] as const
+                  ).map((tab) => (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      aria-pressed={rankingTab === tab.key}
+                      onClick={() => setRankingTab(tab.key)}
+                      className={`px-3 py-1.5 rounded-lg uppercase tracking-wider transition-colors whitespace-nowrap ${
+                        rankingTab === tab.key
+                          ? 'bg-cyan-400/15 text-cyan-300 border border-cyan-400/30'
+                          : 'text-slate-400 hover:text-white border border-transparent'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                <Link
+                  to="/games"
+                  className="text-xs font-bold uppercase tracking-wider text-cyan-300 hover:text-white transition-colors inline-flex items-center gap-1"
+                >
+                  <span>Ver todo</span>
+                  <span aria-hidden="true">→</span>
+                </Link>
+              </div>
+            </div>
+
+            {rankedGames.length > 0 ? (
+              <div
+                data-testid="catalog-grid"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
+              >
+                {rankedGames.map((game) => {
+                  const lowest = getLowestEdition(game);
+                  const reviewStats = reviewStatsByGame.get(game.id) ?? null;
+                  const isNintendo = isNintendoTitle(game);
+                  const isAdded = addedGameId === game.id;
+                  const editionCount = game.editions?.length ?? 0;
+
+                  const physicalStock = Number(lowest?.stockPhysical ?? 0);
+                  const availabilityLabel = !lowest
+                    ? 'CATÁLOGO'
+                    : lowest.format === EditionFormat.DIGITAL
+                      ? 'KEY DIGITAL'
+                      : physicalStock > 0
+                        ? `STOCK: ${physicalStock}`
+                        : 'AGOTADO';
+
+                  const availabilityStyle = !lowest
+                    ? 'text-slate-300 border-white/15 bg-[#0B0C10]/80'
+                    : lowest.format === EditionFormat.DIGITAL
+                      ? 'text-cyan-300 border-cyan-400/35 bg-[#0B0C10]/85'
+                      : physicalStock > 0
+                        ? 'text-emerald-300 border-emerald-400/35 bg-[#0B0C10]/85'
+                        : 'text-rose-300 border-rose-400/35 bg-[#0B0C10]/85';
+
+                  return (
+                    <article
+                      key={game.id}
+                      data-testid={`game-card-${game.id}`}
+                      className="group flex flex-col justify-between rounded-2xl overflow-hidden bg-[#12151E] hover:bg-[#161B26] border border-white/[0.08] hover:border-cyan-400/40 shadow-[0_12px_32px_rgba(0,0,0,0.55)] hover:shadow-[0_18px_42px_rgba(0,0,0,0.75)] transition-all duration-300"
+                    >
+                      {/* Clean 16:10 Key-Art Header */}
+                      <div>
+                        <Link
+                          to={`/games/${game.id}`}
+                          className="relative block aspect-[16/10] w-full overflow-hidden bg-[#0E1118]"
+                        >
+                          {game.coverImageUrl && !failedCoverIds.has(game.id) ? (
+                            <img
+                              src={game.coverImageUrl}
+                              alt={game.title}
+                              loading="lazy"
+                              onError={() => markCoverFailed(game.id)}
+                              className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#191F2E] to-[#0B0C10] px-4 text-center">
+                              <span className="text-lg font-black uppercase tracking-widest text-slate-500">
+                                {game.title.slice(0, 3)}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Bottom Subtle Edge Blend */}
+                          <div
+                            aria-hidden="true"
+                            className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#12151E] to-transparent pointer-events-none"
+                          />
+
+                          {/* Top Micro-Badges */}
+                          <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between gap-2 pointer-events-none">
+                            {game.genres?.[0] ? (
+                              <span className="px-2 py-0.5 rounded-md bg-[#0B0C10]/80 backdrop-blur-md text-[10px] font-bold uppercase tracking-wider text-slate-200 border border-white/10 truncate max-w-[50%]">
+                                {game.genres[0].name}
+                              </span>
+                            ) : (
+                              <span />
+                            )}
+
+                            <span
+                              className={`px-2 py-0.5 rounded-md backdrop-blur-md text-[10px] font-mono font-bold uppercase tracking-wider border ${availabilityStyle}`}
+                            >
+                              {availabilityLabel}
+                            </span>
+                          </div>
+                        </Link>
+
+                        {/* Product Info Hierarchy */}
+                        <div className="px-4 pt-3 pb-2 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <Link to={`/games/${game.id}`} className="min-w-0 flex-1">
+                              <h3 className="text-[15px] font-bold text-white group-hover:text-cyan-300 transition-colors line-clamp-1">
+                                {game.title}
+                              </h3>
+                            </Link>
+
+                            {reviewStats && (
+                              <span
+                                className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-400/25 text-[10px] font-bold text-emerald-300"
+                                title={`${reviewStats.total} reseñas`}
+                              >
+                                ★ {reviewStats.percent}%
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center justify-between gap-2 text-xs text-slate-400">
+                            <span className="truncate">
+                              {game.developer?.name || game.publisher?.name || 'Estudio verificado'}
+                            </span>
+                            {game.esrbRating && (
+                              <span className="shrink-0 text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.08] text-slate-300">
+                                {game.esrbRating}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center justify-between text-[11px] text-slate-400">
+                            <span className="truncate">
+                              {lowest ? lowest.editionName : 'Ficha informativa'}
+                            </span>
+                            {editionCount > 1 && (
+                              <span className="shrink-0 text-purple-300 font-semibold">
+                                +{editionCount - 1} ed.
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Conversion Price & Action Footer */}
+                      <div className="px-4 py-3.5 mt-1 border-t border-white/[0.06] bg-[#0F121A]/70 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                            {lowest ? 'Desde' : 'Precio'}
+                          </p>
+                          <p className="text-lg font-black text-emerald-400 tabular-nums leading-tight">
+                            {lowest ? formatCurrency(lowest.basePrice) : 'Consultar'}
+                          </p>
+                        </div>
+
+                        <button
+                          type="button"
+                          data-testid={`card-add-to-cart-${game.id}`}
+                          onClick={() => handleAddToCart(game, lowest)}
+                          className={`px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 shrink-0 btn-nintendo-animation btn-nintendo-shine ${
+                            isAdded
+                              ? 'bg-emerald-400 text-[#0B0C10] shadow-[0_4px_16px_rgba(52,211,153,0.4)]'
+                              : isNintendo
+                                ? 'bg-[#e60012] hover:bg-[#ff1a1a] text-white shadow-[0_4px_14px_rgba(230,0,18,0.35)] hover:shadow-[0_8px_20px_rgba(230,0,18,0.5)]'
+                                : 'bg-cyan-400 hover:bg-cyan-300 text-[#0B0C10] shadow-[0_4px_14px_rgba(34,211,238,0.24)] hover:shadow-[0_8px_20px_rgba(34,211,238,0.42)]'
+                          }`}
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2.2}
+                              d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                            />
+                          </svg>
+                          <span>{isAdded ? '¡Listo!' : lowest ? 'Añadir' : 'Ver'}</span>
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="p-10 rounded-2xl bg-[#12151E] border border-white/[0.08] text-center space-y-2">
+                <p className="text-sm font-bold text-white">Aún no hay videojuegos registrados en el catálogo</p>
+                <p className="text-xs text-slate-400">
+                  Agrega títulos desde el módulo de gestión para verlos aquí.
+                </p>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* SECTION 3: DESTACADOS Y RECOMENDADOS (STEAM SPLIT SPOTLIGHT) */}
         {activeSpotlight && (
           <section aria-labelledby="hero-carousel-title" className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <span className="w-2.5 h-6 bg-blue-400 rounded-full shadow-[0_0_12px_#aec6ff]" />
-                <h2
-                  id="hero-carousel-title"
-                  className="text-xl sm:text-2xl font-black uppercase tracking-wider text-white"
-                >
-                  Destacados y Recomendados
-                </h2>
+                <span className="w-1.5 h-6 bg-purple-400 rounded-full" />
+                <div>
+                  <h2
+                    id="hero-carousel-title"
+                    className="text-xl sm:text-2xl font-black uppercase tracking-wide text-white"
+                  >
+                    Destacados y Recomendados
+                  </h2>
+                  <p className="text-xs text-slate-400">
+                    Comparativa rápida de ediciones, reseñas y disponibilidad
+                  </p>
+                </div>
               </div>
 
               {/* Carousel Controls */}
@@ -209,14 +601,14 @@ export function HomePage() {
                     type="button"
                     onClick={handlePrevSpotlight}
                     aria-label="Juego anterior"
-                    className="p-2 rounded-xl bg-[#272a32]/70 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors border border-white/5"
+                    className="p-2 rounded-xl bg-[#161B26] text-slate-300 hover:text-white hover:bg-[#1E2535] btn-nintendo-animation border border-white/10"
                   >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
 
-                  <div className="flex items-center gap-1.5 px-2">
+                  <div className="hidden sm:flex items-center gap-1.5 px-2">
                     {featuredGames.map((game, idx) => (
                       <button
                         key={game.id}
@@ -227,9 +619,9 @@ export function HomePage() {
                         }}
                         aria-label={`Ver destacado ${game.title}`}
                         className={`h-1.5 rounded-full transition-all duration-300 ${
-                          idx === spotlightIndex
-                            ? 'w-6 bg-[#aec6ff] shadow-[0_0_8px_#aec6ff]'
-                            : 'w-2 bg-[#32353d] hover:bg-slate-500'
+                          idx === safeSpotlightIndex
+                            ? 'w-6 bg-cyan-400'
+                            : 'w-2 bg-slate-700 hover:bg-slate-500'
                         }`}
                       />
                     ))}
@@ -239,9 +631,9 @@ export function HomePage() {
                     type="button"
                     onClick={handleNextSpotlight}
                     aria-label="Siguiente juego"
-                    className="p-2 rounded-xl bg-[#272a32]/70 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors border border-white/5"
+                    className="p-2 rounded-xl bg-[#161B26] text-slate-300 hover:text-white hover:bg-[#1E2535] btn-nintendo-animation border border-white/10"
                   >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
@@ -250,71 +642,70 @@ export function HomePage() {
             </div>
 
             {/* Split Spotlight Container */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 rounded-2xl overflow-hidden bg-[#161a24] border border-white/10 shadow-[0_16px_40px_rgba(0,0,0,0.7)] group">
+            <div className="grid grid-cols-1 lg:grid-cols-12 rounded-2xl overflow-hidden bg-[#12151E] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.75)] group">
               {/* Main Visual Column (Col 1-8) */}
-              <div className="lg:col-span-8 relative min-h-[420px] lg:min-h-[520px] flex flex-col justify-between p-6 sm:p-8 overflow-hidden bg-gradient-to-br from-[#1c2232] to-[#0f121a]">
-                {activeSpotlight.coverImageUrl ? (
+              <div className="lg:col-span-8 relative min-h-[380px] lg:min-h-[460px] flex flex-col justify-between p-6 sm:p-8 overflow-hidden bg-[#0E1118]">
+                {activeSpotlight.coverImageUrl && !failedCoverIds.has(activeSpotlight.id) ? (
                   <img
                     src={activeSpotlight.coverImageUrl}
                     alt={activeSpotlight.title}
-                    className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105 -z-10"
+                    onError={() => markCoverFailed(activeSpotlight.id)}
+                    className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
                   />
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center -z-10 bg-gradient-to-br from-blue-950/40 via-[#121622] to-black opacity-90">
-                    <div className="text-center space-y-2 p-8">
-                      <div className="w-20 h-20 mx-auto rounded-3xl bg-blue-500/10 border border-blue-400/20 flex items-center justify-center text-blue-400">
-                        <svg className="w-10 h-10" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-5 9h2v-2h2v2h2v2h-2v2H9v-2H7v-2zm10 2c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-2-3c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z" />
-                        </svg>
-                      </div>
-                      <p className="text-2xl font-black text-slate-300 tracking-wider">
-                        {activeSpotlight.title}
-                      </p>
-                    </div>
+                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#161C2C] via-[#10131C] to-[#0B0C10]">
+                    <p className="text-2xl font-black text-slate-500 tracking-wider uppercase">
+                      {activeSpotlight.title}
+                    </p>
                   </div>
                 )}
 
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0b0e15] via-[#0b0e15]/60 to-transparent -z-10" />
-                <div className="absolute inset-0 bg-gradient-to-r from-[#0b0e15]/80 via-transparent to-[#161a24] lg:block hidden -z-10" />
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0 bg-gradient-to-t from-[#0B0C10] via-[#0B0C10]/65 to-[#0B0C10]/20"
+                />
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0 bg-gradient-to-r from-[#0B0C10]/85 via-transparent to-[#12151E]/90 hidden lg:block"
+                />
 
                 {/* Top Metatags */}
-                <div className="flex flex-wrap items-center gap-2 z-10">
-                  <span className="text-[11px] uppercase tracking-wider px-2.5 py-1 rounded bg-[#4f8eff] text-[#00275e] font-extrabold shadow-[0_0_12px_rgba(79,142,255,0.4)]">
-                    LANZAMIENTO DESTACADO
+                <div className="relative z-10 flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-mono uppercase tracking-widest px-2.5 py-1 rounded-md bg-cyan-400 text-[#0B0C10] font-black">
+                    Lanzamiento Destacado
                   </span>
-                  <span className="text-[11px] uppercase tracking-wider px-2.5 py-0.5 rounded bg-black/60 backdrop-blur-md text-white border border-white/10 font-bold">
+                  <span className="text-[11px] uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-[#0B0C10]/75 backdrop-blur-md text-slate-100 border border-white/10 font-bold">
                     ESRB: {activeSpotlight.esrbRating || 'Pendiente'}
                   </span>
                   {activeSpotlight.developer && (
-                    <span className="text-[11px] uppercase tracking-wider px-2.5 py-0.5 rounded bg-black/60 backdrop-blur-md text-[#aec6ff] border border-white/10 font-bold">
+                    <span className="text-[11px] uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-[#0B0C10]/75 backdrop-blur-md text-cyan-300 border border-white/10 font-bold">
                       Desarrollo: {activeSpotlight.developer.name}
                     </span>
                   )}
                 </div>
 
-                {/* Bottom Left Info Area */}
-                <div className="z-10 space-y-3 mt-auto max-w-xl">
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight drop-shadow-[0_4px_16px_rgba(0,0,0,0.9)]">
+                {/* Bottom Info Area */}
+                <div className="relative z-10 space-y-3 mt-auto max-w-xl">
+                  <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
                     {activeSpotlight.title}
-                  </h1>
+                  </h3>
 
-                  <p className="text-xs sm:text-sm text-slate-200 line-clamp-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+                  <p className="text-xs sm:text-sm text-slate-200 line-clamp-2">
                     {activeSpotlight.synopsis || 'Sin descripción disponible para este título.'}
                   </p>
 
-                  {/* Genres Cloud */}
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {(activeSpotlight.genres ?? []).map((genre) => (
                       <Link
                         key={genre.id}
                         to={`/games?genreId=${genre.id}`}
-                        className="text-xs px-2.5 py-1 rounded-lg bg-black/60 hover:bg-blue-600/60 text-slate-200 hover:text-white border border-white/10 transition-colors font-medium backdrop-blur-md"
+                        className="text-xs px-2.5 py-1 rounded-lg bg-[#0B0C10]/70 hover:bg-cyan-400/20 text-slate-200 hover:text-cyan-200 border border-white/10 hover:border-cyan-400/40 transition-colors font-medium backdrop-blur-md"
                       >
                         {genre.name}
                       </Link>
                     ))}
                     {activeSpotlight.releaseDate && (
-                      <span className="text-xs px-2.5 py-1 rounded-lg bg-slate-800/80 text-slate-300 border border-white/5">
+                      <span className="text-xs px-2.5 py-1 rounded-lg bg-[#161B26]/90 text-slate-300 border border-white/10">
                         Lanzamiento: {formatDate(activeSpotlight.releaseDate)}
                       </span>
                     )}
@@ -322,17 +713,17 @@ export function HomePage() {
                 </div>
               </div>
 
-              {/* Side Preview Pane (Col 9-12) */}
-              <div className="lg:col-span-4 bg-[#141722] border-t lg:border-t-0 lg:border-l border-white/10 flex flex-col justify-between p-6 sm:p-8 space-y-6">
+              {/* Side Edition & Checkout Panel (Col 9-12) */}
+              <div className="lg:col-span-4 bg-[#12151E] border-t lg:border-t-0 lg:border-l border-white/[0.08] flex flex-col justify-between p-6 sm:p-7 space-y-5">
                 <div className="space-y-4">
                   <div className="space-y-1">
-                    <span className="text-xs uppercase tracking-wider text-emerald-400 font-extrabold flex items-center gap-1.5">
+                    <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-400 font-bold flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                       Disponible en Catálogo
                     </span>
-                    <h3 className="text-lg sm:text-xl font-bold text-white">
+                    <h4 className="text-lg font-bold text-white">
                       {currentEdition?.editionName ?? 'Edición Principal'}
-                    </h3>
+                    </h4>
                     <p className="text-xs text-slate-400">
                       {activeSpotlight.publisher
                         ? `Publisher oficial: ${activeSpotlight.publisher.name}`
@@ -343,7 +734,7 @@ export function HomePage() {
 
                   {/* Dynamic Editions Selector */}
                   <div className="space-y-2">
-                    <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">
+                    <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">
                       Ediciones Registradas
                     </p>
                     {activeSpotlight.editions && activeSpotlight.editions.length > 0 ? (
@@ -357,8 +748,8 @@ export function HomePage() {
                               onClick={() => setSelectedEditionId(edition.id)}
                               className={`p-2.5 rounded-xl text-left border transition-all flex items-center justify-between ${
                                 isSelected
-                                  ? 'bg-[#1c2234] border-[#aec6ff] shadow-sm'
-                                  : 'bg-[#10131d] border-white/5 hover:border-white/20'
+                                  ? 'bg-[#192030] border-cyan-400/70 shadow-[0_0_0_1px_rgba(34,211,238,0.2)]'
+                                  : 'bg-[#0E1118] border-white/[0.06] hover:border-white/20'
                               }`}
                             >
                               <div className="truncate pr-2">
@@ -369,7 +760,7 @@ export function HomePage() {
                                   {edition.format} {edition.platform ? `· ${edition.platform.name}` : ''}
                                 </p>
                               </div>
-                              <span className="text-xs font-black text-emerald-400 shrink-0">
+                              <span className="text-xs font-black text-emerald-400 tabular-nums shrink-0">
                                 {formatCurrency(edition.basePrice)}
                               </span>
                             </button>
@@ -377,31 +768,30 @@ export function HomePage() {
                         })}
                       </div>
                     ) : (
-                      <div className="p-3 rounded-xl bg-black/40 text-xs text-slate-500 border border-white/5">
+                      <div className="p-3 rounded-xl bg-[#0E1118] text-xs text-slate-400 border border-white/[0.06]">
                         Sin ediciones registradas para este título
                       </div>
                     )}
                   </div>
 
-                  {/* Real Reviews & Platform Details */}
-                  <div className="space-y-2 pt-2 border-t border-white/5 text-xs">
-                    <div className="flex items-center justify-between">
+                  {/* Reviews & Platforms */}
+                  <div className="space-y-2 pt-3 border-t border-white/[0.06] text-xs">
+                    <div className="flex items-center justify-between gap-2">
                       <span className="text-slate-400">Reseñas:</span>
                       {spotlightReviewStats ? (
                         <span className="text-emerald-400 font-bold flex items-center gap-1">
-                          <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
-                            <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a2 2 0 00-.8 1.4z" />
-                          </svg>
-                          {spotlightReviewStats.percent}% positivas ({spotlightReviewStats.total} {spotlightReviewStats.total === 1 ? 'opinión' : 'opiniones'})
+                          ★ {spotlightReviewStats.avg} · {spotlightReviewStats.percent}% positivas (
+                          {spotlightReviewStats.total}{' '}
+                          {spotlightReviewStats.total === 1 ? 'opinión' : 'opiniones'})
                         </span>
                       ) : (
                         <span className="text-slate-500 font-medium">Sin reseñas registradas</span>
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <span className="text-slate-400">Plataformas:</span>
-                      <div className="flex items-center gap-1.5 text-slate-300 font-medium truncate max-w-[180px]">
+                      <div className="text-slate-300 font-medium truncate max-w-[190px]">
                         {activeSpotlight.editions && activeSpotlight.editions.length > 0 ? (
                           Array.from(
                             new Set(
@@ -419,105 +809,99 @@ export function HomePage() {
                 </div>
 
                 {/* Price and Action Module */}
-                <div className="pt-4 border-t border-white/10 space-y-3">
-                  <div className="flex items-center justify-between bg-black/50 p-3 rounded-xl border border-white/5">
+                <div className="pt-4 border-t border-white/[0.08] space-y-3">
+                  <div className="flex items-center justify-between bg-[#0B0C10]/70 p-3 rounded-xl border border-white/[0.07]">
                     <div>
-                      <p className="text-[10px] uppercase font-bold text-slate-400">Precio actual</p>
-                      <p className="text-xl font-black text-white">
-                        {currentEdition
-                          ? formatCurrency(currentEdition.basePrice)
-                          : 'Consultar'}
+                      <p className="text-[10px] font-mono uppercase text-slate-400">Precio actual</p>
+                      <p className="text-xl font-black text-emerald-400 tabular-nums">
+                        {currentEdition ? formatCurrency(currentEdition.basePrice) : 'Consultar'}
                       </p>
                     </div>
 
                     <Link
                       to={`/games/${activeSpotlight.id}`}
-                      className="text-xs text-slate-300 hover:text-white px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors font-semibold"
+                      className="text-xs text-cyan-300 hover:text-white px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.1] border border-white/[0.07] transition-colors font-semibold"
                     >
-                      Ver Ficha Técnica →
+                      Ver Ficha →
                     </Link>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleAddToCart(activeSpotlight, currentEdition)}
-                      className={`flex-1 py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-2 ${
-                        addedGameId === activeSpotlight.id
-                          ? 'bg-emerald-500 text-black shadow-[0_0_20px_rgba(16,185,129,0.5)]'
-                          : 'bg-[#4f8eff] hover:bg-blue-400 text-[#00275e] hover:text-black shadow-[0_0_20px_rgba(79,142,255,0.4)]'
-                      }`}
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                        />
-                      </svg>
+                  <button
+                    type="button"
+                    data-testid="spotlight-add-to-cart"
+                    onClick={() => handleAddToCart(activeSpotlight, currentEdition)}
+                    className={`w-full py-3 px-4 rounded-full font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 btn-nintendo-animation btn-nintendo-shine ${
+                      addedGameId === activeSpotlight.id
+                        ? 'bg-emerald-400 text-[#0B0C10] shadow-[0_0_20px_rgba(52,211,153,0.45)]'
+                        : isNintendoSpotlight
+                          ? 'bg-[#e60012] hover:bg-[#ff1a1a] text-white shadow-[0_4px_14px_rgba(230,0,18,0.35)] hover:shadow-[0_8px_20px_rgba(230,0,18,0.5)]'
+                          : 'bg-cyan-400 hover:bg-cyan-300 text-[#0B0C10] shadow-[0_4px_16px_rgba(34,211,238,0.28)] hover:shadow-[0_8px_24px_rgba(34,211,238,0.45)]'
+                    }`}
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2.2}
+                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                      />
+                    </svg>
+                    <span>
                       {addedGameId === activeSpotlight.id ? '¡Añadido al Carrito!' : 'Agregar al Carrito'}
-                    </button>
-
-                    <Link
-                      to={`/games/${activeSpotlight.id}`}
-                      className="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-white/5 transition-colors"
-                      title="Ver todos los detalles del juego"
-                    >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                      </svg>
-                    </Link>
-                  </div>
+                    </span>
+                  </button>
                 </div>
               </div>
             </div>
           </section>
         )}
 
-        {/* SECTION 2: PROMOCIONES Y OFERTAS (DRIVEN 100% BY DATABASE PROMOTIONS) */}
+        {/* SECTION 4: PROMOCIONES Y DESCUENTOS (100% DATABASE DRIVEN) */}
         <section aria-labelledby="promotions-title" className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="flex items-center gap-3">
-              <span className="w-2.5 h-6 bg-amber-500 rounded-full shadow-[0_0_12px_#f59e0b]" />
-              <div>
-                <h2
-                  id="promotions-title"
-                  className="text-xl sm:text-2xl font-black uppercase tracking-wider text-white"
-                >
-                  Promociones y Descuentos
-                </h2>
-                <p className="text-xs text-slate-400">
-                  Campañas activas en la tienda registradas por los administradores
-                </p>
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2.5">
+                <span className="w-1.5 h-5 bg-amber-400 rounded-full" />
+                <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-amber-300">
+                  Campañas Activas
+                </span>
               </div>
+              <h2
+                id="promotions-title"
+                className="text-xl sm:text-2xl font-black uppercase tracking-wide text-white"
+              >
+                Promociones y Descuentos
+              </h2>
             </div>
 
             <Link
               to="/catalog/promotions"
-              className="text-xs font-bold uppercase tracking-wider text-[#aec6ff] hover:text-white transition-colors flex items-center gap-1"
+              className="text-xs font-bold uppercase tracking-wider text-cyan-300 hover:text-white transition-colors inline-flex items-center gap-1"
             >
-              Administrar promociones
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
+              <span>Administrar promociones</span>
+              <span aria-hidden="true">→</span>
             </Link>
           </div>
 
           {activePromotions.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {activePromotions.map((promo: Promotion) => (
                 <article
                   key={promo.id}
-                  className="rounded-2xl overflow-hidden bg-[#161a24] border border-white/10 p-6 shadow-xl flex flex-col justify-between space-y-4"
+                  className="relative rounded-2xl overflow-hidden bg-[#12151E] border border-white/[0.08] hover:border-amber-400/40 p-6 shadow-xl flex flex-col justify-between space-y-5 transition-colors"
                 >
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black uppercase px-2.5 py-1 rounded bg-amber-500 text-black">
+                  <div
+                    aria-hidden="true"
+                    className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-amber-400/80 via-purple-400/40 to-transparent"
+                  />
+
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-black uppercase px-2.5 py-1 rounded-md bg-amber-400 text-[#0B0C10]">
                         -{promo.discountPercentage}% OFF
                       </span>
                       {promo.couponCode && (
-                        <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-black/60 text-slate-300 border border-white/10">
+                        <span className="text-[11px] font-mono px-2.5 py-1 rounded-md bg-[#0B0C10] text-cyan-300 border border-cyan-400/25">
                           Cupón: {promo.couponCode}
                         </span>
                       )}
@@ -531,7 +915,7 @@ export function HomePage() {
 
                   <Link
                     to="/games"
-                    className="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider text-center transition-colors"
+                    className="w-full py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-white font-bold text-xs uppercase tracking-wider text-center transition-colors"
                   >
                     Ver Juegos Aplicables
                   </Link>
@@ -539,7 +923,7 @@ export function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="rounded-2xl bg-[#141824] border border-white/10 p-6 text-center space-y-2">
+            <div className="rounded-2xl bg-[#12151E] border border-white/[0.08] p-6 text-center space-y-2">
               <p className="text-sm font-bold text-white">No hay promociones activas en este momento</p>
               <p className="text-xs text-slate-400 max-w-md mx-auto">
                 Los títulos del catálogo están disponibles con su precio estándar. Puedes consultar todas las ediciones o crear una nueva promoción desde el panel de catálogo.
@@ -547,7 +931,7 @@ export function HomePage() {
               <div className="pt-2">
                 <Link
                   to="/games"
-                  className="inline-block px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-white transition-colors"
+                  className="inline-block px-4 py-2 rounded-xl bg-white/[0.07] hover:bg-white/[0.14] border border-white/10 text-xs font-bold text-white transition-colors"
                 >
                   Explorar Catálogo Completo
                 </Link>
@@ -556,29 +940,27 @@ export function HomePage() {
           )}
         </section>
 
-        {/* SECTION 3: EXPLORAR POR GÉNERO (DRIVEN 100% BY DATABASE GENRES) */}
+        {/* SECTION 5: EXPLORAR POR GÉNERO */}
         <section aria-labelledby="genres-title" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="w-2.5 h-6 bg-emerald-400 rounded-full shadow-[0_0_12px_#34d399]" />
-              <div>
-                <h2
-                  id="genres-title"
-                  className="text-xl sm:text-2xl font-black uppercase tracking-wider text-white"
-                >
-                  Explorar por Género
-                </h2>
-                <p className="text-xs text-slate-400">
-                  {genres.length > 0
-                    ? `${genres.length} géneros disponibles para filtrar títulos`
-                    : 'Categorías registradas en la base de datos'}
-                </p>
+          <div className="flex items-end justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2.5">
+                <span className="w-1.5 h-5 bg-emerald-400 rounded-full" />
+                <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-emerald-300">
+                  Categorías
+                </span>
               </div>
+              <h2
+                id="genres-title"
+                className="text-xl sm:text-2xl font-black uppercase tracking-wide text-white"
+              >
+                Explorar por Género
+              </h2>
             </div>
 
             <Link
               to="/catalog/genres"
-              className="text-xs font-bold uppercase tracking-wider text-[#aec6ff] hover:text-white transition-colors"
+              className="text-xs font-bold uppercase tracking-wider text-cyan-300 hover:text-white transition-colors"
             >
               Ver todos los géneros →
             </Link>
@@ -594,22 +976,20 @@ export function HomePage() {
                   <Link
                     key={genre.id}
                     to={`/games?genreId=${genre.id}`}
-                    className={`relative rounded-2xl overflow-hidden p-4 sm:p-5 flex flex-col justify-between h-40 bg-gradient-to-br ${accent.bg} border ${accent.border} group hover:scale-[1.03] transition-all shadow-lg`}
+                    className={`rounded-2xl p-4 flex flex-col justify-between h-36 bg-[#12151E] hover:bg-[#161B26] border ${accent.border} transition-colors group`}
                   >
-                    <div className="p-2 rounded-xl bg-black/60 w-fit text-white border border-white/10">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                      </svg>
+                    <div className="flex items-center justify-between">
+                      <span className={`w-2 h-2 rounded-full ${accent.dot}`} />
+                      <span className="text-[10px] font-mono uppercase text-slate-500 group-hover:text-slate-300 transition-colors">
+                        {genre.slug}
+                      </span>
                     </div>
 
                     <div>
-                      <span className={`text-[10px] uppercase font-black tracking-wider ${accent.text}`}>
-                        {genre.slug}
-                      </span>
-                      <h3 className="text-xs sm:text-sm font-black text-white uppercase group-hover:text-white transition-colors line-clamp-1">
+                      <h3 className={`text-sm font-black uppercase ${accent.text} line-clamp-1`}>
                         {genre.name}
                       </h3>
-                      <p className="text-[10px] text-slate-400 mt-0.5">
+                      <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">
                         {genre.description || (count !== null ? `${count} ${count === 1 ? 'juego' : 'juegos'}` : 'Explorar')}
                       </p>
                     </div>
@@ -618,174 +998,20 @@ export function HomePage() {
               })}
             </div>
           ) : (
-            <div className="p-6 rounded-2xl bg-[#141824] border border-white/10 text-center text-xs text-slate-400">
+            <div className="p-6 rounded-2xl bg-[#12151E] border border-white/[0.08] text-center text-xs text-slate-400">
               No hay géneros creados aún en la base de datos.
             </div>
           )}
         </section>
 
-        {/* SECTION 4: TENDENCIAS Y NOVEDADES (REAL TABBED GAMES LIST) */}
-        <section aria-labelledby="catalog-list-title" className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <span className="w-2.5 h-6 bg-[#aec6ff] rounded-full shadow-[0_0_12px_#aec6ff]" />
-              <h2
-                id="catalog-list-title"
-                className="text-xl sm:text-2xl font-black uppercase tracking-wider text-white"
-              >
-                Títulos del Catálogo
-              </h2>
-            </div>
-
-            {/* Real Filter Tabs */}
-            <div className="flex items-center bg-[#151924] p-1 rounded-xl border border-white/10 text-xs font-bold overflow-x-auto">
-              <button
-                type="button"
-                onClick={() => setRankingTab('new')}
-                className={`px-3 py-1.5 rounded-lg uppercase tracking-wider transition-all ${
-                  rankingTab === 'new'
-                    ? 'bg-[#272a32] text-[#aec6ff] shadow-sm'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Novedades
-              </button>
-              <button
-                type="button"
-                onClick={() => setRankingTab('cheapest')}
-                className={`px-3 py-1.5 rounded-lg uppercase tracking-wider transition-all ${
-                  rankingTab === 'cheapest'
-                    ? 'bg-[#272a32] text-[#aec6ff] shadow-sm'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Más Económicos
-              </button>
-              <button
-                type="button"
-                onClick={() => setRankingTab('alpha')}
-                className={`px-3 py-1.5 rounded-lg uppercase tracking-wider transition-all ${
-                  rankingTab === 'alpha'
-                    ? 'bg-[#272a32] text-[#aec6ff] shadow-sm'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Alfabético
-              </button>
-              <button
-                type="button"
-                onClick={() => setRankingTab('all')}
-                className={`px-3 py-1.5 rounded-lg uppercase tracking-wider transition-all ${
-                  rankingTab === 'all'
-                    ? 'bg-[#272a32] text-[#aec6ff] shadow-sm'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Todos
-              </button>
-            </div>
-          </div>
-
-          {/* Dynamic Ranked Games List */}
-          <div className="space-y-2">
-            {rankedGames.length > 0 ? (
-              rankedGames.map((game, idx) => {
-                const lowest = getLowestEdition(game);
-                const reviewStats = getGameReviewStats(game.id);
-
-                return (
-                  <div
-                    key={game.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-xl bg-[#141822] hover:bg-[#1a202d] border border-white/5 hover:border-white/15 shadow-md transition-all duration-200 group gap-4"
-                  >
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm sm:text-base font-black text-slate-500 w-6 text-center">
-                        #{idx + 1}
-                      </span>
-
-                      <div className="relative w-28 sm:w-36 h-16 sm:h-20 rounded-lg overflow-hidden flex-shrink-0 bg-black/40 border border-white/10 flex items-center justify-center">
-                        {game.coverImageUrl ? (
-                          <img
-                            src={game.coverImageUrl}
-                            alt={game.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        ) : (
-                          <span className="text-xs font-bold text-slate-500 uppercase">
-                            {game.title.slice(0, 3)}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="space-y-1">
-                        <Link to={`/games/${game.id}`}>
-                          <h3 className="text-sm sm:text-base font-black text-white group-hover:text-[#aec6ff] transition-colors line-clamp-1">
-                            {game.title}
-                          </h3>
-                        </Link>
-
-                        <div className="flex flex-wrap items-center gap-2 text-xs">
-                          <span className="text-slate-400">
-                            {game.genres?.map((g) => g.name).join(', ') || 'General'}
-                          </span>
-                          {game.developer && (
-                            <>
-                              <span className="text-slate-600">•</span>
-                              <span className="text-slate-400">{game.developer.name}</span>
-                            </>
-                          )}
-                          {reviewStats && (
-                            <>
-                              <span className="text-slate-600">•</span>
-                              <span className="text-emerald-400 font-bold">
-                                {reviewStats.percent}% positivas
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4 justify-end">
-                      <span className="text-base font-black text-white">
-                        {lowest ? formatCurrency(lowest.basePrice) : 'Consultar'}
-                      </span>
-
-                      <button
-                        type="button"
-                        onClick={() => handleAddToCart(game, lowest)}
-                        className="p-2.5 rounded-lg bg-slate-800 hover:bg-[#4f8eff] hover:text-[#00275e] text-white border border-white/5 transition-colors"
-                        title="Añadir al carrito"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="p-8 rounded-xl bg-[#141822] border border-white/5 text-center text-xs text-slate-400">
-                Aún no hay videojuegos disponibles en esta categoría.
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* SECTION 5: PLATAFORMAS REGISTRADAS EN LA BASE DE DATOS */}
-        <section className="rounded-3xl overflow-hidden bg-[#141824] border border-white/10 p-8 sm:p-10 space-y-6">
+        {/* SECTION 6: PLATAFORMAS SOPORTADAS */}
+        <section className="rounded-2xl overflow-hidden bg-[#12151E] border border-white/[0.08] p-6 sm:p-8 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
-              <span className="text-[10px] uppercase px-2.5 py-0.5 rounded bg-blue-500 text-black font-extrabold tracking-wider">
-                COMPATIBILIDAD
+              <span className="text-[10px] font-mono uppercase px-2.5 py-0.5 rounded bg-cyan-400/15 text-cyan-300 border border-cyan-400/25 font-bold tracking-widest">
+                Compatibilidad
               </span>
-              <h2 className="text-2xl font-black text-white">Plataformas Soportadas</h2>
+              <h2 className="text-xl sm:text-2xl font-black text-white">Plataformas Soportadas</h2>
               <p className="text-xs text-slate-400">
                 Consulta los videojuegos agrupados por plataforma y ediciones de lanzamiento
               </p>
@@ -793,46 +1019,62 @@ export function HomePage() {
 
             <Link
               to="/catalog/platforms"
-              className="text-xs font-bold uppercase tracking-wider text-[#aec6ff] hover:text-white transition-colors"
+              className="text-xs font-bold uppercase tracking-wider text-cyan-300 hover:text-white transition-colors"
             >
               Ver todas las plataformas →
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {platforms.map((platform: Platform) => (
-              <Link
-                key={platform.id}
-                to={`/games?platformId=${platform.id}`}
-                className="p-4 rounded-xl bg-[#1c2234] border border-white/5 hover:border-blue-400/30 transition-all flex items-center justify-between group"
-              >
-                <div>
-                  <p className="text-sm font-bold text-white group-hover:text-[#aec6ff] transition-colors">
-                    {platform.name}
-                  </p>
-                  <p className="text-[11px] text-slate-400 font-mono">{platform.code}</p>
-                </div>
-                <span className="text-xs text-slate-400">
-                  {platform.editions?.length ? `${platform.editions.length} ed.` : 'Explorar'}
-                </span>
-              </Link>
-            ))}
-          </div>
+          {platforms.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {platforms.map((platform: Platform) => (
+                <Link
+                  key={platform.id}
+                  to={`/games?platformId=${platform.id}`}
+                  className="p-4 rounded-xl bg-[#161B26] hover:bg-[#1B2230] border border-white/[0.06] hover:border-cyan-400/35 transition-colors flex items-center justify-between group"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    {platform.iconUrl && (
+                      <img
+                        src={platform.iconUrl}
+                        alt=""
+                        aria-hidden="true"
+                        className="w-5 h-5 object-contain shrink-0 opacity-85"
+                      />
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors truncate">
+                        {platform.name}
+                      </p>
+                      <p className="text-[11px] text-slate-400 font-mono">{platform.code}</p>
+                    </div>
+                  </div>
+                  <span className="text-xs text-slate-400 shrink-0">
+                    {platform.editions?.length ? `${platform.editions.length} ed.` : 'Explorar'}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="p-5 rounded-xl bg-[#161B26] border border-white/[0.06] text-center text-xs text-slate-400">
+              No hay plataformas registradas en este momento.
+            </div>
+          )}
 
-          <div className="pt-4 border-t border-white/5 flex flex-wrap items-center justify-between gap-4">
+          <div className="pt-4 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-4">
             <p className="text-xs text-slate-400">
               ¿Gestionas nuevos títulos o ediciones? Accede a los módulos de administración.
             </p>
             <div className="flex items-center gap-3">
               <Link
                 to="/catalog/games"
-                className="px-4 py-2 rounded-xl bg-[#4f8eff] text-[#00275e] hover:bg-blue-400 font-bold text-xs uppercase tracking-wider transition-colors"
+                className="px-4 py-2 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-[#0B0C10] font-bold text-xs uppercase tracking-wider transition-colors"
               >
                 Administrar Videojuegos
               </Link>
               <Link
                 to="/library"
-                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider transition-colors"
+                className="px-4 py-2 rounded-xl bg-white/[0.07] hover:bg-white/[0.14] border border-white/10 text-white font-bold text-xs uppercase tracking-wider transition-colors"
               >
                 Mi Biblioteca
               </Link>
