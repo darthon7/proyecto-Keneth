@@ -16,9 +16,10 @@ const fields: FieldConfig[] = [
   { name: 'description', label: 'Descripción', type: 'textarea' },
 ];
 
-export function GenresPage() {
+export function GenresPage({ embedded = false }: { embedded?: boolean }) {
   return (
     <CrudResourcePage<Genre, CreateGenrePayload>
+      embedded={embedded}
       title="Géneros"
       description="Géneros disponibles para clasificar los videojuegos. Cada juego puede tener varios."
       queryKey={['genres']}

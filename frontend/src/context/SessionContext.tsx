@@ -1,65 +1,110 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { usersApi } from '@/api';
-import type { User } from '@/types';
-
-const STORAGE_KEY = 'keneth.currentUserId';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  ApiError,
+  authApi,
+  clearStoredAuthToken,
+  errorMessage,
+  getStoredAuthToken,
+  onUnauthorized,
+  setStoredAuthToken,
+} from '@/api';
+import { UserRole } from '@/types';
+import type { AuthResponse, SafeUser } from '@/types';
 
 interface SessionContextValue {
-  currentUser: User | null;
+  currentUser: SafeUser | null;
   currentUserId: number | null;
-  users: User[];
+  token: string | null;
+  isAdmin: boolean;
   isLoading: boolean;
   error: string | null;
-  selectUser: (userId: number) => void;
+  setSession: (auth: AuthResponse) => void;
   logout: () => void;
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
+const PROTECTED_QUERY_KEYS = [
+  ['auth'],
+  ['orders'],
+  ['order'],
+  ['user-libraries'],
+  ['wishlists'],
+  ['users'],
+  ['user'],
+  ['digital-keys'],
+] as const;
+
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [currentUserId, setCurrentUserId] = useState<number | null>(() => {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    const parsed = stored ? Number(stored) : NaN;
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-  });
+  const queryClient = useQueryClient();
+  const [token, setToken] = useState<string | null>(() => getStoredAuthToken());
 
-  const { data: users = [], isLoading, error } = useQuery({
-    queryKey: ['users'],
-    queryFn: () => usersApi.list(),
-  });
-
-  // La sesión solo existe si el usuario la inició desde el modal de acceso.
-  // Si la cuenta guardada se borró de la base de datos, la sesión se cierra.
-  useEffect(() => {
-    if (currentUserId === null || users.length === 0) return;
-    if (users.some((user) => user.id === currentUserId)) return;
-    setCurrentUserId(null);
-    window.localStorage.removeItem(STORAGE_KEY);
-  }, [currentUserId, users]);
-
-  const selectUser = useCallback((userId: number) => {
-    setCurrentUserId(userId);
-    window.localStorage.setItem(STORAGE_KEY, String(userId));
-  }, []);
+  const clearProtectedCache = useCallback(() => {
+    for (const queryKey of PROTECTED_QUERY_KEYS) {
+      queryClient.removeQueries({ queryKey: [...queryKey] });
+    }
+  }, [queryClient]);
 
   const logout = useCallback(() => {
-    setCurrentUserId(null);
-    window.localStorage.removeItem(STORAGE_KEY);
-  }, []);
+    clearStoredAuthToken();
+    setToken(null);
+    clearProtectedCache();
+  }, [clearProtectedCache]);
+
+  useEffect(() => {
+    return onUnauthorized(() => {
+      clearStoredAuthToken();
+      setToken(null);
+      clearProtectedCache();
+    });
+  }, [clearProtectedCache]);
+
+  const meQuery = useQuery({
+    queryKey: ['auth', 'me', token],
+    queryFn: () => authApi.me(),
+    enabled: Boolean(token),
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (
+      token &&
+      meQuery.isError &&
+      meQuery.error instanceof ApiError &&
+      (meQuery.error.status === 401 || meQuery.error.status === 403)
+    ) {
+      logout();
+    }
+  }, [token, meQuery.isError, meQuery.error, logout]);
+
+  const setSession = useCallback(
+    (auth: AuthResponse) => {
+      setStoredAuthToken(auth.accessToken);
+      setToken(auth.accessToken);
+      queryClient.setQueryData(['auth', 'me', auth.accessToken], auth.user);
+    },
+    [queryClient],
+  );
+
+  const currentUser = token ? (meQuery.data ?? null) : null;
+  const isAdmin = currentUser?.role === UserRole.ADMIN;
+  const isLoading = Boolean(token) && meQuery.isLoading;
+  const error = token && meQuery.isError ? errorMessage(meQuery.error) : null;
 
   const value = useMemo<SessionContextValue>(
     () => ({
-      currentUser: users.find((user) => user.id === currentUserId) ?? null,
-      currentUserId,
-      users,
+      currentUser,
+      currentUserId: currentUser?.id ?? null,
+      token,
+      isAdmin,
       isLoading,
-      error: error instanceof Error ? error.message : null,
-      selectUser,
+      error,
+      setSession,
       logout,
     }),
-    [users, currentUserId, isLoading, error, selectUser, logout],
+    [currentUser, token, isAdmin, isLoading, error, setSession, logout],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

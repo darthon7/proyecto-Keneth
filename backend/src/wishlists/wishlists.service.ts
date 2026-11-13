@@ -5,6 +5,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { sanitizeUser } from '../auth/index.js';
+import {
+  normalizePagination,
+  type PaginationOptions,
+} from '../common/pagination.util.js';
 import { Wishlist } from './entities/wishlist.entity.js';
 import { User } from '../users/entities/user.entity.js';
 import { Game } from '../games/entities/game.entity.js';
@@ -50,16 +55,31 @@ export class WishlistsService {
       notifyOnSale: notifyOnSale ?? true,
     });
 
-    return await this.wishlistRepository.save(wish);
+    const saved = await this.wishlistRepository.save(wish);
+    return this.sanitizeWishlist(saved);
   }
 
-  async findAll() {
-    return await this.wishlistRepository.find({
+  private sanitizeWishlist(wish: Wishlist) {
+    if (!wish.user) {
+      return wish;
+    }
+    return {
+      ...wish,
+      user: sanitizeUser(wish.user),
+    };
+  }
+
+  async findAll(pagination?: PaginationOptions) {
+    const { take, skip } = normalizePagination(pagination);
+    const wishes = await this.wishlistRepository.find({
       relations: {
         user: true,
         game: true,
       },
+      take,
+      skip,
     });
+    return wishes.map((wish) => this.sanitizeWishlist(wish));
   }
 
   async findByUser(userId: number) {
@@ -77,17 +97,31 @@ export class WishlistsService {
     if (!wish) {
       throw new NotFoundException(`Elemento de wishlist ${id} no encontrado`);
     }
-    return wish;
+    return this.sanitizeWishlist(wish);
   }
 
   async update(id: number, updateDto: UpdateWishlistDto) {
-    const wish = await this.findOne(id);
+    const wish = await this.wishlistRepository.findOne({
+      where: { id },
+      relations: { user: true, game: true },
+    });
+    if (!wish) {
+      throw new NotFoundException(`Elemento de wishlist ${id} no encontrado`);
+    }
     this.wishlistRepository.merge(wish, updateDto);
-    return await this.wishlistRepository.save(wish);
+    const saved = await this.wishlistRepository.save(wish);
+    return this.sanitizeWishlist(saved);
   }
 
   async remove(id: number) {
-    const wish = await this.findOne(id);
-    return await this.wishlistRepository.remove(wish);
+    const wish = await this.wishlistRepository.findOne({
+      where: { id },
+      relations: { user: true, game: true },
+    });
+    if (!wish) {
+      throw new NotFoundException(`Elemento de wishlist ${id} no encontrado`);
+    }
+    const removed = await this.wishlistRepository.remove(wish);
+    return this.sanitizeWishlist(removed);
   }
 }

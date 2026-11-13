@@ -152,4 +152,39 @@ describe('HomePage', () => {
     expect(screen.getByText('-25% OFF')).toBeInTheDocument();
     expect(screen.getByText('Cupón: SPRING25')).toBeInTheDocument();
   });
+
+  it('renderiza el hero banner accesible con h1, sin el bloque Destacado Oficial ni etiqueta main propia', async () => {
+    vi.mocked(gamesApi.list).mockResolvedValue(mockGames);
+    vi.mocked(genresApi.list).mockResolvedValue(mockGenres);
+    vi.mocked(platformsApi.list).mockResolvedValue(mockPlatforms);
+    vi.mocked(promotionsApi.list).mockResolvedValue([]);
+    vi.mocked(reviewsApi.list).mockResolvedValue([]);
+
+    const { container } = renderHomePage();
+
+    const heroBanner = screen.getByTestId('hero-zelda-banner');
+    expect(heroBanner).toBeInTheDocument();
+
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(heading).toBeInTheDocument();
+    expect(heading).toHaveTextContent(/El Pibes/i);
+
+    expect(screen.queryByText(/Destacado Oficial/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Colección Destacada/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('hero-zelda-cta')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Ver Ofertas/i })).not.toBeInTheDocument();
+    expect(container.querySelector('main')).toBeNull();
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Cyber Chronicles 2077').length).toBeGreaterThanOrEqual(1);
+    });
+
+    expect(screen.getByTestId('hero-zelda-banner')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+    expect(screen.queryByText(/Destacado Oficial/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Colección Destacada/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('hero-zelda-cta')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Ver Ofertas/i })).not.toBeInTheDocument();
+    expect(container.querySelector('main')).toBeNull();
+  });
 });

@@ -2,10 +2,12 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
+import { EmptyState } from '@/components/atoms/EmptyState';
 import { ErrorBanner } from '@/components/atoms/ErrorBanner';
 import { Select } from '@/components/atoms/Select';
 import { Spinner } from '@/components/atoms/Spinner';
 import { errorMessage, ordersApi } from '@/api';
+import { useSession } from '@/context/SessionContext';
 import { formatCurrency, formatDate, humanizeEnum } from '@/utils/format';
 import type { PaymentStatus } from '@/types';
 
@@ -14,11 +16,12 @@ export function OrderDetailPage() {
   const orderId = Number(id);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { currentUser, isAdmin, isLoading: sessionLoading } = useSession();
 
   const orderQuery = useQuery({
     queryKey: ['order', orderId],
     queryFn: () => ordersApi.get(orderId),
-    enabled: Number.isFinite(orderId),
+    enabled: Number.isFinite(orderId) && Boolean(currentUser),
   });
 
   const updateMutation = useMutation({
@@ -37,6 +40,19 @@ export function OrderDetailPage() {
       navigate('/orders');
     },
   });
+
+  if (sessionLoading) return <Spinner label="Verificando sesión…" />;
+
+  if (!currentUser) {
+    return (
+      <section className="page-container py-16">
+        <EmptyState
+          title="Inicia sesión"
+          description="Entra en tu cuenta desde la barra superior para consultar el detalle de tu orden."
+        />
+      </section>
+    );
+  }
 
   if (orderQuery.isLoading) return <Spinner label="Cargando orden…" />;
 
@@ -112,38 +128,40 @@ export function OrderDetailPage() {
               <p className="mt-1 text-caption text-[#475569]">Referencia: {order.paymentGatewayRef}</p>
             )}
 
-            <div className="mt-6 flex flex-col gap-3">
-              <Select
-                label="Estado del pago"
-                name="paymentStatus"
-                value={order.paymentStatus}
-                onChange={(event) =>
-                  updateMutation.mutate(event.target.value as PaymentStatus)
-                }
-                options={[
-                  { value: 'PENDING', label: 'Pendiente' },
-                  { value: 'COMPLETED', label: 'Completado' },
-                  { value: 'FAILED', label: 'Fallido' },
-                  { value: 'REFUNDED', label: 'Reembolsado' },
-                ]}
-              />
+            {isAdmin && (
+              <div className="mt-6 flex flex-col gap-3">
+                <Select
+                  label="Estado del pago"
+                  name="paymentStatus"
+                  value={order.paymentStatus}
+                  onChange={(event) =>
+                    updateMutation.mutate(event.target.value as PaymentStatus)
+                  }
+                  options={[
+                    { value: 'PENDING', label: 'Pendiente' },
+                    { value: 'COMPLETED', label: 'Completado' },
+                    { value: 'FAILED', label: 'Fallido' },
+                    { value: 'REFUNDED', label: 'Reembolsado' },
+                  ]}
+                />
 
-              {updateMutation.isError && (
-                <ErrorBanner message={errorMessage(updateMutation.error)} />
-              )}
+                {updateMutation.isError && (
+                  <ErrorBanner message={errorMessage(updateMutation.error)} />
+                )}
 
-              <Button
-                variant="danger"
-                onClick={() => deleteMutation.mutate()}
-                isLoading={deleteMutation.isPending}
-              >
-                Eliminar orden
-              </Button>
+                <Button
+                  variant="danger"
+                  onClick={() => deleteMutation.mutate()}
+                  isLoading={deleteMutation.isPending}
+                >
+                  Eliminar orden
+                </Button>
 
-              {deleteMutation.isError && (
-                <ErrorBanner message={errorMessage(deleteMutation.error)} />
-              )}
-            </div>
+                {deleteMutation.isError && (
+                  <ErrorBanner message={errorMessage(deleteMutation.error)} />
+                )}
+              </div>
+            )}
           </div>
         </aside>
       </div>

@@ -35,6 +35,7 @@ interface CrudResourcePageProps<T, TPayload extends object = Record<string, unkn
   toFormValues: (item: T) => Record<string, unknown>;
   getId: (item: T) => number | string;
   emptyMessage?: string;
+  embedded?: boolean;
 }
 
 type ModalState<T> = { mode: 'create' } | { mode: 'edit'; item: T } | null;
@@ -52,6 +53,7 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
   toFormValues,
   getId,
   emptyMessage = 'Todavía no hay registros.',
+  embedded = false,
 }: CrudResourcePageProps<T, TPayload>) {
   const queryClient = useQueryClient();
   const [modalState, setModalState] = useState<ModalState<T> | null>(null);
@@ -105,6 +107,16 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
     setModalState({ mode: 'edit', item });
   };
 
+  const openDeleteModal = (item: T) => {
+    deleteMutation.reset();
+    setItemToDelete(item);
+  };
+
+  const closeDeleteModal = () => {
+    deleteMutation.reset();
+    setItemToDelete(null);
+  };
+
   const submit = form.handleSubmit((values) => {
     setFormError(null);
     saveMutation.mutate(buildPayload(values, fields));
@@ -113,13 +125,13 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
   const items = listQuery.data ?? [];
 
   return (
-    <section className="page-container py-16">
+    <section className={embedded ? 'space-y-6' : 'page-container py-16'}>
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-heading-sm font-extrabold text-[#0F172A]">{title}</h1>
           {description && <p className="mt-2 max-w-2xl text-body-sm text-[#475569]">{description}</p>}
         </div>
-        <Button variant="brand" onClick={openCreate}>
+        <Button variant="brand" data-testid="crud-create-btn" onClick={openCreate}>
           Nuevo registro
         </Button>
       </header>
@@ -173,6 +185,7 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
                       <div className="inline-flex items-center gap-3">
                         <button
                           type="button"
+                          data-testid={`crud-edit-btn-${getId(item)}`}
                           onClick={() => openEdit(item)}
                           className="text-body-sm font-semibold text-[#1E1B4B] transition-colors hover:text-[#FF2A5F]"
                         >
@@ -180,7 +193,8 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
                         </button>
                         <button
                           type="button"
-                          onClick={() => setItemToDelete(item)}
+                          data-testid={`crud-delete-btn-${getId(item)}`}
+                          onClick={() => openDeleteModal(item)}
                           className="text-body-sm font-semibold text-[#EF4444] transition-colors hover:text-[#991B1B]"
                         >
                           Eliminar
@@ -205,7 +219,12 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
             <Button variant="ghost" onClick={() => setModalState(null)}>
               Cancelar
             </Button>
-            <Button variant="brand" onClick={submit} isLoading={saveMutation.isPending}>
+            <Button
+              variant="brand"
+              data-testid="crud-save-btn"
+              onClick={submit}
+              isLoading={saveMutation.isPending}
+            >
               Guardar
             </Button>
           </>
@@ -285,16 +304,17 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
 
       <Modal
         isOpen={itemToDelete !== null}
-        onClose={() => setItemToDelete(null)}
+        onClose={closeDeleteModal}
         title="Eliminar registro"
         size="sm"
         footer={
           <>
-            <Button variant="ghost" onClick={() => setItemToDelete(null)}>
+            <Button variant="ghost" onClick={closeDeleteModal}>
               Cancelar
             </Button>
             <Button
               variant="danger"
+              data-testid="crud-confirm-delete-btn"
               isLoading={deleteMutation.isPending}
               onClick={() => itemToDelete && deleteMutation.mutate(itemToDelete)}
             >

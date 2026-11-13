@@ -10,9 +10,24 @@ const fields: FieldConfig[] = [
   { name: 'country', label: 'País (ISO-2)', type: 'text', minLength: 2, maxLength: 2, placeholder: 'MX' },
 ];
 
-export function PublishersPage() {
+function safeHttpUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return trimmed;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function PublishersPage({ embedded = false }: { embedded?: boolean }) {
   return (
     <CrudResourcePage<Publisher, CreatePublisherPayload>
+      embedded={embedded}
       title="Publishers"
       description="Las empresas que publican los videojuegos del catálogo. Se relacionan 1:N con los juegos."
       queryKey={['publishers']}
@@ -27,19 +42,22 @@ export function PublishersPage() {
         {
           header: 'Sitio web',
           className: 'text-fog',
-          render: (publisher) =>
-            publisher.websiteUrl ? (
-              <a
-                href={publisher.websiteUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-[#1E1B4B] font-medium hover:text-[#FF2A5F] underline-offset-2 hover:underline"
-              >
-                {publisher.websiteUrl}
-              </a>
-            ) : (
-              '—'
-            ),
+          render: (publisher) => {
+            const safeUrl = safeHttpUrl(publisher.websiteUrl);
+            if (safeUrl) {
+              return (
+                <a
+                  href={safeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#1E1B4B] font-medium hover:text-[#FF2A5F] underline-offset-2 hover:underline"
+                >
+                  {publisher.websiteUrl}
+                </a>
+              );
+            }
+            return publisher.websiteUrl ? <span>{publisher.websiteUrl}</span> : '—';
+          },
         },
         {
           header: 'Juegos',

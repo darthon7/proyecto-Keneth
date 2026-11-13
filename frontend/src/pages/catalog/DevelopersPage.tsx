@@ -16,9 +16,10 @@ const fields: FieldConfig[] = [
   },
 ];
 
-export function DevelopersPage() {
+export function DevelopersPage({ embedded = false }: { embedded?: boolean }) {
   return (
     <CrudResourcePage<Developer, CreateDeveloperPayload>
+      embedded={embedded}
       title="Desarrolladoras"
       description="Estudios que desarrollan los videojuegos del catálogo. Se relacionan 1:N con los juegos."
       queryKey={['developers']}

@@ -3,6 +3,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { DataSource, EntityTarget } from 'typeorm';
 import { executeSeed } from './seed.js';
+import { isScryptHash, verifyPassword } from '../auth/password.util.js';
 import { User, UserRole } from '../users/entities/user.entity.js';
 import { Platform } from '../platforms/entities/platform.entity.js';
 import { Genre } from '../genres/entities/genre.entity.js';
@@ -220,11 +221,19 @@ describe('executeSeed (ejecución con DataSource mockeado)', () => {
     expect(admin!.role).toBe(UserRole.ADMIN);
     expect(admin!.isActive).toBe(true);
     expect(admin!.username).toBe('admin');
+    expect(isScryptHash(admin!.password)).toBe(true);
+    expect((await verifyPassword('AdminDev123!', admin!.password)).valid).toBe(
+      true,
+    );
 
     expect(customer).toBeDefined();
     expect(customer!.role).toBe(UserRole.CUSTOMER);
     expect(customer!.isActive).toBe(true);
     expect(customer!.username).toBe('gamer_mx');
+    expect(isScryptHash(customer!.password)).toBe(true);
+    expect(
+      (await verifyPassword('CustomerDev123!', customer!.password)).valid,
+    ).toBe(true);
 
     userRepo.save.mockClear();
     await executeSeed(dataSource);
@@ -306,7 +315,11 @@ describe('executeSeed (ejecución con DataSource mockeado)', () => {
     expect(admin).toBeDefined();
     expect(admin!.role).toBe(UserRole.ADMIN);
     expect(admin!.username).toBe('super_admin');
-    expect(admin!.password).toBe('UltraSecretProdPassword99!');
+    expect(isScryptHash(admin!.password)).toBe(true);
+    expect(
+      (await verifyPassword('UltraSecretProdPassword99!', admin!.password))
+        .valid,
+    ).toBe(true);
     expect(customer).toBeDefined();
     expect(customer!.role).toBe(UserRole.CUSTOMER);
   });

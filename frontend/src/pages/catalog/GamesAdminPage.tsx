@@ -41,7 +41,7 @@ const EMPTY_FORM: GameFormValues = {
   developerId: 0,
 };
 
-export function GamesAdminPage() {
+export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGame, setEditingGame] = useState<Game | null>(null);
@@ -73,7 +73,7 @@ export function GamesAdminPage() {
         slug: editingGame.slug,
         synopsis: editingGame.synopsis ?? '',
         esrbRating: editingGame.esrbRating,
-        releaseDate: editingGame.releaseDate.slice(0, 10),
+        releaseDate: (editingGame.releaseDate ?? '').slice(0, 10),
         coverImageUrl: editingGame.coverImageUrl ?? '',
         publisherId: editingGame.publisher?.id ?? 0,
         developerId: editingGame.developer?.id ?? 0,
@@ -144,7 +144,7 @@ export function GamesAdminPage() {
   };
 
   return (
-    <section className="page-container py-16">
+    <section className={embedded ? 'space-y-6' : 'page-container py-16'}>
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-heading-sm font-extrabold text-[#0F172A]">Administrar videojuegos</h1>
@@ -155,6 +155,7 @@ export function GamesAdminPage() {
         </div>
         <Button
           variant="brand"
+          data-testid="games-admin-create-btn"
           onClick={() => {
             setEditingGame(null);
             setIsModalOpen(true);
@@ -215,6 +216,7 @@ export function GamesAdminPage() {
                       <div className="inline-flex items-center gap-3">
                         <button
                           type="button"
+                          data-testid={`games-admin-edit-btn-${game.id}`}
                           onClick={() => {
                             setEditingGame(game);
                             setIsModalOpen(true);
@@ -225,6 +227,7 @@ export function GamesAdminPage() {
                         </button>
                         <button
                           type="button"
+                          data-testid={`games-admin-delete-btn-${game.id}`}
                           onClick={() => setGameToDelete(game)}
                           className="text-body-sm font-semibold text-[#EF4444] hover:text-[#991B1B] btn-nintendo-animation"
                         >
@@ -250,7 +253,12 @@ export function GamesAdminPage() {
             <Button variant="ghost" onClick={() => setIsModalOpen(false)}>
               Cancelar
             </Button>
-            <Button variant="brand" onClick={submit} isLoading={saveMutation.isPending}>
+            <Button
+              variant="brand"
+              data-testid="games-admin-save-btn"
+              onClick={submit}
+              isLoading={saveMutation.isPending}
+            >
               Guardar
             </Button>
           </>
@@ -357,6 +365,7 @@ export function GamesAdminPage() {
             </Button>
             <Button
               variant="danger"
+              data-testid="games-admin-confirm-delete-btn"
               isLoading={deleteMutation.isPending}
               onClick={() => gameToDelete && deleteMutation.mutate(gameToDelete)}
             >

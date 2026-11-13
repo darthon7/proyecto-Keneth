@@ -8,6 +8,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { GUARDS_METADATA } from '@nestjs/common/constants.js';
 import type { Repository } from 'typeorm';
+import { isScryptHash, JwtAuthGuard, verifyPassword } from '../auth/index.js';
 import { UsersService } from './users.service.js';
 import { UsersController } from './users.controller.js';
 import { User } from './entities/user.entity.js';
@@ -42,7 +43,7 @@ describe('UsersService, DTOs y Roles', () => {
     service = new UsersService(mockRepo as unknown as Repository<User>);
   });
 
-  it('create asigna explícitamente UserRole.CUSTOMER', async () => {
+  it('create asigna explícitamente UserRole.CUSTOMER, hashea la contraseña y sanitiza el retorno', async () => {
     mockRepo.findOneBy.mockResolvedValue(null);
 
     const result = await service.create({
@@ -51,13 +52,16 @@ describe('UsersService, DTOs y Roles', () => {
       username: 'nuevo_usuario',
     });
 
-    expect(mockRepo.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        email: 'nuevo@example.com',
-        role: UserRole.CUSTOMER,
-      }),
-    );
+    const createPayload = mockRepo.create.mock.calls[0][0] as Partial<User>;
+    expect(createPayload.email).toBe('nuevo@example.com');
+    expect(createPayload.role).toBe(UserRole.CUSTOMER);
+    expect(createPayload.password).toBeDefined();
+    expect(isScryptHash(createPayload.password!)).toBe(true);
+    expect(
+      (await verifyPassword('Password123', createPayload.password!)).valid,
+    ).toBe(true);
     expect(result.role).toBe(UserRole.CUSTOMER);
+    expect(result).not.toHaveProperty('password');
   });
 
   it('create lanza BadRequestException si el correo ya existe', async () => {
@@ -72,15 +76,23 @@ describe('UsersService, DTOs y Roles', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
-  it('findAll filtra opcionalmente por rol sin consultas adicionales', async () => {
-    mockRepo.find.mockResolvedValue([]);
+  it('findAll filtra opcionalmente por rol y sanitiza contraseñas', async () => {
+    mockRepo.find.mockResolvedValue([
+      {
+        id: 1,
+        email: 'admin@example.com',
+        password: 'scrypt$abc$def',
+        role: UserRole.ADMIN,
+      },
+    ]);
 
-    await service.findAll(UserRole.ADMIN);
+    const admins = await service.findAll(UserRole.ADMIN);
     expect(mockRepo.find).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { role: UserRole.ADMIN },
       }),
     );
+    expect(admins[0]).not.toHaveProperty('password');
 
     await service.findAll();
     expect(mockRepo.find).toHaveBeenLastCalledWith(
@@ -90,10 +102,11 @@ describe('UsersService, DTOs y Roles', () => {
     );
   });
 
-  it('update ignora explícitamente role si se envía programáticamente', async () => {
+  it('update ignora explícitamente role si se envía programáticamente y sanitiza la respuesta', async () => {
     const existingUser = {
       id: 5,
       email: 'customer@example.com',
+      password: 'scrypt$salt$hash',
       username: 'old_name',
       role: UserRole.CUSTOMER,
     } as User;
@@ -109,12 +122,35 @@ describe('UsersService, DTOs y Roles', () => {
     });
     expect(updated.role).toBe(UserRole.CUSTOMER);
     expect(updated.username).toBe('new_name');
+    expect(updated).not.toHaveProperty('password');
   });
 
-  it('updateRole actualiza el rol del usuario existente', async () => {
+  it('update hashea password con scrypt cuando viene en el DTO', async () => {
+    const existingUser = {
+      id: 5,
+      email: 'customer@example.com',
+      password: 'old-password',
+      username: 'old_name',
+      role: UserRole.CUSTOMER,
+    } as User;
+    mockRepo.findOne.mockResolvedValue(existingUser);
+
+    const updated = await service.update(5, {
+      password: 'NewPassword99!',
+    });
+
+    expect(isScryptHash(existingUser.password)).toBe(true);
+    expect(
+      (await verifyPassword('NewPassword99!', existingUser.password)).valid,
+    ).toBe(true);
+    expect(updated).not.toHaveProperty('password');
+  });
+
+  it('updateRole actualiza el rol del usuario existente y sanitiza la respuesta', async () => {
     const existingUser = {
       id: 7,
       email: 'user@example.com',
+      password: 'secret-password',
       role: UserRole.CUSTOMER,
     } as User;
     mockRepo.findOneBy.mockResolvedValue(existingUser);
@@ -122,6 +158,7 @@ describe('UsersService, DTOs y Roles', () => {
     const updated = await service.updateRole(7, UserRole.ADMIN);
     expect(mockRepo.findOneBy).toHaveBeenCalledWith({ id: 7 });
     expect(updated.role).toBe(UserRole.ADMIN);
+    expect(updated).not.toHaveProperty('password');
     expect(mockRepo.save).toHaveBeenCalledWith(existingUser);
   });
 
@@ -133,34 +170,34 @@ describe('UsersService, DTOs y Roles', () => {
     );
   });
 
-  it('UsersController.updateRole posee @Roles(UserRole.ADMIN) y @UseGuards(RolesGuard)', () => {
+  it('endpoints administrativos de UsersController poseen @Roles(UserRole.ADMIN) y @UseGuards(JwtAuthGuard, RolesGuard)', () => {
     const reflector = new Reflector();
-    const roles = reflector.get<UserRole[]>(
-      ROLES_KEY,
-      UsersController.prototype.updateRole,
-    );
-    const guards = reflector.get<unknown[]>(
-      GUARDS_METADATA,
-      UsersController.prototype.updateRole,
-    );
-
-    expect(roles).toEqual([UserRole.ADMIN]);
-    expect(guards).toContain(RolesGuard);
-  });
-
-  it('endpoints existentes de UsersController permanecen sin RolesGuard para compatibilidad', () => {
-    const reflector = new Reflector();
-    const publicHandlers = [
+    const adminHandlers = [
       UsersController.prototype.create,
       UsersController.prototype.findAll,
-      UsersController.prototype.findOne,
-      UsersController.prototype.update,
+      UsersController.prototype.updateRole,
       UsersController.prototype.remove,
     ];
 
-    for (const handler of publicHandlers) {
+    for (const handler of adminHandlers) {
+      const roles = reflector.get<UserRole[]>(ROLES_KEY, handler);
       const guards = reflector.get<unknown[]>(GUARDS_METADATA, handler);
-      expect(guards).toBeUndefined();
+      expect(roles).toEqual([UserRole.ADMIN]);
+      expect(guards).toContain(JwtAuthGuard);
+      expect(guards).toContain(RolesGuard);
+    }
+  });
+
+  it('endpoints de perfil de UsersController poseen @UseGuards(JwtAuthGuard)', () => {
+    const reflector = new Reflector();
+    const authHandlers = [
+      UsersController.prototype.findOne,
+      UsersController.prototype.update,
+    ];
+
+    for (const handler of authHandlers) {
+      const guards = reflector.get<unknown[]>(GUARDS_METADATA, handler);
+      expect(guards).toContain(JwtAuthGuard);
     }
   });
 

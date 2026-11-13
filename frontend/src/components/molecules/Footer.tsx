@@ -3,7 +3,7 @@ import { BrandLogo } from '@/components/atoms/BrandLogo';
 
 const FOOTER_LINKS = [
   { to: '/games', label: 'Catálogo' },
-  { to: '/catalog/promotions', label: 'Ofertas' },
+  { to: '/promotions', label: 'Ofertas' },
   { to: '/library', label: 'Biblioteca' },
   { to: '/wishlist', label: 'Deseados' },
   { to: '/orders', label: 'Órdenes' },

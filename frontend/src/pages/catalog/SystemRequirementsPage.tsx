@@ -7,7 +7,7 @@ import type { CreateSystemRequirementPayload, SystemRequirement } from '@/types'
 import { humanizeEnum } from '@/utils/format';
 import type { FieldConfig } from '@/utils/fields';
 
-export function SystemRequirementsPage() {
+export function SystemRequirementsPage({ embedded = false }: { embedded?: boolean }) {
   const gamesQuery = useQuery({ queryKey: ['games'], queryFn: () => gamesApi.list() });
 
   const fields = useMemo<FieldConfig[]>(
@@ -49,6 +49,7 @@ export function SystemRequirementsPage() {
 
   return (
     <CrudResourcePage<SystemRequirement, CreateSystemRequirementPayload>
+      embedded={embedded}
       title="Requisitos del sistema"
       description="Niveles mínimos, recomendados y ultra para cada videojuego del catálogo."
       queryKey={['system-requirements']}

@@ -4,35 +4,32 @@ import { useQuery } from '@tanstack/react-query';
 import { wishlistsExtraApi } from '@/api';
 import { BrandLogo } from '@/components/atoms/BrandLogo';
 import { LoginModal } from '@/components/molecules/LoginModal';
+import type { AuthModalMode } from '@/components/molecules/LoginModal';
 import { useCart } from '@/context/CartContext';
 import { useSession } from '@/context/SessionContext';
+import { UserRole } from '@/types';
 import { initials } from '@/utils/format';
 
 const MAIN_NAV_LINKS = [
   { to: '/games', label: 'TIENDA' },
   { to: '/reviews', label: 'COMUNIDAD' },
-  { to: '/catalog/promotions', label: 'NOTICIAS' },
+  { to: '/promotions', label: 'OFERTAS' },
   { to: '/orders', label: 'SOPORTE' },
 ];
 
 const USER_SECTION_LINKS = [
   { to: '/library', label: 'Mi Biblioteca' },
   { to: '/wishlist', label: 'Lista de Deseados' },
-  { to: '/users', label: 'Directorio de Usuarios' },
+  { to: '/orders', label: 'Mis Compras' },
 ];
 
-const CATALOG_ADMIN_LINKS = [
-  { to: '/catalog/games', label: 'Administrar Videojuegos' },
-  { to: '/catalog/editions', label: 'Ediciones y DLCs' },
-  { to: '/catalog/digital-keys', label: 'Claves Digitales' },
-  { to: '/catalog/genres', label: 'Géneros' },
-  { to: '/catalog/platforms', label: 'Plataformas' },
-  { to: '/catalog/publishers', label: 'Publishers' },
-  { to: '/catalog/developers', label: 'Desarrolladoras' },
-  { to: '/catalog/system-requirements', label: 'Requisitos Técnicos' },
+const EXPLORE_STORE_LINKS = [
+  { to: '/games', label: 'Tienda de Juegos' },
+  { to: '/promotions', label: 'Ofertas y Cupones' },
+  { to: '/reviews', label: 'Comunidad' },
 ];
 
-const MORE_LINKS = [...USER_SECTION_LINKS, ...CATALOG_ADMIN_LINKS];
+const MORE_LINKS = [...USER_SECTION_LINKS, ...EXPLORE_STORE_LINKS];
 
 export function NavBar() {
   const navigate = useNavigate();
@@ -44,11 +41,12 @@ export function NavBar() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<AuthModalMode | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const { totalItems } = useCart();
   const { currentUser, logout } = useSession();
+  const isAdmin = currentUser?.role === UserRole.ADMIN;
 
   // Dynamic wishlist count for logged-in user
   const { data: userWishlist = [] } = useQuery({
@@ -150,7 +148,7 @@ export function NavBar() {
                 </NavLink>
               ))}
 
-              {/* Extended Catalog & Management Dropdown */}
+              {/* Customer Catalog & Space Dropdown */}
               <div ref={catalogMenuRef} className="relative">
                 <button
                   type="button"
@@ -181,8 +179,8 @@ export function NavBar() {
                 {isCatalogOpen && (
                   <div
                     role="menu"
-                    aria-label="Secciones y gestión del catálogo"
-                    className="absolute top-full left-0 mt-2.5 w-[420px] rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-4 shadow-[0_20px_48px_rgba(15,23,42,0.2)] z-50"
+                    aria-label="Secciones de la tienda y tu espacio"
+                    className="absolute top-full left-0 mt-2.5 w-[380px] rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-4 shadow-[0_20px_48px_rgba(15,23,42,0.2)] z-50"
                   >
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
@@ -204,15 +202,15 @@ export function NavBar() {
 
                       <div className="space-y-1.5">
                         <p className="px-2.5 pb-1 text-[10px] font-mono font-bold uppercase tracking-widest text-[#FF2A5F] border-b border-[#E2E8F0]">
-                          Gestión
+                          Explorar
                         </p>
-                        {CATALOG_ADMIN_LINKS.map((item) => (
+                        {EXPLORE_STORE_LINKS.map((item) => (
                           <Link
                             key={item.to}
                             to={item.to}
                             role="menuitem"
                             onClick={() => setIsCatalogOpen(false)}
-                            className="block px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#475569] hover:text-[#1E1B4B] hover:bg-[#F4F4F6] transition-colors"
+                            className="block px-2.5 py-2 rounded-lg text-xs font-semibold text-[#475569] hover:text-[#1E1B4B] hover:bg-[#F4F4F6] transition-colors"
                           >
                             {item.label}
                           </Link>
@@ -272,7 +270,7 @@ export function NavBar() {
             </form>
           </div>
 
-          {/* Right: Wishlist, Cart, Account / Auth CTA */}
+          {/* Right: Wishlist, Cart, Admin Panel CTA (ADMIN only), Account / Auth CTA */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             {/* Wishlist Link with Dynamic Badge */}
             <Link
@@ -323,6 +321,25 @@ export function NavBar() {
 
             <div className="h-6 w-px bg-white/20 hidden sm:block mx-0.5" />
 
+            {/* Exclusive Admin Control Panel Button (rendered ONLY for ADMIN) */}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                data-testid="navbar-admin-panel-btn"
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-full bg-[#FFC700] hover:bg-[#FFD633] text-[#0F172A] border border-[#FF2A5F]/40 shadow-[0_4px_14px_rgba(255,199,0,0.3)] hover:shadow-[0_8px_20px_rgba(255,199,0,0.45)] btn-nintendo-animation btn-nintendo-shine text-[11px] sm:text-xs font-black uppercase tracking-wider whitespace-nowrap"
+              >
+                <svg className="w-4 h-4 shrink-0 text-[#FF2A5F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2.2}
+                    d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                  />
+                </svg>
+                <span>Panel de Control</span>
+              </Link>
+            )}
+
             {/* User Session Profile Widget or Login CTA (preserving button animation) */}
             {currentUser ? (
               <div ref={profileMenuRef} className="relative">
@@ -344,7 +361,7 @@ export function NavBar() {
                       {currentUser.username}
                     </span>
                     <span className="text-[9px] font-mono font-bold text-[#FFC700] uppercase tracking-wider">
-                      {currentUser.countryCode || 'CUENTA'}
+                      {isAdmin ? 'ADMIN' : currentUser.countryCode || 'CUENTA'}
                     </span>
                   </div>
 
@@ -365,14 +382,35 @@ export function NavBar() {
                   <div
                     role="menu"
                     aria-label="Menú de usuario"
-                    className="absolute right-0 top-full mt-2.5 w-56 rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-2 shadow-[0_20px_48px_rgba(15,23,42,0.2)] z-50"
+                    className="absolute right-0 top-full mt-2.5 w-60 rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-2 shadow-[0_20px_48px_rgba(15,23,42,0.2)] z-50"
                   >
                     <div className="px-3 py-2.5 border-b border-[#E2E8F0]">
-                      <p className="text-xs font-bold text-[#0F172A] truncate">{currentUser.username}</p>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs font-bold text-[#0F172A] truncate">{currentUser.username}</p>
+                        {isAdmin && (
+                          <span
+                            data-testid="navbar-profile-admin-badge"
+                            className="shrink-0 rounded px-1.5 py-0.5 bg-[#FFC700] text-[#0F172A] text-[9px] font-black uppercase tracking-wider"
+                          >
+                            ADMIN
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[11px] text-[#475569] truncate">{currentUser.email}</p>
                     </div>
 
                     <div className="py-1.5 space-y-0.5">
+                      {isAdmin && (
+                        <Link
+                          to="/admin"
+                          role="menuitem"
+                          data-testid="navbar-profile-admin-link"
+                          onClick={() => setIsProfileOpen(false)}
+                          className="block px-3 py-1.5 rounded-lg text-xs font-bold text-[#1E1B4B] bg-[#FEF3C7]/70 hover:bg-[#FFC700] transition-colors"
+                        >
+                          Panel de Control
+                        </Link>
+                      )}
                       <Link
                         to={`/users/${currentUser.id}`}
                         role="menuitem"
@@ -411,6 +449,7 @@ export function NavBar() {
                       <button
                         type="button"
                         role="menuitem"
+                        data-testid="navbar-logout-btn"
                         onClick={logout}
                         className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-bold text-[#EF4444] hover:bg-[#FEE2E2] transition-colors"
                       >
@@ -421,28 +460,53 @@ export function NavBar() {
                 )}
               </div>
             ) : (
-              <button
-                type="button"
-                data-testid="navbar-login-btn"
-                onClick={() => setIsLoginOpen(true)}
-                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#FF2A5F] hover:bg-[#E01E4F] text-white shadow-[0_4px_14px_rgba(255,42,95,0.35)] hover:shadow-[0_8px_22px_rgba(255,42,95,0.5)] btn-nintendo-animation btn-nintendo-shine text-[11px] sm:text-xs font-black uppercase tracking-wider whitespace-nowrap group"
-              >
-                <svg
-                  className="hidden sm:block w-4 h-4 transition-transform group-hover:translate-x-0.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <button
+                  type="button"
+                  data-testid="navbar-login-btn"
+                  onClick={() => setAuthModalMode('login')}
+                  className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#FF2A5F] hover:bg-[#E01E4F] text-white shadow-[0_4px_14px_rgba(255,42,95,0.35)] hover:shadow-[0_8px_22px_rgba(255,42,95,0.5)] btn-nintendo-animation btn-nintendo-shine text-[11px] sm:text-xs font-black uppercase tracking-wider whitespace-nowrap group"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2.2}
-                    d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
-                  />
-                </svg>
-                <span>Iniciar sesión</span>
-              </button>
+                  <svg
+                    className="hidden sm:block w-4 h-4 transition-transform group-hover:translate-x-0.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2.2}
+                      d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
+                    />
+                  </svg>
+                  <span>Iniciar sesión</span>
+                </button>
+
+                <button
+                  type="button"
+                  data-testid="navbar-register-btn"
+                  onClick={() => setAuthModalMode('register')}
+                  className="hidden sm:flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/25 btn-nintendo-animation text-[11px] sm:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-colors"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2.2}
+                      d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+                    />
+                  </svg>
+                  <span>Registrarse</span>
+                </button>
+              </div>
             )}
 
             {/* Mobile Menu Hamburger */}
@@ -480,6 +544,17 @@ export function NavBar() {
             />
           </form>
 
+          {isAdmin && (
+            <Link
+              to="/admin"
+              data-testid="navbar-mobile-admin-panel-btn"
+              onClick={() => setIsMenuOpen(false)}
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-full bg-[#FFC700] hover:bg-[#FFD633] text-[#0F172A] font-black text-xs uppercase tracking-wider btn-nintendo-animation"
+            >
+              <span>Panel de Control</span>
+            </Link>
+          )}
+
           <div className="flex flex-col space-y-1">
             <p className="px-3 text-[10px] font-mono font-bold uppercase tracking-widest text-[#FFC700]">
               Navegación
@@ -504,12 +579,12 @@ export function NavBar() {
 
           <div className="space-y-2 border-t border-white/15 pt-3">
             <p className="px-3 text-[10px] font-mono font-bold uppercase tracking-widest text-[#FFC700]">
-              Catálogo y Gestión
+              Explorar y Mi Espacio
             </p>
             <div className="grid grid-cols-2 gap-1">
               {MORE_LINKS.map((link) => (
                 <Link
-                  key={link.to}
+                  key={`${link.to}-${link.label}`}
                   to={link.to}
                   onClick={() => setIsMenuOpen(false)}
                   className="px-3 py-1.5 rounded-lg text-xs text-indigo-100 hover:text-white hover:bg-white/10 transition-colors truncate"
@@ -532,22 +607,38 @@ export function NavBar() {
               </button>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => {
-                setIsMenuOpen(false);
-                setIsLoginOpen(true);
-              }}
-              className="w-full py-2.5 rounded-full bg-[#FF2A5F] hover:bg-[#E01E4F] text-white shadow-[0_4px_16px_rgba(255,42,95,0.35)] btn-nintendo-animation btn-nintendo-shine font-black text-xs uppercase tracking-wider"
-            >
-              Iniciar sesión
-            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  setAuthModalMode('login');
+                }}
+                className="w-full py-2.5 rounded-full bg-[#FF2A5F] hover:bg-[#E01E4F] text-white shadow-[0_4px_16px_rgba(255,42,95,0.35)] btn-nintendo-animation btn-nintendo-shine font-black text-xs uppercase tracking-wider"
+              >
+                Iniciar sesión
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  setAuthModalMode('register');
+                }}
+                className="w-full py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/25 btn-nintendo-animation font-black text-xs uppercase tracking-wider transition-colors"
+              >
+                Registrarse
+              </button>
+            </div>
           )}
         </div>
       )}
 
-      {/* Login Authentication Modal */}
-      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+      {/* Login / Registration Authentication Modal */}
+      <LoginModal
+        isOpen={authModalMode !== null}
+        initialMode={authModalMode ?? 'login'}
+        onClose={() => setAuthModalMode(null)}
+      />
     </header>
   );
 }

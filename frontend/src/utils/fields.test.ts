@@ -88,4 +88,53 @@ describe('buildSchema', () => {
 
     expect(result.success).toBe(false);
   });
+
+  it('acepta NaN o vacío en campos numéricos opcionales y valida min/max/int si tienen valor', () => {
+    const schema = buildSchema([
+      { name: 'foundedYear', label: 'Año de fundación', type: 'number', min: 1950, max: 2100 },
+    ]);
+
+    expect(schema.safeParse({ foundedYear: Number.NaN })).toEqual({
+      success: true,
+      data: { foundedYear: undefined },
+    });
+    expect(schema.safeParse({ foundedYear: '' })).toEqual({
+      success: true,
+      data: { foundedYear: undefined },
+    });
+    expect(schema.safeParse({ foundedYear: 2001 })).toEqual({
+      success: true,
+      data: { foundedYear: 2001 },
+    });
+    expect(schema.safeParse({ foundedYear: 1900 }).success).toBe(false);
+    expect(schema.safeParse({ foundedYear: 2200 }).success).toBe(false);
+    expect(schema.safeParse({ foundedYear: 2001.5 }).success).toBe(false);
+  });
+
+  it('rechaza cadena vacía, 0 o NaN en selects numéricos requeridos con mensaje claro', () => {
+    const schema = buildSchema([
+      {
+        name: 'gameId',
+        label: 'Videojuego',
+        type: 'select',
+        required: true,
+        options: [{ value: 7, label: 'Zelda' }],
+      },
+    ]);
+
+    const emptyResult = schema.safeParse({ gameId: '' });
+    expect(emptyResult.success).toBe(false);
+    if (!emptyResult.success) {
+      expect(emptyResult.error.issues[0]?.message).toBe(
+        'Selecciona una opción válida para Videojuego',
+      );
+    }
+
+    expect(schema.safeParse({ gameId: 0 }).success).toBe(false);
+    expect(schema.safeParse({ gameId: Number.NaN }).success).toBe(false);
+    expect(schema.safeParse({ gameId: '7' })).toEqual({
+      success: true,
+      data: { gameId: 7 },
+    });
+  });
 });

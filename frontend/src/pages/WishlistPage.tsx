@@ -12,7 +12,7 @@ import { useSession } from '@/context/SessionContext';
 import { formatDate } from '@/utils/format';
 
 export function WishlistPage() {
-  const { currentUser } = useSession();
+  const { currentUser, isLoading: sessionLoading } = useSession();
   const queryClient = useQueryClient();
   const [gameId, setGameId] = useState('');
   const [notifyOnSale, setNotifyOnSale] = useState(true);
@@ -52,6 +52,10 @@ export function WishlistPage() {
       await queryClient.invalidateQueries({ queryKey: ['wishlists'] });
     },
   });
+
+  if (sessionLoading) {
+    return <Spinner label="Verificando sesión…" />;
+  }
 
   if (!currentUser) {
     return (

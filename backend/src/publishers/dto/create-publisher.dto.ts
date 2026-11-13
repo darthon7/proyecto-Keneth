@@ -1,11 +1,21 @@
-import { IsEmail, IsOptional, IsString, Length } from 'class-validator';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  IsUrl,
+  Length,
+  ValidateIf,
+} from 'class-validator';
 
 export class CreatePublisherDto {
   @IsString()
   name: string;
 
   @IsOptional()
-  @IsString()
+  @ValidateIf(
+    (_object, value) => value !== undefined && value !== null && value !== '',
+  )
+  @IsUrl({ protocols: ['http', 'https'], require_protocol: true })
   websiteUrl?: string;
 
   @IsOptional()

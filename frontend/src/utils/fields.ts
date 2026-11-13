@@ -35,34 +35,60 @@ export interface FieldConfig {
 
 export type FormValues = Record<string, unknown>;
 
-const optionalNumber = z.preprocess(
-  (value) => (value === '' || value === null || value === undefined ? undefined : value),
-  z.coerce.number().optional(),
-);
+function createOptionalNumberSchema(numberSchema: z.ZodType = z.coerce.number()) {
+  return z.preprocess(
+    (value) =>
+      value === '' ||
+      value === null ||
+      value === undefined ||
+      (typeof value === 'number' && Number.isNaN(value))
+        ? undefined
+        : value,
+    numberSchema.optional(),
+  );
+}
 
 function fieldSchema(field: FieldConfig): z.ZodType {
   switch (field.type) {
     case 'number': {
-      let schema = z.coerce.number();
-      if (field.required) {
-        schema = schema.min(field.min ?? 0);
+      let schema = z.coerce.number({ error: `${field.label} debe ser un número válido` });
+      if (field.min !== undefined) {
+        schema = schema.min(field.min);
+      } else if (field.required) {
+        schema = schema.min(0);
       }
       if (field.max !== undefined) schema = schema.max(field.max);
-      if (field.step === 1 || field.type === 'number') {
-        if (field.step === undefined) schema = schema.int();
+      if (field.step === undefined || field.step === 1) {
+        schema = schema.int();
       }
-      return field.required ? schema : optionalNumber;
+      if (field.required) {
+        return z.preprocess(
+          (value) => (value === '' || value === null || value === undefined ? NaN : value),
+          schema,
+        );
+      }
+      return createOptionalNumberSchema(schema);
     }
     case 'checkbox':
       return z.boolean().default(false);
     case 'select': {
       const numeric = field.options?.some((option) => typeof option.value === 'number');
       if (numeric) {
-        const schema = z.coerce.number();
-        return field.required ? schema : optionalNumber;
+        if (field.required) {
+          const message = `Selecciona una opción válida para ${field.label}`;
+          return z.preprocess(
+            (value) => (value === '' || value === null || value === undefined ? NaN : value),
+            z.coerce
+              .number({ error: message })
+              .refine((val) => Number.isFinite(val) && val >= 1, { message }),
+          );
+        }
+        return createOptionalNumberSchema();
       }
       const schema = z.string();
-      return field.required ? schema : schema.optional();
+      return field.required
+        ? schema.min(1, `Selecciona una opción válida para ${field.label}`)
+        : schema.optional();
     }
     case 'textarea': {
       const schema = z.string();
@@ -150,7 +176,9 @@ export function buildPayload(
     }
 
     if (field.type === 'number') {
-      payload[field.name] = Number(value);
+      const numericValue = Number(value);
+      if (Number.isNaN(numericValue)) continue;
+      payload[field.name] = numericValue;
       continue;
     }
 

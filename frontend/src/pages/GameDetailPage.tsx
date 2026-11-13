@@ -25,7 +25,7 @@ export function GameDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { addItem } = useCart();
-  const { currentUser } = useSession();
+  const { currentUser, isAdmin } = useSession();
   const [activeTab, setActiveTab] = useState<Tab>('Descripción');
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [rating, setRating] = useState(5);
@@ -272,7 +272,7 @@ export function GameDetailPage() {
                 {requirements.length === 0 && (
                   <EmptyState
                     title="Sin requisitos"
-                    description="Añade requisitos mínimos y recomendados desde el catálogo."
+                    description="Este videojuego todavía no tiene requisitos técnicos publicados."
                   />
                 )}
                 {requirements.map((requirement) => (
@@ -315,7 +315,14 @@ export function GameDetailPage() {
           </div>
 
           <p className="mt-10 text-caption text-[#94A3B8]">
-            Identificador interno: <Link to="/catalog/games" className="text-[#1E1B4B] font-semibold hover:text-[#FF2A5F]">#{game.id}</Link>
+            Identificador interno:{' '}
+            {isAdmin ? (
+              <Link to="/admin/games" className="text-[#1E1B4B] font-semibold hover:text-[#FF2A5F]">
+                #{game.id}
+              </Link>
+            ) : (
+              <span className="font-semibold text-[#475569]">#{game.id}</span>
+            )}
           </p>
         </div>
       </div>

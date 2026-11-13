@@ -7,7 +7,11 @@ import {
   Param,
   Delete,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/index.js';
+import { Roles, RolesGuard } from '../common/auth/index.js';
+import { UserRole } from '../users/entities/user-role.enum.js';
 import { PublishersService } from './publishers.service.js';
 import { CreatePublisherDto } from './dto/create-publisher.dto.js';
 import { UpdatePublisherDto } from './dto/update-publisher.dto.js';
@@ -16,6 +20,8 @@ import { UpdatePublisherDto } from './dto/update-publisher.dto.js';
 export class PublishersController {
   constructor(private readonly publishersService: PublishersService) {}
 
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post()
   create(@Body() createPublisherDto: CreatePublisherDto) {
     return this.publishersService.create(createPublisherDto);
@@ -31,6 +37,8 @@ export class PublishersController {
     return this.publishersService.findOne(id);
   }
 
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -39,6 +47,8 @@ export class PublishersController {
     return this.publishersService.update(id, updatePublisherDto);
   }
 
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.publishersService.remove(id);

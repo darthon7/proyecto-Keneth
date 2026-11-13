@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 import { Promotion } from './entities/promotion.entity.js';
 import { CreatePromotionDto } from './dto/create-promotion.dto.js';
 import { UpdatePromotionDto } from './dto/update-promotion.dto.js';
@@ -54,8 +54,21 @@ export class PromotionsService {
   }
 
   async findByCoupon(couponCode: string) {
-    return await this.promotionRepository.findOne({
-      where: { couponCode, isActive: true },
+    const now = new Date();
+    const promo = await this.promotionRepository.findOne({
+      where: {
+        couponCode,
+        isActive: true,
+        startDate: LessThanOrEqual(now),
+        endDate: MoreThanOrEqual(now),
+      },
     });
+    if (!promo || !promo.isActive) {
+      return null;
+    }
+    if (new Date(promo.startDate) > now || new Date(promo.endDate) < now) {
+      return null;
+    }
+    return promo;
   }
 }

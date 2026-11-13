@@ -19,7 +19,8 @@ import { GameEditionsModule } from './game-editions/game-editions.module.js';
 import { DigitalKeysModule } from './digital-keys/digital-keys.module.js';
 import { PromotionsModule } from './promotions/promotions.module.js';
 
-// Usuarios, Órdenes y Comunidad
+// Usuarios, Autenticación, Órdenes y Comunidad
+import { AuthModule } from './auth/auth.module.js';
 import { UsersModule } from './users/users.module.js';
 import { OrdersModule } from './orders/orders.module.js';
 import { UserLibrariesModule } from './user-libraries/user-libraries.module.js';
@@ -68,6 +69,7 @@ import { ReviewsModule } from './reviews/reviews.module.js';
     GameEditionsModule,
     DigitalKeysModule,
     PromotionsModule,
+    AuthModule,
     UsersModule,
     OrdersModule,
     UserLibrariesModule,

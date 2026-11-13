@@ -5,6 +5,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { sanitizeUser } from '../auth/index.js';
+import {
+  normalizePagination,
+  type PaginationOptions,
+} from '../common/pagination.util.js';
 import { Review } from './entities/review.entity.js';
 import { User } from '../users/entities/user.entity.js';
 import { Game } from '../games/entities/game.entity.js';
@@ -71,23 +76,39 @@ export class ReviewsService {
       helpfulCount: helpfulCount ?? 0,
     });
 
-    return await this.reviewRepository.save(review);
+    const saved = await this.reviewRepository.save(review);
+    return this.sanitizeReview(saved);
   }
 
-  async findAll() {
-    return await this.reviewRepository.find({
+  private sanitizeReview(review: Review) {
+    if (!review.user) {
+      return review;
+    }
+    return {
+      ...review,
+      user: sanitizeUser(review.user),
+    };
+  }
+
+  async findAll(pagination?: PaginationOptions) {
+    const { take, skip } = normalizePagination(pagination);
+    const reviews = await this.reviewRepository.find({
       relations: {
         user: true,
         game: true,
       },
+      take,
+      skip,
     });
+    return reviews.map((review) => this.sanitizeReview(review));
   }
 
   async findByGame(gameId: number) {
-    return await this.reviewRepository.find({
+    const reviews = await this.reviewRepository.find({
       where: { game: { id: gameId } },
       relations: { user: true },
     });
+    return reviews.map((review) => this.sanitizeReview(review));
   }
 
   async findOne(id: number) {
@@ -98,17 +119,31 @@ export class ReviewsService {
     if (!review) {
       throw new NotFoundException(`Reseña con ID ${id} no encontrada`);
     }
-    return review;
+    return this.sanitizeReview(review);
   }
 
   async update(id: number, updateDto: UpdateReviewDto) {
-    const review = await this.findOne(id);
+    const review = await this.reviewRepository.findOne({
+      where: { id },
+      relations: { user: true, game: true },
+    });
+    if (!review) {
+      throw new NotFoundException(`Reseña con ID ${id} no encontrada`);
+    }
     this.reviewRepository.merge(review, updateDto);
-    return await this.reviewRepository.save(review);
+    const saved = await this.reviewRepository.save(review);
+    return this.sanitizeReview(saved);
   }
 
   async remove(id: number) {
-    const review = await this.findOne(id);
-    return await this.reviewRepository.remove(review);
+    const review = await this.reviewRepository.findOne({
+      where: { id },
+      relations: { user: true, game: true },
+    });
+    if (!review) {
+      throw new NotFoundException(`Reseña con ID ${id} no encontrada`);
+    }
+    const removed = await this.reviewRepository.remove(review);
+    return this.sanitizeReview(removed);
   }
 }

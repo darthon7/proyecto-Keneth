@@ -12,6 +12,7 @@ import { GameEdition, EditionFormat } from '../game-editions/entities/game-editi
 import { DigitalKey, KeyStatus } from '../digital-keys/entities/digital-key.entity.js';
 import { SystemRequirement, RequirementTier } from '../system-requirements/entities/system-requirement.entity.js';
 import { User, UserRole } from '../users/entities/user.entity.js';
+import { hashPassword } from '../auth/password.util.js';
 import { Order } from '../orders/entities/order.entity.js';
 import { OrderItem } from '../orders/entities/order-item.entity.js';
 import { UserLibrary } from '../user-libraries/entities/user-library.entity.js';
@@ -712,7 +713,11 @@ export async function executeSeed(dataSource: DataSource): Promise<{ createdCoun
     });
 
     if (!existingUser) {
-      const newUser = userRepo.create(seedUser);
+      const hashedPassword = await hashPassword(seedUser.password);
+      const newUser = userRepo.create({
+        ...seedUser,
+        password: hashedPassword,
+      });
       await userRepo.save(newUser);
     }
   }

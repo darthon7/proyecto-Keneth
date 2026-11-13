@@ -7,7 +7,7 @@ import type { CreateGameEditionPayload, GameEdition } from '@/types';
 import { formatCurrency, humanizeEnum } from '@/utils/format';
 import type { FieldConfig } from '@/utils/fields';
 
-export function EditionsPage() {
+export function EditionsPage({ embedded = false }: { embedded?: boolean }) {
   const gamesQuery = useQuery({ queryKey: ['games'], queryFn: () => gamesApi.list() });
   const platformsQuery = useQuery({
     queryKey: ['platforms'],
@@ -73,6 +73,7 @@ export function EditionsPage() {
 
   return (
     <CrudResourcePage<GameEdition, CreateGameEditionPayload>
+      embedded={embedded}
       title="Ediciones (SKUs)"
       description="Cada edición conecta un videojuego con una plataforma y define precio, formato y stock físico."
       queryKey={['game-editions']}

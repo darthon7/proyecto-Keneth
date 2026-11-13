@@ -1,6 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { sanitizeUser } from '../auth/index.js';
+import {
+  normalizePagination,
+  type PaginationOptions,
+} from '../common/pagination.util.js';
 import { UserLibrary } from './entities/user-library.entity.js';
 import { User } from '../users/entities/user.entity.js';
 import { GameEdition } from '../game-editions/entities/game-edition.entity.js';
@@ -51,17 +56,32 @@ export class UserLibrariesService {
       isRevoked: isRevoked ?? false,
     });
 
-    return await this.libraryRepository.save(entry);
+    const saved = await this.libraryRepository.save(entry);
+    return this.sanitizeEntry(saved);
   }
 
-  async findAll() {
-    return await this.libraryRepository.find({
+  private sanitizeEntry(entry: UserLibrary) {
+    if (!entry.user) {
+      return entry;
+    }
+    return {
+      ...entry,
+      user: sanitizeUser(entry.user),
+    };
+  }
+
+  async findAll(pagination?: PaginationOptions) {
+    const { take, skip } = normalizePagination(pagination);
+    const entries = await this.libraryRepository.find({
       relations: {
         user: true,
         gameEdition: { game: true, platform: true },
         order: true,
       },
+      take,
+      skip,
     });
+    return entries.map((entry) => this.sanitizeEntry(entry));
   }
 
   async findOne(id: number) {
@@ -76,7 +96,7 @@ export class UserLibrariesService {
     if (!entry) {
       throw new NotFoundException(`Registro de biblioteca ${id} no encontrado`);
     }
-    return entry;
+    return this.sanitizeEntry(entry);
   }
 
   async findByUser(userId: number) {
@@ -89,13 +109,35 @@ export class UserLibrariesService {
   }
 
   async update(id: number, updateDto: UpdateUserLibraryDto) {
-    const entry = await this.findOne(id);
+    const entry = await this.libraryRepository.findOne({
+      where: { id },
+      relations: {
+        user: true,
+        gameEdition: { game: true, platform: true },
+        order: true,
+      },
+    });
+    if (!entry) {
+      throw new NotFoundException(`Registro de biblioteca ${id} no encontrado`);
+    }
     this.libraryRepository.merge(entry, updateDto);
-    return await this.libraryRepository.save(entry);
+    const saved = await this.libraryRepository.save(entry);
+    return this.sanitizeEntry(saved);
   }
 
   async remove(id: number) {
-    const entry = await this.findOne(id);
-    return await this.libraryRepository.remove(entry);
+    const entry = await this.libraryRepository.findOne({
+      where: { id },
+      relations: {
+        user: true,
+        gameEdition: { game: true, platform: true },
+        order: true,
+      },
+    });
+    if (!entry) {
+      throw new NotFoundException(`Registro de biblioteca ${id} no encontrado`);
+    }
+    const removed = await this.libraryRepository.remove(entry);
+    return this.sanitizeEntry(removed);
   }
 }

@@ -1,10 +1,20 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import {
+  hashPassword,
+  type SafeUser,
+  sanitizeUser,
+} from '../auth/index.js';
+import {
+  normalizePagination,
+  type PaginationOptions,
+} from '../common/pagination.util.js';
 import { User } from './entities/user.entity.js';
 import { UserRole } from './entities/user-role.enum.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
@@ -17,33 +27,45 @@ export class UsersService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  async create(createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserDto): Promise<SafeUser> {
+    const normalizedEmail = createUserDto.email.trim().toLowerCase();
     const existing = await this.userRepository.findOneBy({
-      email: createUserDto.email,
+      email: normalizedEmail,
     });
     if (existing) {
       throw new BadRequestException('El correo ya está registrado');
     }
 
+    const hashedPassword = await hashPassword(createUserDto.password);
     const user = this.userRepository.create({
       ...createUserDto,
+      email: normalizedEmail,
+      password: hashedPassword,
       role: UserRole.CUSTOMER,
     });
-    return await this.userRepository.save(user);
+    const saved = await this.userRepository.save(user);
+    return sanitizeUser(saved);
   }
 
-  async findAll(role?: UserRole) {
-    return await this.userRepository.find({
+  async findAll(
+    role?: UserRole,
+    pagination?: PaginationOptions,
+  ): Promise<SafeUser[]> {
+    const { take, skip } = normalizePagination(pagination);
+    const users = await this.userRepository.find({
       where: role ? { role } : undefined,
       relations: {
         userLibraries: { gameEdition: { game: true } },
         wishlists: { game: true },
         reviews: true,
       },
+      take,
+      skip,
     });
+    return users.map((user) => sanitizeUser(user));
   }
 
-  async findOne(id: number) {
+  private async findEntityOrFail(id: number): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { id },
       relations: {
@@ -59,25 +81,50 @@ export class UsersService {
     return user;
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto) {
-    const user = await this.findOne(id);
-    const safeUpdateData: UpdateUserDto = { ...updateUserDto };
-    delete (safeUpdateData as Record<string, unknown>).role;
-    this.userRepository.merge(user, safeUpdateData);
-    return await this.userRepository.save(user);
+  async findOne(id: number): Promise<SafeUser> {
+    const user = await this.findEntityOrFail(id);
+    return sanitizeUser(user);
   }
 
-  async updateRole(id: number, role: UserRole) {
+  async update(id: number, updateUserDto: UpdateUserDto): Promise<SafeUser> {
+    const user = await this.findEntityOrFail(id);
+    const safeUpdateData: UpdateUserDto = { ...updateUserDto };
+    delete (safeUpdateData as Record<string, unknown>).role;
+
+    if (typeof safeUpdateData.email === 'string') {
+      const normalizedEmail = safeUpdateData.email.trim().toLowerCase();
+      safeUpdateData.email = normalizedEmail;
+      if (normalizedEmail !== user.email.toLowerCase()) {
+        const existing = await this.userRepository.findOneBy({
+          email: normalizedEmail,
+        });
+        if (existing && existing.id !== id) {
+          throw new ConflictException('El correo ya está registrado');
+        }
+      }
+    }
+
+    if (typeof safeUpdateData.password === 'string') {
+      safeUpdateData.password = await hashPassword(safeUpdateData.password);
+    }
+    this.userRepository.merge(user, safeUpdateData);
+    const saved = await this.userRepository.save(user);
+    return sanitizeUser(saved);
+  }
+
+  async updateRole(id: number, role: UserRole): Promise<SafeUser> {
     const user = await this.userRepository.findOneBy({ id });
     if (!user) {
       throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
     }
     user.role = role;
-    return await this.userRepository.save(user);
+    const saved = await this.userRepository.save(user);
+    return sanitizeUser(saved);
   }
 
-  async remove(id: number) {
-    const user = await this.findOne(id);
-    return await this.userRepository.remove(user);
+  async remove(id: number): Promise<SafeUser> {
+    const user = await this.findEntityOrFail(id);
+    const removed = await this.userRepository.remove(user);
+    return sanitizeUser(removed);
   }
 }

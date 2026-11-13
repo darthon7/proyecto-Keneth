@@ -127,7 +127,7 @@ export interface Promotion {
 export interface User {
   id: number;
   email: string;
-  password: string;
+  password?: string;
   username: string;
   countryCode: string;
   role: UserRole;
@@ -137,6 +137,41 @@ export interface User {
   userLibraries?: UserLibrary[];
   wishlists?: Wishlist[];
   reviews?: Review[];
+}
+
+export type SafeUser = Omit<User, 'password'>;
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+export interface RegisterPayload {
+  email: string;
+  password: string;
+  username: string;
+  countryCode?: string;
+}
+
+export interface AuthResponse {
+  accessToken: string;
+  user: SafeUser;
+}
+
+export interface UpdateUserRolePayload {
+  role: UserRole;
+}
+
+export interface AdminSummary {
+  games: number;
+  developers: number;
+  digitalKeys: number;
+  availableKeys: number;
+  orders: number;
+  completedOrders: number;
+  promotions: number;
+  activePromotions: number;
+  users: number;
 }
 
 export interface Order {

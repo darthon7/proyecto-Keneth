@@ -1,142 +1,147 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { z } from 'zod';
 import { Button } from '@/components/atoms/Button';
 import { ErrorBanner } from '@/components/atoms/ErrorBanner';
 import { Input } from '@/components/atoms/Input';
 import { Modal } from '@/components/atoms/Modal';
-import { Spinner } from '@/components/atoms/Spinner';
-import { ApiError, errorMessage, usersApi } from '@/api';
+import { authApi, errorMessage } from '@/api';
 import { useSession } from '@/context/SessionContext';
-import { buildInitialValues, buildSchema } from '@/utils/fields';
-import type { FieldConfig, FormValues } from '@/utils/fields';
 import { initials } from '@/utils/format';
-import type { CreateUserPayload, User } from '@/types';
+import type { SafeUser } from '@/types';
 
-const fields: FieldConfig[] = [
-  {
-    name: 'email',
-    label: 'Correo',
-    type: 'email',
-    required: true,
-    placeholder: 'jugador@correo.com',
-  },
-  {
-    name: 'password',
-    label: 'Contraseña',
-    type: 'password',
-    required: true,
-    minLength: 4,
-    maxLength: 50,
-    help: 'Mínimo 4 caracteres.',
-  },
-  {
-    name: 'username',
-    label: 'Nombre de usuario',
-    type: 'text',
-    maxLength: 100,
-    placeholder: 'ElPibes',
-    help: 'Solo si la cuenta es nueva.',
-  },
-  {
-    name: 'countryCode',
-    label: 'País (ISO-2)',
-    type: 'text',
-    minLength: 2,
-    maxLength: 2,
-    defaultValue: 'MX',
-  },
-];
+export type AuthModalMode = 'login' | 'register';
 
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialMode?: AuthModalMode;
 }
 
 interface AccessResult {
-  user: User;
+  user: SafeUser;
   isNewAccount: boolean;
 }
 
+interface AuthFormValues {
+  email: string;
+  password: string;
+  username?: string;
+  countryCode?: string;
+}
+
+const DEFAULT_VALUES: AuthFormValues = {
+  email: '',
+  password: '',
+  username: '',
+  countryCode: 'MX',
+};
+
+const loginSchema = z.object({
+  email: z.string().trim().min(1, 'Correo es obligatorio').email('Introduce un correo válido'),
+  password: z.string().min(1, 'Contraseña es obligatoria').max(50, 'Contraseña es muy larga'),
+  username: z.string().optional(),
+  countryCode: z.string().optional(),
+});
+
+const registerSchema = z.object({
+  email: z.string().trim().min(1, 'Correo es obligatorio').email('Introduce un correo válido'),
+  password: z
+    .string()
+    .min(4, 'Contraseña debe tener al menos 4 caracteres')
+    .max(50, 'Contraseña es muy larga'),
+  username: z
+    .string()
+    .trim()
+    .min(2, 'Nombre de usuario debe tener al menos 2 caracteres')
+    .max(100, 'Nombre de usuario es muy largo'),
+  countryCode: z
+    .string()
+    .trim()
+    .refine((value) => value === '' || value.length === 2, {
+      message: 'País debe tener exactamente 2 letras (ISO-2)',
+    })
+    .optional(),
+});
+
 /**
- * Acceso a la tienda. La API no expone autenticación, así que este modal
- * resuelve las dos operaciones con los endpoints disponibles:
- * - correo ya registrado -> inicia sesión con esa cuenta;
- * - correo nuevo -> registra la cuenta con `POST /users` (queda guardada en la
- *   base de datos) y la abre como sesión activa.
+ * Modal de acceso a la tienda conectado a los endpoints reales de autenticación:
+ * - `POST /auth/login` (correo y contraseña)
+ * - `POST /auth/register` (registro de nuevo cliente)
  */
-export function LoginModal({ isOpen, onClose }: LoginModalProps) {
+export function LoginModal({ isOpen, onClose, initialMode = 'login' }: LoginModalProps) {
   const queryClient = useQueryClient();
-  const { users, isLoading, error: usersError, selectUser } = useSession();
+  const { setSession } = useSession();
+  const [mode, setMode] = useState<AuthModalMode>(initialMode);
   const [result, setResult] = useState<AccessResult | null>(null);
 
-  const schema = useMemo(() => buildSchema(fields), []);
+  const isRegister = mode === 'register';
+  const schema = useMemo(() => (isRegister ? registerSchema : loginSchema), [isRegister]);
 
-  const form = useForm<FormValues>({
+  const form = useForm<AuthFormValues>({
     resolver: zodResolver(schema),
-    defaultValues: buildInitialValues(fields),
+    defaultValues: DEFAULT_VALUES,
   });
 
   const accessMutation = useMutation({
-    mutationFn: async (values: FormValues): Promise<AccessResult> => {
-      const email = String(values.email ?? '').trim().toLowerCase();
-      const password = String(values.password ?? '');
+    mutationFn: async (values: AuthFormValues): Promise<AccessResult> => {
+      const email = values.email.trim().toLowerCase();
+      const password = values.password;
 
-      const existing = users.find((user) => user.email.toLowerCase() === email);
-
-      if (existing) {
-        // El backend todavía guarda las contraseñas en texto plano, así que la
-        // comparación se puede hacer en el cliente. Cuando el backend aplique
-        // hash, esta verificación tendrá que moverse al servidor.
-        if (existing.password !== password) {
-          throw new ApiError('La contraseña no coincide con la de esta cuenta.', 401);
-        }
-        return { user: existing, isNewAccount: false };
+      if (isRegister) {
+        const username = (values.username ?? '').trim();
+        const countryCode = (values.countryCode ?? '').trim().toUpperCase();
+        const authResponse = await authApi.register({
+          email,
+          password,
+          username,
+          ...(countryCode ? { countryCode } : {}),
+        });
+        setSession(authResponse);
+        return { user: authResponse.user, isNewAccount: true };
       }
 
-      const username = String(values.username ?? '').trim();
-      if (!username) {
-        throw new ApiError(
-          'Escribe un nombre de usuario para crear la cuenta nueva.',
-          400,
-        );
-      }
-
-      const payload: CreateUserPayload = { username, email, password };
-      const countryCode = String(values.countryCode ?? '').trim();
-      if (countryCode) payload.countryCode = countryCode;
-
-      const created = await usersApi.create(payload);
-      return { user: created, isNewAccount: true };
+      const authResponse = await authApi.login({ email, password });
+      setSession(authResponse);
+      return { user: authResponse.user, isNewAccount: false };
     },
-    onSuccess: async ({ user, isNewAccount }) => {
-      await queryClient.invalidateQueries({ queryKey: ['users'] });
-      selectUser(user.id);
-      setResult({ user, isNewAccount });
-      form.reset(buildInitialValues(fields));
+    onSuccess: async (accessResult) => {
+      await queryClient.invalidateQueries({ queryKey: ['wishlists'] });
+      await queryClient.invalidateQueries({ queryKey: ['orders'] });
+      await queryClient.invalidateQueries({ queryKey: ['user-libraries'] });
+      setResult(accessResult);
+      form.reset(DEFAULT_VALUES);
     },
   });
+
+  const { reset: resetForm } = form;
+  const { reset: resetMutation } = accessMutation;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setMode(initialMode);
+    setResult(null);
+    resetMutation();
+    resetForm(DEFAULT_VALUES);
+  }, [isOpen, initialMode, resetForm, resetMutation]);
+
+  const handleModeSwitch = () => {
+    const nextMode: AuthModalMode = isRegister ? 'login' : 'register';
+    setMode(nextMode);
+    accessMutation.reset();
+    form.clearErrors();
+  };
 
   const handleClose = () => {
     setResult(null);
     accessMutation.reset();
-    form.reset(buildInitialValues(fields));
+    form.reset(DEFAULT_VALUES);
     onClose();
   };
 
   const submit = form.handleSubmit((values) => {
-    const email = String(values.email ?? '').trim().toLowerCase();
-    const exists = users.some((user) => user.email.toLowerCase() === email);
-
-    // El nombre de usuario solo hace falta cuando la cuenta es nueva.
-    if (!exists && !String(values.username ?? '').trim()) {
-      form.setError('username', {
-        message: 'El nombre de usuario es obligatorio para crear una cuenta',
-      });
-      return;
-    }
-
     accessMutation.mutate(values);
   });
 
@@ -144,28 +149,40 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Iniciar sesión"
-      description="Entra con tu cuenta o regístrate para comprar juegos, tener tu biblioteca y dejar reseñas."
+      title={isRegister ? 'Crear cuenta' : 'Iniciar sesión'}
+      description={
+        isRegister
+          ? 'Crea tu cuenta para comprar juegos, tener tu biblioteca y dejar reseñas.'
+          : 'Entra con tu cuenta para comprar juegos, tener tu biblioteca y dejar reseñas.'
+      }
       size="md"
       footer={
         result ? (
-          <Button variant="brand" onClick={handleClose}>
+          <Button variant="brand" data-testid="login-continue-btn" onClick={handleClose}>
             Continuar
           </Button>
         ) : (
           <>
-            <Button variant="ghost" onClick={handleClose}>
+            <Button variant="ghost" data-testid="login-cancel-btn" onClick={handleClose}>
               Cancelar
             </Button>
-            <Button variant="brand" onClick={submit} isLoading={accessMutation.isPending}>
-              Iniciar sesión
+            <Button
+              variant="brand"
+              data-testid="login-submit-btn"
+              onClick={submit}
+              isLoading={accessMutation.isPending}
+            >
+              {isRegister ? 'Crear cuenta' : 'Iniciar sesión'}
             </Button>
           </>
         )
       }
     >
       {result ? (
-        <div className="flex flex-col items-center gap-3 py-6 text-center">
+        <div
+          data-testid="login-success-state"
+          className="flex flex-col items-center gap-3 py-6 text-center"
+        >
           <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#D1FAE5] text-heading-sm font-bold text-[#065F46]">
             {initials(result.user.username)}
           </span>
@@ -178,31 +195,70 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               : `Bienvenido de nuevo, ${result.user.username}. Esta es tu sesión activa.`}
           </p>
         </div>
-      ) : isLoading ? (
-        <Spinner label="Cargando cuentas…" />
       ) : (
-        <form onSubmit={submit} className="flex flex-col gap-4">
-          {usersError && <ErrorBanner message={usersError} />}
+        <form data-testid="login-modal-form" onSubmit={submit} className="flex flex-col gap-4" noValidate>
           {accessMutation.isError && (
             <ErrorBanner message={errorMessage(accessMutation.error)} />
           )}
 
-          {fields.map((field) => {
-            const fieldError = form.formState.errors[field.name]?.message;
-            const errorText = typeof fieldError === 'string' ? fieldError : undefined;
+          <Input
+            data-testid="login-email-input"
+            type="email"
+            label="Correo"
+            placeholder="jugador@correo.com"
+            autoComplete="email"
+            error={form.formState.errors.email?.message}
+            {...form.register('email')}
+          />
 
-            return (
+          <Input
+            data-testid="login-password-input"
+            type="password"
+            label="Contraseña"
+            placeholder="••••••••"
+            autoComplete={isRegister ? 'new-password' : 'current-password'}
+            hint={isRegister ? 'Entre 4 y 50 caracteres.' : undefined}
+            error={form.formState.errors.password?.message}
+            {...form.register('password')}
+          />
+
+          {isRegister && (
+            <>
               <Input
-                key={field.name}
-                type={field.type}
-                label={field.label}
-                placeholder={field.placeholder}
-                error={errorText}
-                hint={field.help}
-                {...form.register(field.name)}
+                data-testid="login-username-input"
+                type="text"
+                label="Nombre de usuario"
+                placeholder="ElPibes"
+                autoComplete="username"
+                hint="Obligatorio para crear tu cuenta."
+                error={form.formState.errors.username?.message}
+                {...form.register('username')}
               />
-            );
-          })}
+
+              <Input
+                data-testid="login-country-input"
+                type="text"
+                label="País (ISO-2)"
+                placeholder="MX"
+                maxLength={2}
+                error={form.formState.errors.countryCode?.message}
+                {...form.register('countryCode')}
+              />
+            </>
+          )}
+
+          <div className="pt-1 text-center">
+            <button
+              type="button"
+              data-testid="login-mode-switch-btn"
+              onClick={handleModeSwitch}
+              className="text-xs font-semibold text-[#1E1B4B] hover:text-[#FF2A5F] underline-offset-2 hover:underline transition-colors"
+            >
+              {isRegister
+                ? '¿Ya tienes una cuenta? Inicia sesión'
+                : '¿No tienes cuenta? Regístrate gratis'}
+            </button>
+          </div>
         </form>
       )}
     </Modal>

@@ -61,7 +61,6 @@ export class GameEditionsService {
       relations: {
         game: true,
         platform: true,
-        digitalKeys: true,
       },
     });
 

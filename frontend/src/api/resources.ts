@@ -1,5 +1,7 @@
 import { apiClient } from './client';
 import type {
+  AdminSummary,
+  AuthResponse,
   CreateDeveloperPayload,
   CreateDigitalKeyPayload,
   CreateGameEditionPayload,
@@ -19,16 +21,20 @@ import type {
   Game,
   GameEdition,
   Genre,
+  LoginPayload,
   Order,
   OrderItem,
   Platform,
   Promotion,
   Publisher,
+  RegisterPayload,
   Review,
+  SafeUser,
   SystemRequirement,
   UpdatePayload,
   User,
   UserLibrary,
+  UserRole,
   Wishlist,
 } from '@/types';
 
@@ -170,5 +176,47 @@ export const wishlistsExtraApi = {
     return apiClient
       .get<Wishlist[]>(`/wishlists/user/${userId}`)
       .then((response) => response.data);
+  },
+};
+
+export const authApi = {
+  /** Inicia sesión con correo y contraseña: POST /auth/login */
+  async login(payload: LoginPayload): Promise<AuthResponse> {
+    const { data } = await apiClient.post<AuthResponse>('/auth/login', payload);
+    return data;
+  },
+  /** Registra una cuenta de cliente: POST /auth/register */
+  async register(payload: RegisterPayload): Promise<AuthResponse> {
+    const { data } = await apiClient.post<AuthResponse>('/auth/register', payload);
+    return data;
+  },
+  /** Hidrata el perfil autenticado actual: GET /auth/me */
+  async me(): Promise<SafeUser> {
+    const { data } = await apiClient.get<SafeUser>('/auth/me');
+    return data;
+  },
+};
+
+export const usersExtraApi = {
+  /** Actualiza el rol de un usuario (solo ADMIN): PATCH /users/:id/role */
+  async updateRole(id: number | string, role: UserRole): Promise<SafeUser> {
+    const { data } = await apiClient.patch<SafeUser>(`/users/${id}/role`, { role });
+    return data;
+  },
+};
+
+export const ordersExtraApi = {
+  /** Confirma el pago de una orden pendiente en el servidor: POST /orders/:id/confirm-payment */
+  async confirmPayment(orderId: number): Promise<Order> {
+    const { data } = await apiClient.post<Order>(`/orders/${orderId}/confirm-payment`);
+    return data;
+  },
+};
+
+export const adminApi = {
+  /** Obtiene conteos agregados ligeros para el panel admin: GET /admin/summary */
+  async summary(): Promise<AdminSummary> {
+    const { data } = await apiClient.get<AdminSummary>('/admin/summary');
+    return data;
   },
 };

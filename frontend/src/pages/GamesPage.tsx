@@ -10,6 +10,7 @@ import { GameFilters } from '@/components/molecules/GameFilters';
 import type { GameFilterValues } from '@/components/molecules/GameFilters';
 import { GameCard } from '@/components/molecules/GameCard';
 import { useCart } from '@/context/CartContext';
+import { useSession } from '@/context/SessionContext';
 import {
   developersApi,
   errorMessage,
@@ -27,6 +28,7 @@ export function GamesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { addItem } = useCart();
+  const { isAdmin } = useSession();
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState(() => searchParams.get('q') ?? '');
 
@@ -151,14 +153,16 @@ export function GamesPage() {
             </div>
           </div>
 
-          <Button
-            variant="brand"
-            size="sm"
-            onClick={() => navigate('/catalog/games')}
-            className="self-start sm:self-auto uppercase tracking-wider font-black"
-          >
-            Administrar Juegos
-          </Button>
+          {isAdmin && (
+            <Button
+              variant="brand"
+              size="sm"
+              onClick={() => navigate('/admin/games')}
+              className="self-start sm:self-auto uppercase tracking-wider font-black"
+            >
+              Administrar Juegos
+            </Button>
+          )}
         </header>
 
         {/* Search & Filters Card */}

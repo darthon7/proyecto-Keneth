@@ -7,7 +7,7 @@ import type { CreateDigitalKeyPayload, DigitalKey } from '@/types';
 import { formatDateTime, humanizeEnum } from '@/utils/format';
 import type { FieldConfig } from '@/utils/fields';
 
-export function DigitalKeysPage() {
+export function DigitalKeysPage({ embedded = false }: { embedded?: boolean }) {
   const editionsQuery = useQuery({
     queryKey: ['game-editions'],
     queryFn: () => gameEditionsApi.list(),
@@ -53,6 +53,7 @@ export function DigitalKeysPage() {
 
   return (
     <CrudResourcePage<DigitalKey, CreateDigitalKeyPayload>
+      embedded={embedded}
       title="Llaves digitales"
       description="Códigos de activación que el backend asigna automáticamente al crear una orden."
       queryKey={['digital-keys']}

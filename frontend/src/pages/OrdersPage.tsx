@@ -8,8 +8,7 @@ import { ErrorBanner } from '@/components/atoms/ErrorBanner';
 import { Input } from '@/components/atoms/Input';
 import { SectionHeader } from '@/components/atoms/SectionHeader';
 import { Spinner } from '@/components/atoms/Spinner';
-import { errorMessage, gameEditionsApi, ordersApi, promotionsApi } from '@/api';
-import { PaymentStatus } from '@/types';
+import { errorMessage, gameEditionsApi, ordersApi, ordersExtraApi, promotionsApi } from '@/api';
 import type { GameEdition } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { useSession } from '@/context/SessionContext';
@@ -28,8 +27,9 @@ export function OrdersPage() {
   });
 
   const ordersQuery = useQuery({
-    queryKey: ['orders'],
+    queryKey: ['orders', currentUser?.id],
     queryFn: () => ordersApi.list(),
+    enabled: Boolean(currentUser?.id),
   });
 
   const promotionsQuery = useQuery({
@@ -80,23 +80,24 @@ export function OrdersPage() {
   const total = subtotal - discount;
 
   const createOrder = useMutation({
-    mutationFn: () =>
-      ordersApi.create({
+    mutationFn: async () => {
+      const created = await ordersApi.create({
         userId: currentUser!.id,
         couponCode: activePromotion?.couponCode ?? undefined,
-        paymentStatus: PaymentStatus.COMPLETED,
         items: cartLines.map((line) => ({
           gameEditionId: line.edition.id,
           quantity: line.quantity,
         })),
-      }),
+      });
+      await ordersExtraApi.confirmPayment(created.order.id);
+      return created;
+    },
     onSuccess: async (data) => {
       clear();
       setSuccessMessage(`Orden ${data.order.orderNumber} creada correctamente.`);
       setCouponCode('');
       await queryClient.invalidateQueries({ queryKey: ['orders'] });
       await queryClient.invalidateQueries({ queryKey: ['user-libraries'] });
-      await queryClient.invalidateQueries({ queryKey: ['digital-keys'] });
       await queryClient.invalidateQueries({ queryKey: ['game-editions'] });
     },
   });
@@ -209,39 +210,47 @@ export function OrdersPage() {
           <div className="mt-12">
             <SectionHeader title="Tus órdenes" />
             <div className="mt-6">
-              {ordersQuery.isLoading && <Spinner label="Cargando órdenes…" />}
-              {ordersQuery.isError && (
-                <ErrorBanner
-                  message={errorMessage(ordersQuery.error)}
-                  onRetry={() => void ordersQuery.refetch()}
-                />
-              )}
-              {userOrders.length === 0 && !ordersQuery.isLoading && (
-                <p className="text-body-sm text-[#475569]">Todavía no tienes órdenes registradas.</p>
-              )}
+              {!currentUser ? (
+                <p className="text-body-sm text-[#475569]">
+                  Inicia sesión para consultar tu historial de órdenes.
+                </p>
+              ) : (
+                <>
+                  {ordersQuery.isLoading && <Spinner label="Cargando órdenes…" />}
+                  {ordersQuery.isError && (
+                    <ErrorBanner
+                      message={errorMessage(ordersQuery.error)}
+                      onRetry={() => void ordersQuery.refetch()}
+                    />
+                  )}
+                  {userOrders.length === 0 && !ordersQuery.isLoading && !ordersQuery.isError && (
+                    <p className="text-body-sm text-[#475569]">Todavía no tienes órdenes registradas.</p>
+                  )}
 
-              <div className="flex flex-col gap-3">
-                {userOrders.map((order) => (
-                  <Link
-                    key={order.id}
-                    to={`/orders/${order.id}`}
-                    className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-4 shadow-xs transition-all hover:border-[#FF2A5F]"
-                  >
-                    <div>
-                      <p className="text-body font-bold text-[#0F172A]">{order.orderNumber}</p>
-                      <p className="text-body-sm text-[#475569]">{formatDate(order.createdAt)}</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <Badge tone={order.paymentStatus === 'COMPLETED' ? 'success' : 'warning'}>
-                        {humanizeEnum(order.paymentStatus)}
-                      </Badge>
-                      <span className="text-body-sm font-bold text-[#0F172A]">
-                        {formatCurrency(order.totalAmount)}
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+                  <div className="flex flex-col gap-3">
+                    {userOrders.map((order) => (
+                      <Link
+                        key={order.id}
+                        to={`/orders/${order.id}`}
+                        className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-4 shadow-xs transition-all hover:border-[#FF2A5F]"
+                      >
+                        <div>
+                          <p className="text-body font-bold text-[#0F172A]">{order.orderNumber}</p>
+                          <p className="text-body-sm text-[#475569]">{formatDate(order.createdAt)}</p>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <Badge tone={order.paymentStatus === 'COMPLETED' ? 'success' : 'warning'}>
+                            {humanizeEnum(order.paymentStatus)}
+                          </Badge>
+                          <span className="text-body-sm font-bold text-[#0F172A]">
+                            {formatCurrency(order.totalAmount)}
+                          </span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

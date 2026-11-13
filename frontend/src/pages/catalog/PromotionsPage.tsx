@@ -6,7 +6,15 @@ import type { CreatePromotionPayload, Promotion } from '@/types';
 import { formatDate } from '@/utils/format';
 import type { FieldConfig } from '@/utils/fields';
 
-export function PromotionsPage() {
+function toLocalDateTimeInput(value: string | null | undefined): string {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const pad = (part: number) => String(part).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+export function PromotionsPage({ embedded = false }: { embedded?: boolean }) {
   const fields = useMemo<FieldConfig[]>(
     () => [
       { name: 'name', label: 'Nombre', type: 'text', required: true, maxLength: 150 },
@@ -35,6 +43,7 @@ export function PromotionsPage() {
 
   return (
     <CrudResourcePage<Promotion, CreatePromotionPayload>
+      embedded={embedded}
       title="Promociones"
       description="Cupones de descuento aplicables al crear órdenes. Solo se aceptan si están activos."
       queryKey={['promotions']}
@@ -72,8 +81,8 @@ export function PromotionsPage() {
         name: promotion.name,
         discountPercentage: Number(promotion.discountPercentage),
         couponCode: promotion.couponCode ?? '',
-        startDate: new Date(promotion.startDate).toISOString().slice(0, 16),
-        endDate: new Date(promotion.endDate).toISOString().slice(0, 16),
+        startDate: toLocalDateTimeInput(promotion.startDate),
+        endDate: toLocalDateTimeInput(promotion.endDate),
         isActive: promotion.isActive,
       })}
       getId={(promotion) => promotion.id}

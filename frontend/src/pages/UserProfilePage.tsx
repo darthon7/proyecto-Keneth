@@ -1,21 +1,49 @@
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Badge } from '@/components/atoms/Badge';
+import { EmptyState } from '@/components/atoms/EmptyState';
 import { ErrorBanner } from '@/components/atoms/ErrorBanner';
 import { RatingStars } from '@/components/atoms/RatingStars';
 import { Spinner } from '@/components/atoms/Spinner';
 import { errorMessage, usersApi } from '@/api';
+import { useSession } from '@/context/SessionContext';
 import { formatCurrency, formatDate } from '@/utils/format';
 
 export function UserProfilePage() {
   const { id } = useParams<{ id: string }>();
   const userId = Number(id);
+  const { currentUser, isAdmin, isLoading: sessionLoading } = useSession();
+
+  const canViewProfile = Boolean(
+    currentUser && Number.isFinite(userId) && (isAdmin || currentUser.id === userId),
+  );
 
   const userQuery = useQuery({
     queryKey: ['user', userId],
     queryFn: () => usersApi.get(userId),
-    enabled: Number.isFinite(userId),
+    enabled: canViewProfile,
   });
+
+  if (sessionLoading) return <Spinner label="Verificando sesión…" />;
+
+  if (!currentUser) {
+    return (
+      <section className="page-container py-16">
+        <EmptyState
+          title="Inicia sesión"
+          description="Entra en tu cuenta desde la barra superior para consultar tu perfil."
+        />
+      </section>
+    );
+  }
+
+  if (!canViewProfile) {
+    return (
+      <section className="page-container py-16">
+        <ErrorBanner message="No tienes permisos para acceder al perfil de otro usuario." />
+      </section>
+    );
+  }
 
   if (userQuery.isLoading) return <Spinner label="Cargando perfil…" />;
 
@@ -40,8 +68,11 @@ export function UserProfilePage() {
 
   return (
     <section className="page-container py-16">
-      <Link to="/users" className="text-body-sm font-medium text-[#475569] transition-colors hover:text-[#FF2A5F]">
-        ← Volver a usuarios
+      <Link
+        to={isAdmin ? '/admin/users' : '/'}
+        className="text-body-sm font-medium text-[#475569] transition-colors hover:text-[#FF2A5F]"
+      >
+        {isAdmin ? '← Volver a usuarios' : '← Volver a la tienda'}
       </Link>
 
       <header className="mt-6">

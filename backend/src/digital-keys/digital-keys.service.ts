@@ -5,6 +5,10 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import {
+  normalizePagination,
+  type PaginationOptions,
+} from '../common/pagination.util.js';
 import { DigitalKey, KeyStatus } from './entities/digital-key.entity.js';
 import { GameEdition } from '../game-editions/entities/game-edition.entity.js';
 import { CreateDigitalKeyDto } from './dto/create-digital-key.dto.js';
@@ -40,9 +44,12 @@ export class DigitalKeysService {
     return await this.keyRepository.save(key);
   }
 
-  async findAll() {
+  async findAll(pagination?: PaginationOptions) {
+    const { take, skip } = normalizePagination(pagination);
     return await this.keyRepository.find({
       relations: { gameEdition: true },
+      take,
+      skip,
     });
   }
 

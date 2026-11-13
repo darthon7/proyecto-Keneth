@@ -9,13 +9,17 @@ import { useSession } from '@/context/SessionContext';
 import { formatDate } from '@/utils/format';
 
 export function LibraryPage() {
-  const { currentUser } = useSession();
+  const { currentUser, isLoading: sessionLoading } = useSession();
 
   const libraryQuery = useQuery({
     queryKey: ['user-libraries', 'user', currentUser?.id],
     queryFn: () => userLibrariesExtraApi.byUser(currentUser!.id),
     enabled: Boolean(currentUser?.id),
   });
+
+  if (sessionLoading) {
+    return <Spinner label="Verificando sesión…" />;
+  }
 
   if (!currentUser) {
     return (

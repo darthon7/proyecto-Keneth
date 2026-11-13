@@ -137,17 +137,6 @@ export function HomePage() {
     return [...games].slice(0, 5);
   }, [games]);
 
-  // Resolve real Zelda catalog link if a Zelda game exists in the backend
-  const zeldaTargetPath = useMemo(() => {
-    const exactOcarina = games.find((g) => g.title.toLowerCase().includes('ocarina'));
-    if (exactOcarina) return `/games/${exactOcarina.id}`;
-    const anyZelda = games.find(
-      (g) => g.title.toLowerCase().includes('zelda') || g.slug.toLowerCase().includes('zelda'),
-    );
-    if (anyZelda) return `/games/${anyZelda.id}`;
-    return '/games';
-  }, [games]);
-
   const safeSpotlightIndex =
     featuredGames.length > 0 ? Math.min(spotlightIndex, featuredGames.length - 1) : 0;
   const activeSpotlight: Game | undefined = featuredGames[safeSpotlightIndex];
@@ -256,13 +245,16 @@ export function HomePage() {
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[#F4F4F6] text-[#0F172A] font-sans antialiased selection:bg-[#FF2A5F] selection:text-white">
-      <main className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-14">
+      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-14">
         {/* HERO BANNER PRINCIPAL: ZELDA OCARINA OF TIME PANORAMIC SPOTLIGHT */}
         <section
           aria-labelledby="hero-zelda-heading"
           data-testid="hero-zelda-banner"
-          className="relative rounded-2xl overflow-hidden bg-[#1E1B4B] border border-[#1E1B4B] hover:border-[#FF2A5F] shadow-[0_14px_34px_rgba(30,27,75,0.16)] transition-colors duration-300"
+          className="relative rounded-2xl overflow-hidden bg-[#1E1B4B] border border-[#1E1B4B] shadow-[0_14px_34px_rgba(30,27,75,0.16)]"
         >
+          <h1 id="hero-zelda-heading" className="sr-only">
+            El Pibes — Tienda de Videojuegos y Catálogo Destacado
+          </h1>
           {/* Retro Pop Top Accent Hairline */}
           <div
             aria-hidden="true"
@@ -300,6 +292,7 @@ export function HomePage() {
 
               {/* Classic Zelda Gold Serif "YA DISPONIBLE" directly beneath the logo */}
               <div
+                aria-hidden="true"
                 className="absolute left-[9.5%] w-[38%] top-[61%] flex justify-center pointer-events-none select-none"
                 style={{ filter: 'drop-shadow(0 3px 10px rgba(0, 0, 0, 0.96))' }}
               >
@@ -317,53 +310,6 @@ export function HomePage() {
               aria-hidden="true"
               className="absolute inset-0 bg-gradient-to-t from-[#1E1B4B]/85 via-transparent to-[#1E1B4B]/20 pointer-events-none"
             />
-          </div>
-
-          {/* Integrated High-Conversion Action Bar (Retro Pop Indigo Contrast Zone) */}
-          <div className="px-5 sm:px-8 py-5 bg-[#1E1B4B] border-t border-white/15 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="space-y-1.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[#FFC700] text-[#0F172A] text-[10px] font-mono font-bold uppercase tracking-widest">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#FF2A5F] animate-pulse" />
-                  Destacado Oficial
-                </span>
-                {activePromotions[0] && (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-[#10B981] text-[#0F172A] text-[10px] font-mono font-bold uppercase tracking-wider">
-                    Promo Activa -{activePromotions[0].discountPercentage}%
-                  </span>
-                )}
-              </div>
-
-              <h1
-                id="hero-zelda-heading"
-                className="text-lg sm:text-2xl font-black text-white tracking-tight"
-              >
-                The Legend of Zelda: Ocarina of Time &amp; Colección Destacada
-              </h1>
-              <p className="text-xs sm:text-sm text-indigo-200 max-w-2xl">
-                Claves digitales de activación instantánea, ediciones de colección y catálogo verificado.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3 shrink-0">
-              <Link
-                to="/catalog/promotions"
-                className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-bold uppercase tracking-wider transition-colors"
-              >
-                Ver Ofertas
-              </Link>
-
-              <Link
-                to={zeldaTargetPath}
-                data-testid="hero-zelda-cta"
-                className="px-6 py-2.5 rounded-full bg-[#FF2A5F] hover:bg-[#E01E4F] text-white shadow-[0_4px_16px_rgba(255,42,95,0.35)] btn-nintendo-animation btn-nintendo-shine text-xs font-black uppercase tracking-wider inline-flex items-center gap-2"
-              >
-                <span>Explorar Catálogo</span>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </Link>
-            </div>
           </div>
         </section>
 
@@ -908,10 +854,10 @@ export function HomePage() {
             </div>
 
             <Link
-              to="/catalog/promotions"
+              to="/promotions"
               className="text-xs font-bold uppercase tracking-wider text-[#1E1B4B] hover:text-[#FF2A5F] transition-colors inline-flex items-center gap-1"
             >
-              <span>Administrar promociones</span>
+              <span>Ver todas las ofertas</span>
               <span aria-hidden="true">→</span>
             </Link>
           </div>
@@ -959,7 +905,7 @@ export function HomePage() {
             <div className="rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-6 text-center space-y-2 shadow-xs">
               <p className="text-sm font-bold text-[#0F172A]">No hay promociones activas en este momento</p>
               <p className="text-xs text-[#475569] max-w-md mx-auto">
-                Los títulos del catálogo están disponibles con su precio estándar. Puedes consultar todas las ediciones o crear una nueva promoción desde el panel de catálogo.
+                Los títulos del catálogo están disponibles con su precio estándar. Explora todas las ediciones disponibles en la tienda.
               </p>
               <div className="pt-2">
                 <Link
@@ -992,10 +938,10 @@ export function HomePage() {
             </div>
 
             <Link
-              to="/catalog/genres"
+              to="/games"
               className="text-xs font-bold uppercase tracking-wider text-[#1E1B4B] hover:text-[#FF2A5F] transition-colors"
             >
-              Ver todos los géneros →
+              Explorar catálogo →
             </Link>
           </div>
 
@@ -1051,10 +997,10 @@ export function HomePage() {
             </div>
 
             <Link
-              to="/catalog/platforms"
+              to="/games"
               className="text-xs font-bold uppercase tracking-wider text-[#1E1B4B] hover:text-[#FF2A5F] transition-colors"
             >
-              Ver todas las plataformas →
+              Explorar juegos →
             </Link>
           </div>
 
@@ -1104,14 +1050,14 @@ export function HomePage() {
 
           <div className="pt-4 border-t border-[#E2E8F0] flex flex-wrap items-center justify-between gap-4">
             <p className="text-xs text-[#475569]">
-              ¿Gestionas nuevos títulos o ediciones? Accede a los módulos de administración.
+              ¿Buscas tu próxima aventura digital? Explora la tienda completa o accede a tu biblioteca.
             </p>
             <div className="flex items-center gap-3">
               <Link
-                to="/catalog/games"
+                to="/games"
                 className="px-4 py-2 rounded-xl bg-[#FF2A5F] hover:bg-[#E01E4F] text-white font-bold text-xs uppercase tracking-wider transition-colors"
               >
-                Administrar Videojuegos
+                Explorar Tienda
               </Link>
               <Link
                 to="/library"
@@ -1122,7 +1068,7 @@ export function HomePage() {
             </div>
           </div>
         </section>
-      </main>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
+import {
+  normalizePagination,
+  type PaginationOptions,
+} from '../common/pagination.util.js';
 import { Game } from './entities/game.entity.js';
 import { Publisher } from '../publishers/entities/publisher.entity.js';
 import { Developer } from '../developers/entities/developer.entity.js';
@@ -54,7 +58,8 @@ export class GamesService {
     return await this.gameRepository.save(nuevoJuego);
   }
 
-  async findAll() {
+  async findAll(pagination?: PaginationOptions) {
+    const { take, skip } = normalizePagination(pagination);
     return await this.gameRepository.find({
       relations: {
         publisher: true,
@@ -63,6 +68,8 @@ export class GamesService {
         editions: true,
         systemRequirements: true,
       },
+      take,
+      skip,
     });
   }
 

@@ -16,9 +16,10 @@ const fields: FieldConfig[] = [
   { name: 'iconUrl', label: 'Icono (URL)', type: 'text', placeholder: 'https://…' },
 ];
 
-export function PlatformsPage() {
+export function PlatformsPage({ embedded = false }: { embedded?: boolean }) {
   return (
     <CrudResourcePage<Platform, CreatePlatformPayload>
+      embedded={embedded}
       title="Plataformas"
       description="Plataformas donde se lanzan las ediciones de cada videojuego."
       queryKey={['platforms']}
