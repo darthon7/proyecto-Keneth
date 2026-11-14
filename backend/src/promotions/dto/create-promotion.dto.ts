@@ -6,6 +6,7 @@ import {
   IsString,
   Max,
   Min,
+  MinLength,
 } from 'class-validator';
 
 export class CreatePromotionDto {
@@ -17,9 +18,9 @@ export class CreatePromotionDto {
   @Max(100)
   discountPercentage: number;
 
-  @IsOptional()
   @IsString()
-  couponCode?: string;
+  @MinLength(2)
+  couponCode: string;
 
   @IsDateString()
   startDate: string;

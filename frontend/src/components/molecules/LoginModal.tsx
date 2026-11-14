@@ -7,6 +7,7 @@ import { Button } from '@/components/atoms/Button';
 import { ErrorBanner } from '@/components/atoms/ErrorBanner';
 import { Input } from '@/components/atoms/Input';
 import { Modal } from '@/components/atoms/Modal';
+import { Select } from '@/components/atoms/Select';
 import { authApi, errorMessage } from '@/api';
 import { useSession } from '@/context/SessionContext';
 import { initials } from '@/utils/format';
@@ -31,6 +32,37 @@ interface AuthFormValues {
   username?: string;
   countryCode?: string;
 }
+
+const COUNTRY_OPTIONS: { value: string; label: string }[] = [
+  { value: 'MX', label: 'México' },
+  { value: 'AR', label: 'Argentina' },
+  { value: 'BO', label: 'Bolivia' },
+  { value: 'BR', label: 'Brasil' },
+  { value: 'CA', label: 'Canadá' },
+  { value: 'CL', label: 'Chile' },
+  { value: 'CO', label: 'Colombia' },
+  { value: 'CR', label: 'Costa Rica' },
+  { value: 'EC', label: 'Ecuador' },
+  { value: 'SV', label: 'El Salvador' },
+  { value: 'ES', label: 'España' },
+  { value: 'US', label: 'Estados Unidos' },
+  { value: 'FR', label: 'Francia' },
+  { value: 'DE', label: 'Alemania' },
+  { value: 'GT', label: 'Guatemala' },
+  { value: 'HN', label: 'Honduras' },
+  { value: 'IT', label: 'Italia' },
+  { value: 'JP', label: 'Japón' },
+  { value: 'KR', label: 'Corea del Sur' },
+  { value: 'NI', label: 'Nicaragua' },
+  { value: 'PA', label: 'Panamá' },
+  { value: 'PY', label: 'Paraguay' },
+  { value: 'PE', label: 'Perú' },
+  { value: 'PR', label: 'Puerto Rico' },
+  { value: 'GB', label: 'Reino Unido' },
+  { value: 'DO', label: 'República Dominicana' },
+  { value: 'UY', label: 'Uruguay' },
+  { value: 'VE', label: 'Venezuela' },
+];
 
 const DEFAULT_VALUES: AuthFormValues = {
   email: '',
@@ -61,7 +93,7 @@ const registerSchema = z.object({
     .string()
     .trim()
     .refine((value) => value === '' || value.length === 2, {
-      message: 'País debe tener exactamente 2 letras (ISO-2)',
+      message: 'Selecciona un país válido',
     })
     .optional(),
 });
@@ -76,6 +108,7 @@ export function LoginModal({ isOpen, onClose, initialMode = 'login' }: LoginModa
   const { setSession } = useSession();
   const [mode, setMode] = useState<AuthModalMode>(initialMode);
   const [result, setResult] = useState<AccessResult | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const isRegister = mode === 'register';
   const schema = useMemo(() => (isRegister ? registerSchema : loginSchema), [isRegister]);
@@ -123,19 +156,26 @@ export function LoginModal({ isOpen, onClose, initialMode = 'login' }: LoginModa
     if (!isOpen) return;
     setMode(initialMode);
     setResult(null);
+    setShowPassword(false);
     resetMutation();
     resetForm(DEFAULT_VALUES);
   }, [isOpen, initialMode, resetForm, resetMutation]);
 
-  const handleModeSwitch = () => {
-    const nextMode: AuthModalMode = isRegister ? 'login' : 'register';
+  const switchToMode = (nextMode: AuthModalMode) => {
+    if (nextMode === mode) return;
     setMode(nextMode);
+    setShowPassword(false);
     accessMutation.reset();
     form.clearErrors();
   };
 
+  const handleModeSwitch = () => {
+    switchToMode(isRegister ? 'login' : 'register');
+  };
+
   const handleClose = () => {
     setResult(null);
+    setShowPassword(false);
     accessMutation.reset();
     form.reset(DEFAULT_VALUES);
     onClose();
@@ -162,19 +202,24 @@ export function LoginModal({ isOpen, onClose, initialMode = 'login' }: LoginModa
             Continuar
           </Button>
         ) : (
-          <>
-            <Button variant="ghost" data-testid="login-cancel-btn" onClick={handleClose}>
+          <div className="flex w-full items-center justify-end gap-2.5">
+            <Button
+              variant="ghost"
+              data-testid="login-cancel-btn"
+              onClick={handleClose}
+              className="border border-[#E2E8F0] bg-[#FFFFFF] hover:border-[#CBD5E1]"
+            >
               Cancelar
             </Button>
             <Button
-              variant="brand"
+              variant={isRegister ? 'brand' : 'primary'}
               data-testid="login-submit-btn"
               onClick={submit}
               isLoading={accessMutation.isPending}
             >
               {isRegister ? 'Crear cuenta' : 'Iniciar sesión'}
             </Button>
-          </>
+          </div>
         )
       }
     >
@@ -183,7 +228,7 @@ export function LoginModal({ isOpen, onClose, initialMode = 'login' }: LoginModa
           data-testid="login-success-state"
           className="flex flex-col items-center gap-3 py-6 text-center"
         >
-          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#D1FAE5] text-heading-sm font-bold text-[#065F46]">
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#D1FAE5] text-heading-sm font-bold text-[#065F46] ring-4 ring-[#ECFDF5]">
             {initials(result.user.username)}
           </span>
           <p className="text-body font-semibold text-[#0F172A]">
@@ -197,6 +242,40 @@ export function LoginModal({ isOpen, onClose, initialMode = 'login' }: LoginModa
         </div>
       ) : (
         <form data-testid="login-modal-form" onSubmit={submit} className="flex flex-col gap-4" noValidate>
+          {/* Segmented Mode Switcher with Color Distinction */}
+          <div
+            role="tablist"
+            aria-label="Modo de acceso"
+            className="grid grid-cols-2 gap-1 rounded-xl bg-[#F1F5F9] p-1 border border-[#E2E8F0]"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={!isRegister}
+              onClick={() => switchToMode('login')}
+              className={`rounded-lg py-2 text-xs font-bold uppercase tracking-wider transition-all ${
+                !isRegister
+                  ? 'bg-[#1E1B4B] text-white shadow-sm'
+                  : 'text-[#475569] hover:text-[#0F172A]'
+              }`}
+            >
+              Iniciar sesión
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={isRegister}
+              onClick={() => switchToMode('register')}
+              className={`rounded-lg py-2 text-xs font-bold uppercase tracking-wider transition-all ${
+                isRegister
+                  ? 'bg-[#FF2A5F] text-white shadow-sm'
+                  : 'text-[#475569] hover:text-[#0F172A]'
+              }`}
+            >
+              Crear cuenta
+            </button>
+          </div>
+
           {accessMutation.isError && (
             <ErrorBanner message={errorMessage(accessMutation.error)} />
           )}
@@ -211,40 +290,50 @@ export function LoginModal({ isOpen, onClose, initialMode = 'login' }: LoginModa
             {...form.register('email')}
           />
 
-          <Input
-            data-testid="login-password-input"
-            type="password"
-            label="Contraseña"
-            placeholder="••••••••"
-            autoComplete={isRegister ? 'new-password' : 'current-password'}
-            hint={isRegister ? 'Entre 4 y 50 caracteres.' : undefined}
-            error={form.formState.errors.password?.message}
-            {...form.register('password')}
-          />
+          <div className="relative">
+            <Input
+              data-testid="login-password-input"
+              type={showPassword ? 'text' : 'password'}
+              label="Contraseña"
+              placeholder="••••••••"
+              autoComplete={isRegister ? 'new-password' : 'current-password'}
+              hint={isRegister ? 'Entre 4 y 50 caracteres.' : undefined}
+              error={form.formState.errors.password?.message}
+              className="pr-20"
+              {...form.register('password')}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              className="absolute right-3 top-[31px] text-[11px] font-bold uppercase tracking-wider text-[#1E1B4B] hover:text-[#FF2A5F] transition-colors"
+            >
+              {showPassword ? 'Ocultar' : 'Mostrar'}
+            </button>
+          </div>
 
           {isRegister && (
-            <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 rounded-xl bg-[#F8FAFC] p-3.5 border border-[#E2E8F0]">
               <Input
                 data-testid="login-username-input"
                 type="text"
                 label="Nombre de usuario"
                 placeholder="ElPibes"
                 autoComplete="username"
-                hint="Obligatorio para crear tu cuenta."
+                hint="Nickname único en la tienda."
                 error={form.formState.errors.username?.message}
                 {...form.register('username')}
               />
 
-              <Input
+              <Select
                 data-testid="login-country-input"
-                type="text"
-                label="País (ISO-2)"
-                placeholder="MX"
-                maxLength={2}
+                label="País"
+                options={COUNTRY_OPTIONS}
+                hint="Región de tu cuenta."
                 error={form.formState.errors.countryCode?.message}
                 {...form.register('countryCode')}
               />
-            </>
+            </div>
           )}
 
           <div className="pt-1 text-center">
@@ -252,7 +341,11 @@ export function LoginModal({ isOpen, onClose, initialMode = 'login' }: LoginModa
               type="button"
               data-testid="login-mode-switch-btn"
               onClick={handleModeSwitch}
-              className="text-xs font-semibold text-[#1E1B4B] hover:text-[#FF2A5F] underline-offset-2 hover:underline transition-colors"
+              className={`text-xs font-semibold underline-offset-2 hover:underline transition-colors ${
+                isRegister
+                  ? 'text-[#1E1B4B] hover:text-[#FF2A5F]'
+                  : 'text-[#FF2A5F] hover:text-[#1E1B4B]'
+              }`}
             >
               {isRegister
                 ? '¿Ya tienes una cuenta? Inicia sesión'

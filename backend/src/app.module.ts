@@ -26,6 +26,7 @@ import { OrdersModule } from './orders/orders.module.js';
 import { UserLibrariesModule } from './user-libraries/user-libraries.module.js';
 import { WishlistsModule } from './wishlists/wishlists.module.js';
 import { ReviewsModule } from './reviews/reviews.module.js';
+import { FeaturedTrailersModule } from './featured-trailers/featured-trailers.module.js';
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { ReviewsModule } from './reviews/reviews.module.js';
     UserLibrariesModule,
     WishlistsModule,
     ReviewsModule,
+    FeaturedTrailersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

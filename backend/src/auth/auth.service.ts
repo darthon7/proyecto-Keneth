@@ -3,11 +3,13 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity.js';
+import { Promotion } from '../promotions/entities/promotion.entity.js';
 import { UserRole } from '../users/entities/user-role.enum.js';
 import {
   type AuthResponse,
@@ -24,6 +26,9 @@ export class AuthService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly tokenService: TokenService,
+    @Optional()
+    @InjectRepository(Promotion)
+    private readonly promotionRepository?: Repository<Promotion>,
   ) {}
 
   async login(email: string, password: string): Promise<AuthResponse> {
@@ -74,6 +79,7 @@ export class AuthService {
 
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
     const normalizedEmail = registerDto.email.trim().toLowerCase();
+    const normalizedUsername = registerDto.username.trim();
     const existing = await this.userRepository.findOneBy({
       email: normalizedEmail,
     });
@@ -81,17 +87,39 @@ export class AuthService {
       throw new ConflictException('El correo ya está registrado');
     }
 
+    const existingUsername = await this.userRepository.findOneBy({
+      username: normalizedUsername,
+    });
+    if (existingUsername) {
+      throw new ConflictException('El nombre de usuario ya está en uso');
+    }
+
     const hashedPassword = await hashPassword(registerDto.password);
     const newUser = this.userRepository.create({
       email: normalizedEmail,
       password: hashedPassword,
-      username: registerDto.username.trim(),
+      username: normalizedUsername,
       countryCode: registerDto.countryCode ?? 'MX',
       isActive: true,
       role: UserRole.CUSTOMER,
     });
 
     const savedUser = await this.userRepository.save(newUser);
+    if (this.promotionRepository) {
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+      await this.promotionRepository.save(
+        this.promotionRepository.create({
+          name: 'Cupón de Bienvenida (10% OFF)',
+          discountPercentage: 10,
+          couponCode: 'BIENVENIDA10',
+          startDate: now,
+          endDate: expiresAt,
+          isActive: true,
+          userId: savedUser.id,
+        }),
+      );
+    }
     const accessToken = this.tokenService.sign({
       sub: savedUser.id,
       email: savedUser.email,

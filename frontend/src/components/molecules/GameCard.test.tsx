@@ -35,7 +35,6 @@ const game: Game = {
       format: EditionFormat.DIGITAL,
       basePrice: 1299,
       isDlc: false,
-      stockPhysical: 0,
       createdAt: '2022-02-25T00:00:00.000Z',
       game: undefined as never,
       platform: undefined as never,
@@ -44,7 +43,7 @@ const game: Game = {
 };
 
 describe('GameCard', () => {
-  it('muestra título, publisher y precio de la edición más barata', () => {
+  it('muestra título y precio de la edición más barata', () => {
     render(
       <MemoryRouter>
         <GameCard game={game} />
@@ -52,7 +51,7 @@ describe('GameCard', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'Elden Ring' })).toBeInTheDocument();
-    expect(screen.getByText('FromSoftware')).toBeInTheDocument();
+    expect(screen.queryByText('FromSoftware')).not.toBeInTheDocument();
     expect(screen.getByText(/\$1,299/)).toBeInTheDocument();
   });
 

@@ -1,7 +1,12 @@
 import { Injectable, Logger, type OnApplicationBootstrap } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+import { DataSource, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { Game } from './games/entities/game.entity.js';
+import { Developer } from './developers/entities/developer.entity.js';
+import { DigitalKey, KeyStatus } from './digital-keys/entities/digital-key.entity.js';
+import { Order, PaymentStatus } from './orders/entities/order.entity.js';
+import { Promotion } from './promotions/entities/promotion.entity.js';
+import { User } from './users/entities/user.entity.js';
 import { executeSeed } from './database/seed.js';
 
 @Injectable()
@@ -32,5 +37,52 @@ export class AppService implements OnApplicationBootstrap {
 
   async manualSeed() {
     return await executeSeed(this.dataSource);
+  }
+
+  async getAdminSummary() {
+    const now = new Date();
+    const [
+      games,
+      developers,
+      digitalKeys,
+      availableKeys,
+      orders,
+      completedOrders,
+      promotions,
+      activePromotions,
+      users,
+    ] = await Promise.all([
+      this.dataSource.getRepository(Game).count(),
+      this.dataSource.getRepository(Developer).count(),
+      this.dataSource.getRepository(DigitalKey).count(),
+      this.dataSource
+        .getRepository(DigitalKey)
+        .count({ where: { status: KeyStatus.AVAILABLE } }),
+      this.dataSource.getRepository(Order).count(),
+      this.dataSource
+        .getRepository(Order)
+        .count({ where: { paymentStatus: PaymentStatus.COMPLETED } }),
+      this.dataSource.getRepository(Promotion).count(),
+      this.dataSource.getRepository(Promotion).count({
+        where: {
+          isActive: true,
+          startDate: LessThanOrEqual(now),
+          endDate: MoreThanOrEqual(now),
+        },
+      }),
+      this.dataSource.getRepository(User).count(),
+    ]);
+
+    return {
+      games,
+      developers,
+      digitalKeys,
+      availableKeys,
+      orders,
+      completedOrders,
+      promotions,
+      activePromotions,
+      users,
+    };
   }
 }

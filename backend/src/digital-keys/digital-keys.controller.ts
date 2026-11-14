@@ -13,7 +13,10 @@ import { JwtAuthGuard } from '../auth/index.js';
 import { Roles, RolesGuard } from '../common/auth/index.js';
 import { UserRole } from '../users/entities/user-role.enum.js';
 import { DigitalKeysService } from './digital-keys.service.js';
-import { CreateDigitalKeyDto } from './dto/create-digital-key.dto.js';
+import {
+  CreateBulkDigitalKeysDto,
+  CreateDigitalKeyDto,
+} from './dto/create-digital-key.dto.js';
 import { UpdateDigitalKeyDto } from './dto/update-digital-key.dto.js';
 
 @Roles(UserRole.ADMIN)
@@ -25,6 +28,11 @@ export class DigitalKeysController {
   @Post()
   create(@Body() createDto: CreateDigitalKeyDto) {
     return this.digitalKeysService.create(createDto);
+  }
+
+  @Post('bulk')
+  createBulk(@Body() bulkDto: CreateBulkDigitalKeysDto) {
+    return this.digitalKeysService.createBulk(bulkDto);
   }
 
   @Get()

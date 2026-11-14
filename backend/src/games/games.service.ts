@@ -11,6 +11,7 @@ import { Developer } from '../developers/entities/developer.entity.js';
 import { Genre } from '../genres/entities/genre.entity.js';
 import { CreateGameDto } from './dto/create-game.dto.js';
 import { UpdateGameDto } from './dto/update-game.dto.js';
+import { ApplyDiscountCampaignDto } from './dto/apply-discount-campaign.dto.js';
 
 @Injectable()
 export class GamesService {
@@ -29,7 +30,14 @@ export class GamesService {
   ) {}
 
   async create(createGameDto: CreateGameDto) {
-    const { publisherId, developerId, genreIds, ...datos } = createGameDto;
+    const {
+      publisherId,
+      developerId,
+      genreIds,
+      discountStartDate,
+      discountEndDate,
+      ...datos
+    } = createGameDto;
 
     const publisher = await this.publisherRepository.findOneBy({ id: publisherId });
     if (!publisher) {
@@ -50,6 +58,8 @@ export class GamesService {
 
     const nuevoJuego = this.gameRepository.create({
       ...datos,
+      discountStartDate: discountStartDate ? new Date(discountStartDate) : null,
+      discountEndDate: discountEndDate ? new Date(discountEndDate) : null,
       publisher,
       developer,
       genres,
@@ -65,7 +75,7 @@ export class GamesService {
         publisher: true,
         developer: true,
         genres: true,
-        editions: true,
+        editions: { platform: true, digitalKeys: true },
         systemRequirements: true,
       },
       take,
@@ -80,7 +90,7 @@ export class GamesService {
         publisher: true,
         developer: true,
         genres: true,
-        editions: { platform: true },
+        editions: { platform: true, digitalKeys: true },
         systemRequirements: true,
         reviews: true,
       },
@@ -95,7 +105,14 @@ export class GamesService {
 
   async update(id: number, updateGameDto: UpdateGameDto) {
     const game = await this.findOne(id);
-    const { publisherId, developerId, genreIds, ...datos } = updateGameDto;
+    const {
+      publisherId,
+      developerId,
+      genreIds,
+      discountStartDate,
+      discountEndDate,
+      ...datos
+    } = updateGameDto;
 
     if (publisherId) {
       const publisher = await this.publisherRepository.findOneBy({ id: publisherId });
@@ -119,8 +136,57 @@ export class GamesService {
       });
     }
 
-    this.gameRepository.merge(game, datos);
+    this.gameRepository.merge(game, {
+      ...datos,
+      ...(discountStartDate !== undefined
+        ? { discountStartDate: discountStartDate ? new Date(discountStartDate) : null }
+        : {}),
+      ...(discountEndDate !== undefined
+        ? { discountEndDate: discountEndDate ? new Date(discountEndDate) : null }
+        : {}),
+    });
     return await this.gameRepository.save(game);
+  }
+
+  async applyDiscountCampaign(dto: ApplyDiscountCampaignDto) {
+    const uniqueIds = [...new Set(dto.gameIds)];
+    const games = await this.gameRepository.find({
+      where: { id: In(uniqueIds) },
+    });
+
+    if (games.length === 0) {
+      throw new NotFoundException('No se encontraron videojuegos para aplicar la campaña.');
+    }
+
+    const isClearing = dto.discountPercentage <= 0;
+    const campaignName = isClearing
+      ? null
+      : (dto.discountCampaignName?.trim() || 'Campaña de Ofertas');
+    const startDate = isClearing
+      ? null
+      : dto.discountStartDate
+        ? new Date(dto.discountStartDate)
+        : null;
+    const endDate = isClearing
+      ? null
+      : dto.discountEndDate
+        ? new Date(dto.discountEndDate)
+        : null;
+
+    for (const game of games) {
+      game.discountPercentage = isClearing ? 0 : dto.discountPercentage;
+      game.discountCampaignName = campaignName;
+      game.discountStartDate = startDate;
+      game.discountEndDate = endDate;
+    }
+
+    const updated = await this.gameRepository.save(games);
+    return {
+      updatedCount: updated.length,
+      discountPercentage: isClearing ? 0 : dto.discountPercentage,
+      discountCampaignName: campaignName,
+      games: updated,
+    };
   }
 
   async remove(id: number) {

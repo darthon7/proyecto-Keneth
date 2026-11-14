@@ -36,6 +36,9 @@ interface CrudResourcePageProps<T, TPayload extends object = Record<string, unkn
   getId: (item: T) => number | string;
   emptyMessage?: string;
   embedded?: boolean;
+  headerActions?: ReactNode;
+  filterControls?: ReactNode;
+  transformItems?: (items: T[]) => T[];
 }
 
 type ModalState<T> = { mode: 'create' } | { mode: 'edit'; item: T } | null;
@@ -54,6 +57,9 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
   getId,
   emptyMessage = 'Todavía no hay registros.',
   embedded = false,
+  headerActions,
+  filterControls,
+  transformItems,
 }: CrudResourcePageProps<T, TPayload>) {
   const queryClient = useQueryClient();
   const [modalState, setModalState] = useState<ModalState<T> | null>(null);
@@ -123,6 +129,7 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
   });
 
   const items = listQuery.data ?? [];
+  const visibleItems = transformItems ? transformItems(items) : items;
 
   return (
     <section className={embedded ? 'space-y-6' : 'page-container py-16'}>
@@ -131,12 +138,17 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
           <h1 className="text-heading-sm font-extrabold text-[#0F172A]">{title}</h1>
           {description && <p className="mt-2 max-w-2xl text-body-sm text-[#475569]">{description}</p>}
         </div>
-        <Button variant="brand" data-testid="crud-create-btn" onClick={openCreate}>
-          Nuevo registro
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {headerActions}
+          <Button variant="brand" data-testid="crud-create-btn" onClick={openCreate}>
+            Nuevo registro
+          </Button>
+        </div>
       </header>
 
       <div className="mt-8">
+        {filterControls}
+
         {listQuery.isLoading && <Spinner label="Cargando registros…" />}
 
         {listQuery.isError && (
@@ -154,7 +166,14 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
           />
         )}
 
-        {items.length > 0 && (
+        {listQuery.isSuccess && items.length > 0 && visibleItems.length === 0 && (
+          <EmptyState
+            title="Sin coincidencias"
+            description="Ningún registro coincide con los filtros actuales."
+          />
+        )}
+
+        {visibleItems.length > 0 && (
           <div className="overflow-x-auto rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] shadow-xs px-4 py-2">
             <table className="w-full min-w-[640px] border-collapse text-left">
               <thead>
@@ -174,7 +193,7 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
                 </tr>
               </thead>
               <tbody>
-                {items.map((item) => (
+                {visibleItems.map((item) => (
                   <tr key={getId(item)} className="border-b border-[#E2E8F0] last:border-b-0 hover:bg-[#F8FAFC] transition-colors">
                     {columns.map((column) => (
                       <td key={column.header} className={`px-3 py-3 text-body-sm ${column.className ?? 'text-[#0F172A] font-medium'}`}>

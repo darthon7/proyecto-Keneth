@@ -88,10 +88,10 @@ const dataSource = new DataSource(
 );
 
 const PLATFORMS_DATA = [
-  { name: 'Nintendo Switch', code: 'NSW', iconUrl: 'https://api.iconify.design/simple-icons:nintendoswitch.svg?color=%23e60012' },
-  { name: 'PlayStation 5', code: 'PS5', iconUrl: 'https://api.iconify.design/simple-icons:playstation5.svg?color=%230070d1' },
-  { name: 'Xbox Series X|S', code: 'XSX', iconUrl: 'https://api.iconify.design/simple-icons:xbox.svg?color=%23107c10' },
-  { name: 'PC', code: 'PC', iconUrl: 'https://api.iconify.design/simple-icons:steam.svg?color=%23ffffff' },
+  { name: 'Nintendo Switch', code: 'NSW', iconUrl: 'https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/nintendoswitch.svg' },
+  { name: 'PlayStation 5', code: 'PS5', iconUrl: 'https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/playstation5.svg' },
+  { name: 'Xbox Series X|S', code: 'XSX', iconUrl: 'https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/xbox.svg' },
+  { name: 'PC', code: 'PC', iconUrl: 'https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/steam.svg' },
 ];
 
 const GENRES_DATA = [
@@ -168,6 +168,8 @@ interface GameSeedDefinition {
   platformCode: 'NSW' | 'PS5' | 'XSX' | 'PC';
   genres: string[];
   basePrice: number;
+  discountCampaignName?: string;
+  discountPercentage?: number;
   sysReq?: {
     min: { os: string; cpu: string; ram: number; gpu: string; storage: number; dx?: string };
     rec: { os: string; cpu: string; ram: number; gpu: string; storage: number; dx?: string };
@@ -182,7 +184,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Una aventura épica por la tierra y los cielos de Hyrule. El jugador aprovecha el poder de las nuevas habilidades de Link para luchar contra las malévolas fuerzas que amenazan el reino.',
     esrbRating: 'E10+',
     releaseDate: '2023-05-12',
-    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/f/fb/The_Legend_of_Zelda_Tears_of_the_Kingdom_cover.jpg',
+    coverImageUrl: 'https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto/f_auto/dpr_2.0/store/software/switch/70010000063714/fb30eab428df3fc993b41c76e20f72e4d76d49734d17d31996b5ab61c414b117',
     publisherName: 'Nintendo',
     developerName: 'Nintendo EPD',
     platformCode: 'NSW',
@@ -195,7 +197,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Olvida todo lo que sabes sobre los juegos de The Legend of Zelda. Entra en un mundo de descubrimientos, exploración y aventura en este aclamado título de mundo abierto.',
     esrbRating: 'E10+',
     releaseDate: '2017-03-03',
-    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/c/c6/The_Legend_of_Zelda_Breath_of_the_Wild.jpg',
+    coverImageUrl: 'https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto/f_auto/dpr_2.0/store/software/switch/70010000000025/7137262b5a64d921e193653f8aa0b722925abc5680380ca0e18a5cfd91697f58',
     publisherName: 'Nintendo',
     developerName: 'Nintendo EPD',
     platformCode: 'NSW',
@@ -208,7 +210,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Acompaña a Mario en una descomunal aventura en 3D por todo el planeta usando sus nuevas e increíbles habilidades para rescatar a la princesa Peach de los planes de boda de Bowser.',
     esrbRating: 'E',
     releaseDate: '2017-10-27',
-    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/8/8d/Super_Mario_Odyssey.jpg',
+    coverImageUrl: 'https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto/f_auto/dpr_2.0/store/software/switch/70010000001130/c42553b4fd0312c31e70ec7468c6c9bccd739f340152925b9600631f2d29f8b5',
     publisherName: 'Nintendo',
     developerName: 'Nintendo EPD',
     platformCode: 'NSW',
@@ -221,7 +223,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: '¡Luchadores y mundos de juego legendarios colisionan en el enfrentamiento definitivo! Más personajes, más escenarios y combates trepidantes con todo el plantel histórico.',
     esrbRating: 'E10+',
     releaseDate: '2018-12-07',
-    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/5/50/Super_Smash_Bros._Ultimate.jpg',
+    coverImageUrl: 'https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto/f_auto/dpr_2.0/store/software/switch/70010000012332/ac4d1fc9824876ce756406f0525d50c57ded4b2a666f6dfe40a6ac5c3563fad9',
     publisherName: 'Nintendo',
     developerName: 'Bandai Namco Studios',
     platformCode: 'NSW',
@@ -234,7 +236,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Pisa a fondo el acelerador en la versión definitiva de Mario Kart 8 y juega donde y cuando quieras con decenas de circuitos y personajes icónicos.',
     esrbRating: 'E',
     releaseDate: '2017-04-28',
-    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/b/b5/MarioKart8Boxart.jpg',
+    coverImageUrl: 'https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto/f_auto/dpr_2.0/store/software/switch/70010000000153/de697f487a36d802dd9a5ff0341f717c8486221f2f1219b675af37aca63bc453',
     publisherName: 'Nintendo',
     developerName: 'Nintendo EPD',
     platformCode: 'NSW',
@@ -247,12 +249,14 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Únete a la cazarrecompensas Samus Aran mientras escapa de un planeta alienígena letal acosado por una terrorífica amenaza mecánica: los implacables robots E.M.M.I.',
     esrbRating: 'T',
     releaseDate: '2021-10-08',
-    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/f/f7/Metroid_Dread_Banner.png',
+    coverImageUrl: 'https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto/f_auto/dpr_2.0/store/software/switch/70010000042924/4f2c683f0196210ec212a2ab8bf6952223c0b88e827b820953407a2ba61c9cb2',
     publisherName: 'Nintendo',
     developerName: 'MercurySteam',
     platformCode: 'NSW',
     genres: ['Acción', 'Aventura', 'Metroidvania', 'Ciencia Ficción'],
     basePrice: 59.99,
+    discountCampaignName: 'Ofertas Nintendo',
+    discountPercentage: 20,
   },
   {
     title: 'Animal Crossing: New Horizons',
@@ -260,7 +264,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Escapa a una isla desierta y crea tu propio paraíso mientras exploras, creas y personalizas en una relajante simulación de vida comunitaria.',
     esrbRating: 'E',
     releaseDate: '2020-03-20',
-    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/1/1f/Animal_Crossing_New_Horizons.jpg',
+    coverImageUrl: 'https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto/f_auto/dpr_2.0/store/software/switch/70010000027619/9989957eae3a6b545194c42fec2071675c34aadacd65e6b33fdfe7b3b6a86c3a',
     publisherName: 'Nintendo',
     developerName: 'Nintendo EPD',
     platformCode: 'NSW',
@@ -273,7 +277,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Explora la vasta región de Paldea a tu propio ritmo en un mundo abierto repleto de Pokémon salvajes, gimnasios desafiantes y misterios del fenómeno Teracristal.',
     esrbRating: 'E',
     releaseDate: '2022-11-18',
-    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/a/af/Pokemon_Scarlet_and_Violet_box_art.jpg',
+    coverImageUrl: 'https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto/f_auto/dpr_2.0/store/software/switch/70010000053966/849c234de8df7265201d26d9d72f88eed3f32438d3dca12fc135beb4c3befc85',
     publisherName: 'Nintendo',
     developerName: 'Game Freak',
     platformCode: 'NSW',
@@ -286,7 +290,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Conviértete en profesor en el Monasterio de Garreg Mach y guía a tus alumnos a través de la vida académica y sangrientas batallas tácticas que decidirán el destino de Fódlan.',
     esrbRating: 'T',
     releaseDate: '2019-07-26',
-    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/3/36/Fire_Emblem_Three_Houses_cover_art.png',
+    coverImageUrl: 'https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto/f_auto/dpr_2.0/store/software/switch/70010000007606/c499fdc86779ca95e61daed1f94288a245d196360d278138e56d44097d1a3878',
     publisherName: 'Nintendo',
     developerName: 'Intelligent Systems',
     platformCode: 'NSW',
@@ -299,7 +303,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Una profunda historia sobre la vida y los lazos que unen a dos facciones en guerra perpetua dentro del deslumbrante y gigantesco mundo de Aionios.',
     esrbRating: 'T',
     releaseDate: '2022-07-29',
-    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/e/ec/Xenoblade_Chronicles_3_box_art.jpg',
+    coverImageUrl: 'https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto/f_auto/dpr_2.0/store/software/switch/70010000053336/e933b48650b33b355e9cf2583da5c94b77180e40fb02d050041083dd62f4df39',
     publisherName: 'Nintendo',
     developerName: 'Monolith Soft',
     platformCode: 'NSW',
@@ -312,7 +316,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'La evolución clásica en 2D de Mario. Descubre los Efectos Maravilla que transforman los escenarios, cobran vida las tuberías y desatan la locura creativa.',
     esrbRating: 'E',
     releaseDate: '2023-10-20',
-    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/c/c5/Super_Mario_Bros_Wonder_cover_art.png',
+    coverImageUrl: 'https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto/f_auto/dpr_2.0/store/software/switch/70010000068688/87e8aa5f1fdc950b88eae7d7c62ed185c8a6373c845090bbdb2e2cf039b38da1',
     publisherName: 'Nintendo',
     developerName: 'Nintendo EPD',
     platformCode: 'NSW',
@@ -327,7 +331,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Peter Parker y Miles Morales regresan en una aventura electrizante. Balancéate, salta y utiliza las nuevas alas de telaraña para recorrer la Nueva York de Marvel frente a Venom y Kraven.',
     esrbRating: 'T',
     releaseDate: '2023-10-20',
-    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/0/0f/Marvel%27s_Spider-Man_2_cover.jpg',
+    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/2651280/header.jpg',
     publisherName: 'Sony Interactive Entertainment',
     developerName: 'Insomniac Games',
     platformCode: 'PS5',
@@ -340,12 +344,14 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Kratos y Atreus deben viajar a cada uno de los Nueve Reinos en busca de respuestas mientras las fuerzas asgardianas se preparan para la batalla profetizada del fin del mundo.',
     esrbRating: 'M',
     releaseDate: '2022-11-09',
-    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/e/ee/God_of_War_Ragnar%C3%B6k_cover.jpg',
+    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/2322010/header.jpg',
     publisherName: 'Sony Interactive Entertainment',
     developerName: 'Santa Monica Studio',
     platformCode: 'PS5',
     genres: ['Acción', 'Aventura', 'Fantasía'],
     basePrice: 69.99,
+    discountCampaignName: 'Campaña PlayStation',
+    discountPercentage: 25,
   },
   {
     title: "Demon's Souls",
@@ -353,7 +359,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Completamente reconstruido desde cero y mejorado magistralmente, este remake introduce los horrores de una tierra de fantasía oscura y hostil a una nueva generación de jugadores.',
     esrbRating: 'M',
     releaseDate: '2020-11-12',
-    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/0/00/Demon%27s_Souls_Remake_Cover_Art.jpg',
+    coverImageUrl: 'https://gmedia.playstation.com/is/image/SIEPDC/demons-soul-hero-02-ps5-en-19aug20?$1200px$',
     publisherName: 'Sony Interactive Entertainment',
     developerName: 'Bluepoint Games',
     platformCode: 'PS5',
@@ -366,7 +372,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Acompaña a Aloy mientras desafía una frontera majestuosa pero peligrosa que oculta nuevas y misteriosas amenazas en el Oeste Prohibido postapocalíptico.',
     esrbRating: 'T',
     releaseDate: '2022-02-18',
-    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/6/69/Horizon_Forbidden_West_cover_art.jpg',
+    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/2420110/header.jpg',
     publisherName: 'Sony Interactive Entertainment',
     developerName: 'Guerrilla Games',
     platformCode: 'PS5',
@@ -379,7 +385,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Tras un aterrizaje forzoso en este planeta alienígena cambiante, Selene debe buscar a través del árido paisaje de una antigua civilización para escapar, atrapada en un bucle temporal implacable.',
     esrbRating: 'M',
     releaseDate: '2021-04-30',
-    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/a/a3/Returnal_cover_art.jpg',
+    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1649240/header.jpg',
     publisherName: 'Sony Interactive Entertainment',
     developerName: 'Housemarque',
     platformCode: 'PS5',
@@ -392,7 +398,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Experimenta la emotiva narración y los inolvidables personajes de Joel y Ellie reconstruidos fielmente para la consola PlayStation 5 con gráficos fotorrealistas.',
     esrbRating: 'M',
     releaseDate: '2022-09-02',
-    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/b/b5/The_Last_of_Us_Part_I_cover.png',
+    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1888930/header.jpg',
     publisherName: 'Sony Interactive Entertainment',
     developerName: 'Naughty Dog',
     platformCode: 'PS5',
@@ -407,7 +413,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Cuando se pierde toda esperanza y el destino de la humanidad pende de un hilo, el Jefe Maestro está listo para enfrentarse al enemigo más despiadado en el anillo Zeta Halo.',
     esrbRating: 'T',
     releaseDate: '2021-12-08',
-    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/1/14/Halo_Infinite.png',
+    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1240440/header.jpg',
     publisherName: 'Xbox Game Studios',
     developerName: '343 Industries',
     platformCode: 'XSX',
@@ -420,7 +426,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Tu aventura Horizon definitiva te espera. Explora los paisajes vibrantes y en constante evolución del mundo abierto de México con acción al volante ilimitada.',
     esrbRating: 'E',
     releaseDate: '2021-11-09',
-    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/8/86/Forza_Horizon_5_cover_art.jpg',
+    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1551360/header.jpg',
     publisherName: 'Xbox Game Studios',
     developerName: 'Playground Games',
     platformCode: 'XSX',
@@ -433,7 +439,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'En este juego de rol de nueva generación ambientado entre las estrellas, crea el personaje que desees y explora con una libertad sin igual un millar de planetas inexplorados.',
     esrbRating: 'M',
     releaseDate: '2023-09-06',
-    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/6/6d/Starfield_cover.jpg',
+    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1716740/header.jpg',
     publisherName: 'Bethesda Softworks',
     developerName: 'Bethesda Game Studios',
     platformCode: 'XSX',
@@ -446,7 +452,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Con una guerra total descendiendo, Kait Diaz se separa para descubrir su conexión con el enemigo y descubre el verdadero peligro para Sera: ella misma.',
     esrbRating: 'M',
     releaseDate: '2019-09-10',
-    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/a/ac/Gears_5_cover_art.png',
+    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1097840/header.jpg',
     publisherName: 'Xbox Game Studios',
     developerName: 'The Coalition',
     platformCode: 'XSX',
@@ -459,7 +465,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Siente el ritmo mientras el aspirante a estrella de rock Chai y su variopinto equipo luchan contra una malvada megacorporación de implantes en un mundo sincronizado con la música.',
     esrbRating: 'T',
     releaseDate: '2023-01-25',
-    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/4/4b/Hi-Fi_Rush_cover_art.jpg',
+    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1817230/header.jpg',
     publisherName: 'Bethesda Softworks',
     developerName: 'Tango Gameworks',
     platformCode: 'XSX',
@@ -497,6 +503,8 @@ const GAMES_DATA: GameSeedDefinition[] = [
     platformCode: 'PC',
     genres: ['RPG', 'Acción', 'Ciencia Ficción', 'Mundo Abierto'],
     basePrice: 59.99,
+    discountCampaignName: 'Ofertas Cyberpunk',
+    discountPercentage: 30,
     sysReq: {
       min: { os: 'Windows 10 64-bit', cpu: 'Core i7-6700 / Ryzen 5 1600', ram: 12, gpu: 'GeForce GTX 1060 6GB / Radeon RX 580', storage: 70, dx: 'DirectX 12' },
       rec: { os: 'Windows 10 64-bit', cpu: 'Core i7-12700 / Ryzen 7 7800X3D', ram: 16, gpu: 'GeForce RTX 2060 Super / Radeon RX 5700 XT', storage: 70, dx: 'DirectX 12' },
@@ -514,6 +522,8 @@ const GAMES_DATA: GameSeedDefinition[] = [
     platformCode: 'PC',
     genres: ['RPG', 'Acción', 'Fantasía', 'Mundo Abierto'],
     basePrice: 59.99,
+    discountCampaignName: 'Semana Souls',
+    discountPercentage: 25,
     sysReq: {
       min: { os: 'Windows 10', cpu: 'INTEL CORE I5-8400 / AMD RYZEN 3 3300X', ram: 12, gpu: 'NVIDIA GEFORCE GTX 1060 3 GB / AMD RADEON RX 580 4 GB', storage: 60, dx: 'DirectX 12' },
       rec: { os: 'Windows 10/11', cpu: 'INTEL CORE I7-8700K / AMD RYZEN 5 3600X', ram: 16, gpu: 'NVIDIA GEFORCE GTX 1070 8 GB / AMD RADEON RX VEGA 56 8 GB', storage: 60, dx: 'DirectX 12' },
@@ -548,6 +558,8 @@ const GAMES_DATA: GameSeedDefinition[] = [
     platformCode: 'PC',
     genres: ['RPG', 'Acción', 'Fantasía', 'Mundo Abierto'],
     basePrice: 39.99,
+    discountCampaignName: 'Clásicos en Oferta',
+    discountPercentage: 50,
     sysReq: {
       min: { os: 'Windows 10 64-bit', cpu: 'Intel CPU Core i5-2500K 3.3GHz / AMD A10-5800K APU', ram: 8, gpu: 'Nvidia GPU GeForce GTX 660 / AMD GPU Radeon HD 7870', storage: 50, dx: 'DirectX 11' },
       rec: { os: 'Windows 10 64-bit', cpu: 'Intel CPU Core i7 3770 3.4 GHz / AMD CPU AMD FX-8350 4 GHz', ram: 16, gpu: 'Nvidia GPU GeForce GTX 1070 / AMD GPU Radeon RX 480', storage: 50, dx: 'DirectX 12' },
@@ -582,6 +594,8 @@ const GAMES_DATA: GameSeedDefinition[] = [
     platformCode: 'PC',
     genres: ['Roguelike', 'Acción', 'Fantasía'],
     basePrice: 24.99,
+    discountCampaignName: 'Indie Fest',
+    discountPercentage: 40,
     sysReq: {
       min: { os: 'Windows 7 SP1', cpu: 'Dual Core 2.4 GHz', ram: 4, gpu: '1GB VRAM / DirectX 10+ support', storage: 15, dx: 'DirectX 10' },
       rec: { os: 'Windows 10 64-bit', cpu: 'Dual Core 3.0 GHz+', ram: 8, gpu: '2GB VRAM / DirectX 11+', storage: 20, dx: 'DirectX 11' },
@@ -804,6 +818,8 @@ export async function executeSeed(dataSource: DataSource): Promise<{ createdCoun
         esrbRating: data.esrbRating,
         releaseDate: data.releaseDate,
         coverImageUrl: data.coverImageUrl,
+        discountCampaignName: data.discountCampaignName ?? null,
+        discountPercentage: data.discountPercentage ?? 0,
         publisher,
         developer,
         genres: assignedGenres,
@@ -816,6 +832,10 @@ export async function executeSeed(dataSource: DataSource): Promise<{ createdCoun
       game.coverImageUrl = data.coverImageUrl;
       game.esrbRating = data.esrbRating;
       game.releaseDate = data.releaseDate;
+      if (data.discountPercentage !== undefined && (!game.discountPercentage || Number(game.discountPercentage) === 0)) {
+        game.discountPercentage = data.discountPercentage;
+        game.discountCampaignName = data.discountCampaignName ?? null;
+      }
       game.publisher = publisher;
       game.developer = developer;
       game.genres = assignedGenres;
@@ -845,7 +865,6 @@ export async function executeSeed(dataSource: DataSource): Promise<{ createdCoun
           format: EditionFormat.DIGITAL,
           basePrice: edInfo.price,
           isDlc: false,
-          stockPhysical: 0,
           game,
           platform,
         });
@@ -895,6 +914,51 @@ export async function executeSeed(dataSource: DataSource): Promise<{ createdCoun
         });
         await sysReqRepo.save([min, rec]);
       }
+    }
+  }
+
+  // 6. Sembrar Cupones Promocionales de ejemplo
+  const promotionRepo = dataSource.getRepository(Promotion);
+  const nowMs = Date.now();
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const seedPromotions = [
+    {
+      name: 'Cupón Retro Pop (15% OFF)',
+      discountPercentage: 15,
+      couponCode: 'RETRO15',
+      startDate: new Date(nowMs - 2 * DAY_MS),
+      endDate: new Date(nowMs + 30 * DAY_MS),
+      isActive: true,
+    },
+    {
+      name: 'Oferta Relámpago (20% OFF)',
+      discountPercentage: 20,
+      couponCode: 'FLASH20',
+      startDate: new Date(nowMs - DAY_MS),
+      endDate: new Date(nowMs + 3 * DAY_MS),
+      isActive: true,
+    },
+    {
+      name: 'Especial de Temporada (Expirado)',
+      discountPercentage: 25,
+      couponCode: 'VERANO25',
+      startDate: new Date(nowMs - 30 * DAY_MS),
+      endDate: new Date(nowMs - 5 * DAY_MS),
+      isActive: true,
+    },
+  ];
+
+  for (const promoInfo of seedPromotions) {
+    const existingPromo = await promotionRepo.findOne({
+      where: { couponCode: promoInfo.couponCode },
+    });
+    if (!existingPromo) {
+      await promotionRepo.save(
+        promotionRepo.create({
+          ...promoInfo,
+          userId: null,
+        }),
+      );
     }
   }
 

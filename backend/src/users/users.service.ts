@@ -29,6 +29,7 @@ export class UsersService {
 
   async create(createUserDto: CreateUserDto): Promise<SafeUser> {
     const normalizedEmail = createUserDto.email.trim().toLowerCase();
+    const normalizedUsername = createUserDto.username.trim();
     const existing = await this.userRepository.findOneBy({
       email: normalizedEmail,
     });
@@ -36,10 +37,18 @@ export class UsersService {
       throw new BadRequestException('El correo ya está registrado');
     }
 
+    const existingUsername = await this.userRepository.findOneBy({
+      username: normalizedUsername,
+    });
+    if (existingUsername) {
+      throw new ConflictException('El nombre de usuario ya está en uso');
+    }
+
     const hashedPassword = await hashPassword(createUserDto.password);
     const user = this.userRepository.create({
       ...createUserDto,
       email: normalizedEmail,
+      username: normalizedUsername,
       password: hashedPassword,
       role: UserRole.CUSTOMER,
     });
@@ -72,7 +81,7 @@ export class UsersService {
         userLibraries: { gameEdition: { game: true, platform: true } },
         wishlists: { game: true },
         orders: { items: true },
-        reviews: true,
+        reviews: { game: true },
       },
     });
     if (!user) {
@@ -100,6 +109,19 @@ export class UsersService {
         });
         if (existing && existing.id !== id) {
           throw new ConflictException('El correo ya está registrado');
+        }
+      }
+    }
+
+    if (typeof safeUpdateData.username === 'string') {
+      const normalizedUsername = safeUpdateData.username.trim();
+      safeUpdateData.username = normalizedUsername;
+      if (normalizedUsername !== user.username) {
+        const existingUsername = await this.userRepository.findOneBy({
+          username: normalizedUsername,
+        });
+        if (existingUsername && existingUsername.id !== id) {
+          throw new ConflictException('El nombre de usuario ya está en uso');
         }
       }
     }

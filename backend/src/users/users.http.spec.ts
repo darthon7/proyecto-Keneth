@@ -64,11 +64,15 @@ function createInMemoryUserRepository() {
     reset,
     getAllInternal: () => users,
     findOneBy: vi.fn(
-      async (where: Partial<Pick<User, 'id' | 'email'>>): Promise<User | null> => {
+      async (
+        where: Partial<Pick<User, 'id' | 'email' | 'username'>>,
+      ): Promise<User | null> => {
         return (
           users.find((u) => {
             if (where.id !== undefined && u.id !== where.id) return false;
             if (where.email !== undefined && u.email !== where.email)
+              return false;
+            if (where.username !== undefined && u.username !== where.username)
               return false;
             return true;
           }) ?? null

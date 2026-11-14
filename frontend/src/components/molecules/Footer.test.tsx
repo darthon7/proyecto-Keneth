@@ -28,15 +28,19 @@ describe('Footer', () => {
     const expectedLinks = [
       { label: 'Catálogo', href: '/games' },
       { label: 'Ofertas', href: '/promotions' },
-      { label: 'Biblioteca', href: '/library' },
+      { label: 'Mis Juegos', href: '/library' },
       { label: 'Deseados', href: '/wishlist' },
       { label: 'Órdenes', href: '/orders' },
-      { label: 'Reseñas', href: '/reviews' },
     ];
 
     for (const item of expectedLinks) {
       expect(screen.getByRole('link', { name: item.label })).toHaveAttribute('href', item.href);
     }
+
+    expect(screen.getByRole('link', { name: 'Soporte@Elpibes.com' })).toHaveAttribute(
+      'href',
+      'mailto:Soporte@Elpibes.com',
+    );
 
     expect(screen.queryByText(/NEXUSPLAY/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/PEGI 18/i)).not.toBeInTheDocument();

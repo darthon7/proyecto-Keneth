@@ -13,11 +13,9 @@ import {
 import { Order, PaymentStatus } from './entities/order.entity.js';
 import { OrderItem } from './entities/order-item.entity.js';
 import { User } from '../users/entities/user.entity.js';
-import {
-  GameEdition,
-  EditionFormat,
-} from '../game-editions/entities/game-edition.entity.js';
+import { GameEdition } from '../game-editions/entities/game-edition.entity.js';
 import { PromotionsService } from '../promotions/promotions.service.js';
+import { CouponRedemption } from '../promotions/entities/coupon-redemption.entity.js';
 import { UserLibrary } from '../user-libraries/entities/user-library.entity.js';
 import { CreateOrderDto } from './dto/create-order.dto.js';
 import { UpdateOrderDto } from './dto/update-order.dto.js';
@@ -64,13 +62,27 @@ export class OrdersService {
     }
 
     let discountPercent = 0;
+    let appliedPromotionId: number | null = null;
     const trimmedCoupon = couponCode?.trim();
     if (trimmedCoupon) {
-      const promo = await this.promotionsService.findByCoupon(trimmedCoupon);
+      const promo = await this.promotionsService.findByCoupon(
+        trimmedCoupon,
+        userId,
+      );
       if (!promo || !promo.isActive) {
         throw new BadRequestException('Cupón inválido o expirado');
       }
+      const alreadyClaimed = await this.promotionsService.hasUserClaimed(
+        promo.id,
+        userId,
+      );
+      if (alreadyClaimed) {
+        throw new BadRequestException(
+          'Este cupón ya fue reclamado por tu cuenta (límite de 1 uso por usuario)',
+        );
+      }
       discountPercent = Number(promo.discountPercentage);
+      appliedPromotionId = promo.id;
     }
 
     const isAdmin = options?.isAdmin === true;
@@ -113,65 +125,67 @@ export class OrdersService {
           );
         }
 
+        const editionWithGame = await manager.findOne(GameEdition, {
+          where: { id: edition.id },
+          relations: { game: true },
+        });
+        const game = editionWithGame?.game;
+        const now = new Date();
+        const campaignStartOk =
+          !game?.discountStartDate || new Date(game.discountStartDate) <= now;
+        const campaignEndOk =
+          !game?.discountEndDate || new Date(game.discountEndDate) >= now;
+        const campaignPercent =
+          game && Number(game.discountPercentage) > 0 && campaignStartOk && campaignEndOk
+            ? Number(game.discountPercentage)
+            : 0;
+
         const unitPrice = Number(edition.basePrice);
+        const priceAfterCampaign = Number(
+          (unitPrice * (1 - campaignPercent / 100)).toFixed(2),
+        );
+        const finalSubtotalPerUnit = Number(
+          (priceAfterCampaign * (1 - discountPercent / 100)).toFixed(2),
+        );
         const discountPerUnit = Number(
-          ((unitPrice * discountPercent) / 100).toFixed(2),
+          (unitPrice - finalSubtotalPerUnit).toFixed(2),
         );
-        const subtotalPerUnit = Number(
-          (unitPrice - discountPerUnit).toFixed(2),
-        );
+        const subtotalPerUnit = finalSubtotalPerUnit;
 
-        if (edition.format === EditionFormat.PHYSICAL) {
-          if (edition.stockPhysical < quantity) {
-            throw new BadRequestException(
-              `Stock físico insuficiente para '${edition.editionName}'. Disponible: ${edition.stockPhysical}`,
-            );
-          }
-          edition.stockPhysical -= quantity;
-          await manager.save(GameEdition, edition);
+        const availableKeys = await manager.find(DigitalKey, {
+          where: {
+            gameEdition: { id: edition.id },
+            status: KeyStatus.AVAILABLE,
+          },
+          order: { id: 'ASC' },
+          take: quantity,
+          lock: { mode: 'pessimistic_write' },
+        });
 
+        if (availableKeys.length < quantity) {
+          throw new BadRequestException(
+            `No hay suficientes llaves digitales disponibles para la edición ${edition.id}. Solicitado: ${quantity}, Disponible: ${availableKeys.length}`,
+          );
+        }
+
+        const targetKeyStatus =
+          effectivePaymentStatus === PaymentStatus.COMPLETED
+            ? KeyStatus.ASSIGNED
+            : KeyStatus.RESERVED;
+
+        for (const key of availableKeys) {
+          key.status = targetKeyStatus;
+        }
+        await manager.save(DigitalKey, availableKeys);
+
+        for (const key of availableKeys) {
           itemsToSave.push({
             gameEdition: edition,
             unitPrice,
-            discountApplied: Number((discountPerUnit * quantity).toFixed(2)),
-            subtotal: Number((subtotalPerUnit * quantity).toFixed(2)),
+            discountApplied: discountPerUnit,
+            subtotal: subtotalPerUnit,
+            digitalKey: key,
           });
-        } else {
-          const availableKeys = await manager.find(DigitalKey, {
-            where: {
-              gameEdition: { id: edition.id },
-              status: KeyStatus.AVAILABLE,
-            },
-            order: { id: 'ASC' },
-            take: quantity,
-            lock: { mode: 'pessimistic_write' },
-          });
-
-          if (availableKeys.length < quantity) {
-            throw new BadRequestException(
-              `No hay suficientes llaves digitales disponibles para la edición ${edition.id}. Solicitado: ${quantity}, Disponible: ${availableKeys.length}`,
-            );
-          }
-
-          const targetKeyStatus =
-            effectivePaymentStatus === PaymentStatus.COMPLETED
-              ? KeyStatus.ASSIGNED
-              : KeyStatus.RESERVED;
-
-          for (const key of availableKeys) {
-            key.status = targetKeyStatus;
-          }
-          await manager.save(DigitalKey, availableKeys);
-
-          for (const key of availableKeys) {
-            itemsToSave.push({
-              gameEdition: edition,
-              unitPrice,
-              discountApplied: discountPerUnit,
-              subtotal: subtotalPerUnit,
-              digitalKey: key,
-            });
-          }
         }
       }
 
@@ -188,6 +202,23 @@ export class OrdersService {
       });
 
       const ordenGuardada = await manager.save(Order, nuevaOrden);
+
+      if (appliedPromotionId !== null) {
+        const existingRedemption = await manager.findOne(CouponRedemption, {
+          where: { userId, promotionId: appliedPromotionId },
+        });
+        if (existingRedemption) {
+          throw new BadRequestException(
+            'Este cupón ya fue reclamado por tu cuenta (límite de 1 uso por usuario)',
+          );
+        }
+        const redemption = manager.create(CouponRedemption, {
+          userId,
+          promotionId: appliedPromotionId,
+          orderId: ordenGuardada.id,
+        });
+        await manager.save(CouponRedemption, redemption);
+      }
 
       const itemsGuardados: OrderItem[] = [];
       const libraryEditionIds = new Set<number>();
@@ -399,24 +430,7 @@ export class OrdersService {
       }
 
       for (const item of order.items ?? []) {
-        if (item.gameEdition?.format === EditionFormat.PHYSICAL) {
-          const edition = await manager.findOne(GameEdition, {
-            where: { id: item.gameEdition.id },
-            lock: { mode: 'pessimistic_write' },
-          });
-          if (edition) {
-            const gross = Number(item.subtotal) + Number(item.discountApplied);
-            const qty =
-              Number(item.unitPrice) > 0
-                ? Math.max(1, Math.round(gross / Number(item.unitPrice)))
-                : 1;
-            edition.stockPhysical += qty;
-            await manager.save(GameEdition, edition);
-          }
-        } else if (
-          item.digitalKey &&
-          item.digitalKey.status === KeyStatus.RESERVED
-        ) {
+        if (item.digitalKey && item.digitalKey.status === KeyStatus.RESERVED) {
           item.digitalKey.status = KeyStatus.AVAILABLE;
           await manager.save(DigitalKey, item.digitalKey);
         }

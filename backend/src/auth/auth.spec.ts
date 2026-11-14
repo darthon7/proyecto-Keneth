@@ -58,11 +58,15 @@ function createInMemoryAuthUserRepository() {
     reset,
     getAllInternal: () => users,
     findOneBy: vi.fn(
-      async (where: Partial<Pick<User, 'id' | 'email'>>): Promise<User | null> => {
+      async (
+        where: Partial<Pick<User, 'id' | 'email' | 'username'>>,
+      ): Promise<User | null> => {
         return (
           users.find((u) => {
             if (where.id !== undefined && u.id !== where.id) return false;
             if (where.email !== undefined && u.email !== where.email)
+              return false;
+            if (where.username !== undefined && u.username !== where.username)
               return false;
             return true;
           }) ?? null
@@ -396,6 +400,26 @@ describe('AuthController HTTP Integration (/auth/login, /auth/register, /auth/me
           email: 'admin@example.com',
           password: 'Password123!',
           username: 'duplicate',
+        })
+        .expect(409);
+    });
+
+    it('retorna 409 Conflict si el nombre de usuario ya está en uso', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({
+          email: 'first_user@example.com',
+          password: 'Password123!',
+          username: 'nickname_unico',
+        })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({
+          email: 'second_user@example.com',
+          password: 'Password123!',
+          username: 'nickname_unico',
         })
         .expect(409);
     });

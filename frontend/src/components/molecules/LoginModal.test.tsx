@@ -185,5 +185,12 @@ describe('LoginModal', () => {
     expect(screen.queryByTestId('login-username-input')).not.toBeInTheDocument();
     await user.click(screen.getByTestId('login-mode-switch-btn'));
     expect(screen.getByTestId('login-username-input')).toBeInTheDocument();
+
+    const countrySelect = screen.getByLabelText('País');
+    expect(countrySelect.tagName).toBe('SELECT');
+    expect(screen.queryByText(/ISO-2/i)).not.toBeInTheDocument();
+
+    await user.selectOptions(countrySelect, 'ES');
+    expect(countrySelect).toHaveValue('ES');
   });
 });

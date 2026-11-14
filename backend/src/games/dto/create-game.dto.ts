@@ -2,8 +2,11 @@ import {
   IsArray,
   IsDateString,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
+  Max,
+  Min,
 } from 'class-validator';
 
 export class CreateGameDto {
@@ -27,6 +30,24 @@ export class CreateGameDto {
   @IsOptional()
   @IsString()
   coverImageUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  discountCampaignName?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(95)
+  discountPercentage?: number;
+
+  @IsOptional()
+  @IsDateString()
+  discountStartDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  discountEndDate?: string;
 
   @IsInt()
   publisherId: number;

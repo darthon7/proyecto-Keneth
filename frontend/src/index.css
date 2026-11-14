@@ -243,6 +243,63 @@
     animation: nintendo-shine 0.75s ease-out;
   }
 
+  /* Hero Banner Subtle Motion Animations */
+  @keyframes hero-drift-1 {
+    0%, 100% {
+      transform: scale(1) translate3d(0, 0, 0);
+    }
+    50% {
+      transform: scale(1.045) translate3d(0.6%, -0.5%, 0);
+    }
+  }
+
+  @keyframes hero-drift-2 {
+    0%, 100% {
+      transform: scale(1.01) translate3d(0, 0, 0);
+    }
+    50% {
+      transform: scale(1.05) translate3d(-0.7%, -0.4%, 0);
+    }
+  }
+
+  @keyframes hero-drift-3 {
+    0%, 100% {
+      transform: scale(1) translate3d(0, 0, 0);
+    }
+    50% {
+      transform: scale(1.045) translate3d(0.4%, 0.5%, 0);
+    }
+  }
+
+  @keyframes hero-backdrop-drift {
+    0%, 100% {
+      transform: scale(1.25);
+    }
+    50% {
+      transform: scale(1.31);
+    }
+  }
+
+  .hero-motion-0 {
+    animation: hero-drift-1 14s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  .hero-motion-1 {
+    animation: hero-drift-2 16s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  .hero-motion-2 {
+    animation: hero-drift-3 15s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  .hero-backdrop-motion {
+    animation: hero-backdrop-drift 18s ease-in-out infinite;
+    will-change: transform;
+  }
+
   /* Accessibility: Respect users with reduced-motion preferences */
   @media (prefers-reduced-motion: reduce) {
     .btn-nintendo-animation {
@@ -251,6 +308,12 @@
     }
     .btn-nintendo-shine::after {
       display: none !important;
+    }
+    .hero-motion-0,
+    .hero-motion-1,
+    .hero-motion-2,
+    .hero-backdrop-motion {
+      animation: none !important;
     }
   }
 }

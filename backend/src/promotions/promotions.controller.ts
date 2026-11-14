@@ -9,7 +9,7 @@ import {
   ParseIntPipe,
   UseGuards,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/index.js';
+import { CurrentUser, JwtAuthGuard, Public, type AuthenticatedUser } from '../auth/index.js';
 import { Roles, RolesGuard } from '../common/auth/index.js';
 import { UserRole } from '../users/entities/user-role.enum.js';
 import { PromotionsService } from './promotions.service.js';
@@ -27,9 +27,17 @@ export class PromotionsController {
     return this.promotionsService.create(createDto);
   }
 
+  @Public()
+  @UseGuards(JwtAuthGuard)
   @Get()
-  findAll() {
-    return this.promotionsService.findAll();
+  findAll(@CurrentUser() user?: AuthenticatedUser) {
+    return this.promotionsService.findAll(user?.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('my')
+  findMine(@CurrentUser() user: AuthenticatedUser) {
+    return this.promotionsService.findForUser(user.id);
   }
 
   @Get(':id')

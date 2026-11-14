@@ -4,11 +4,30 @@ import { BrandLogo } from '@/components/atoms/BrandLogo';
 const FOOTER_LINKS = [
   { to: '/games', label: 'Catálogo' },
   { to: '/promotions', label: 'Ofertas' },
-  { to: '/library', label: 'Biblioteca' },
+  { to: '/library', label: 'Mis Juegos' },
   { to: '/wishlist', label: 'Deseados' },
   { to: '/orders', label: 'Órdenes' },
-  { to: '/reviews', label: 'Reseñas' },
 ] as const;
+
+function FooterSupportNotice() {
+  return (
+    <div
+      data-testid="footer-support-notice"
+      className="mt-4 w-fit max-w-full rounded-lg bg-white/5 border border-white/15 px-3 py-1.5 inline-flex items-center text-[11px] text-indigo-100"
+    >
+      <span>
+        ¿Necesitas ayuda? Para pedir soporte envía un correo a{' '}
+        <a
+          href="mailto:Soporte@Elpibes.com"
+          className="font-bold text-[#FFC700] hover:underline"
+        >
+          Soporte@Elpibes.com
+        </a>
+        .
+      </span>
+    </div>
+  );
+}
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -54,8 +73,11 @@ export function Footer() {
           </nav>
         </div>
 
+        {/* Support Notice */}
+        <FooterSupportNotice />
+
         {/* Minimal Copyright & Trust Baseline */}
-        <div className="mt-6 pt-5 border-t border-white/15 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-indigo-200">
+        <div className="mt-5 pt-5 border-t border-white/15 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-indigo-200">
           <p>© {currentYear} EL PIBES Digital Store. Todos los derechos reservados.</p>
           <p className="inline-flex items-center gap-2">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#FFC700]" aria-hidden="true" />

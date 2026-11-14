@@ -79,30 +79,28 @@ describe('NavBar', () => {
 
     expect(screen.getByText(/EL/i)).toBeInTheDocument();
     expect(screen.getByText(/PIBES/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'TIENDA' })).toHaveAttribute('href', '/games');
     expect(screen.getByRole('link', { name: 'OFERTAS' })).toHaveAttribute('href', '/promotions');
+    expect(screen.getByRole('link', { name: 'MIS JUEGOS' })).toHaveAttribute('href', '/library');
+    expect(screen.queryByRole('link', { name: 'COMUNIDAD' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'SOPORTE' })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('navbar-catalog-trigger')).not.toBeInTheDocument();
   });
 
-  it('oculta los controles de administración y el directorio de usuarios para visitantes anónimos', async () => {
+  it('oculta los controles de administración y el directorio de usuarios para visitantes anónimos', () => {
     vi.mocked(wishlistsExtraApi.byUser).mockResolvedValue([]);
-    const user = userEvent.setup();
 
     renderNavBar();
 
     expect(screen.getByRole('button', { name: /Iniciar sesión/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Registrarse/i })).toBeInTheDocument();
+    expect(screen.queryByTestId('navbar-wishlist-link')).not.toBeInTheDocument();
     expect(screen.queryByTestId('navbar-admin-panel-btn')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('navbar-catalog-trigger')).not.toBeInTheDocument();
 
     // Verify absence of former hardcoded mocks
     expect(screen.queryByText(/Aura_Kid/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/US\$ 45\.20/i)).not.toBeInTheDocument();
-
-    // Open CATÁLOGO dropdown and verify only customer links are shown
-    await user.click(screen.getByTestId('navbar-catalog-trigger'));
-    expect(screen.getByRole('menuitem', { name: 'Mi Biblioteca' })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: 'Ofertas y Cupones' })).toBeInTheDocument();
-    expect(screen.queryByRole('menuitem', { name: 'Administrar Videojuegos' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('menuitem', { name: 'Claves Digitales' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('menuitem', { name: 'Directorio de Usuarios' })).not.toBeInTheDocument();
   });
 
   it('NO muestra el botón ni enlaces de Panel de Control para usuarios CUSTOMER', async () => {
@@ -117,6 +115,7 @@ describe('NavBar', () => {
       expect(screen.getByTestId('navbar-profile-trigger')).toBeInTheDocument();
     });
 
+    expect(screen.queryByTestId('navbar-wishlist-link')).not.toBeInTheDocument();
     expect(screen.queryByTestId('navbar-admin-panel-btn')).not.toBeInTheDocument();
 
     await user.click(screen.getByTestId('navbar-profile-trigger'));
@@ -141,7 +140,7 @@ describe('NavBar', () => {
 
     await user.click(screen.getByTestId('navbar-profile-trigger'));
     expect(screen.getByTestId('navbar-profile-admin-badge')).toHaveTextContent('ADMIN');
-    expect(screen.getByTestId('navbar-profile-admin-link')).toHaveAttribute('href', '/admin');
+    expect(screen.queryByTestId('navbar-profile-admin-link')).not.toBeInTheDocument();
 
     await user.click(screen.getByTestId('navbar-mobile-toggle'));
     expect(screen.getByTestId('navbar-mobile-admin-panel-btn')).toHaveAttribute('href', '/admin');

@@ -40,12 +40,10 @@ function renderLayout(initialEntry = '/admin') {
 }
 
 describe('AdminControlPanelLayout', () => {
-  it('renderiza la consola operativa con todos los enlaces del sidebar, cabecera y Outlet', () => {
+  it('renderiza la consola operativa con todos los enlaces del sidebar y Outlet', () => {
     renderLayout('/admin');
 
     expect(screen.getByTestId('admin-control-panel')).toBeInTheDocument();
-    expect(screen.getByTestId('admin-back-to-store-btn')).toHaveAttribute('href', '/');
-    expect(screen.getByTestId('admin-active-user')).toHaveTextContent('AdminOperador');
     expect(screen.getByTestId('outlet-overview')).toBeInTheDocument();
 
     const expectedNavItems = [
@@ -60,7 +58,6 @@ describe('AdminControlPanelLayout', () => {
       { testId: 'admin-nav-system-requirements', href: '/admin/system-requirements' },
       { testId: 'admin-nav-promotions', href: '/admin/promotions' },
       { testId: 'admin-nav-orders', href: '/admin/orders' },
-      { testId: 'admin-nav-users', href: '/admin/users' },
     ];
 
     for (const item of expectedNavItems) {

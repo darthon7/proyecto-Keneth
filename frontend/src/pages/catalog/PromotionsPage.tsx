@@ -17,7 +17,17 @@ function toLocalDateTimeInput(value: string | null | undefined): string {
 export function PromotionsPage({ embedded = false }: { embedded?: boolean }) {
   const fields = useMemo<FieldConfig[]>(
     () => [
-      { name: 'name', label: 'Nombre', type: 'text', required: true, maxLength: 150 },
+      { name: 'name', label: 'Campaña / Descripción', type: 'text', required: true, maxLength: 150 },
+      {
+        name: 'couponCode',
+        label: 'Código de cupón',
+        type: 'text',
+        required: true,
+        minLength: 2,
+        maxLength: 50,
+        placeholder: 'Ej. VERANO25',
+        help: 'Obligatorio. Se valida en el checkout para aplicar el descuento',
+      },
       {
         name: 'discountPercentage',
         label: 'Descuento (%)',
@@ -27,16 +37,9 @@ export function PromotionsPage({ embedded = false }: { embedded?: boolean }) {
         max: 100,
         step: 0.01,
       },
-      {
-        name: 'couponCode',
-        label: 'Código de cupón',
-        type: 'text',
-        maxLength: 50,
-        help: 'Se usa en el checkout para aplicar el descuento',
-      },
       { name: 'startDate', label: 'Inicio', type: 'datetime', required: true },
       { name: 'endDate', label: 'Fin', type: 'datetime', required: true },
-      { name: 'isActive', label: 'Activa', type: 'checkbox', defaultValue: true },
+      { name: 'isActive', label: 'Activo', type: 'checkbox', defaultValue: true },
     ],
     [],
   );
@@ -44,8 +47,8 @@ export function PromotionsPage({ embedded = false }: { embedded?: boolean }) {
   return (
     <CrudResourcePage<Promotion, CreatePromotionPayload>
       embedded={embedded}
-      title="Promociones"
-      description="Cupones de descuento aplicables al crear órdenes. Solo se aceptan si están activos."
+      title="Cupones de Descuento"
+      description="Códigos de descuento aplicables por los clientes en el checkout dentro de su vigencia."
       queryKey={['promotions']}
       fetchList={() => promotionsApi.list()}
       createItem={(payload) => promotionsApi.create(payload)}
@@ -53,15 +56,15 @@ export function PromotionsPage({ embedded = false }: { embedded?: boolean }) {
       deleteItem={(id) => promotionsApi.remove(id)}
       fields={fields}
       columns={[
-        { header: 'Nombre', render: (promotion) => promotion.name },
+        { header: 'Campaña', render: (promotion) => promotion.name },
+        {
+          header: 'Código de Cupón',
+          className: 'font-mono font-bold text-[#1E1B4B]',
+          render: (promotion) => promotion.couponCode ?? '—',
+        },
         {
           header: 'Descuento',
           render: (promotion) => `${Number(promotion.discountPercentage)}%`,
-        },
-        {
-          header: 'Cupón',
-          className: 'text-fog',
-          render: (promotion) => promotion.couponCode ?? '—',
         },
         {
           header: 'Vigencia',
@@ -72,7 +75,7 @@ export function PromotionsPage({ embedded = false }: { embedded?: boolean }) {
           header: 'Estado',
           render: (promotion) => (
             <Badge tone={promotion.isActive ? 'success' : 'neutral'}>
-              {promotion.isActive ? 'Activa' : 'Inactiva'}
+              {promotion.isActive ? 'Activo' : 'Inactivo'}
             </Badge>
           ),
         },

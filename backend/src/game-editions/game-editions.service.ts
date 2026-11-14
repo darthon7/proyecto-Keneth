@@ -1,11 +1,10 @@
 import {
-  BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { GameEdition } from './entities/game-edition.entity.js';
+import { EditionFormat, GameEdition } from './entities/game-edition.entity.js';
 import { Game } from '../games/entities/game.entity.js';
 import { Platform } from '../platforms/entities/platform.entity.js';
 import { CreateGameEditionDto } from './dto/create-game-edition.dto.js';
@@ -39,6 +38,7 @@ export class GameEditionsService {
 
     const edition = this.editionRepository.create({
       ...datos,
+      format: datos.format ?? EditionFormat.DIGITAL,
       game,
       platform,
     });
@@ -51,6 +51,7 @@ export class GameEditionsService {
       relations: {
         game: true,
         platform: true,
+        digitalKeys: true,
       },
     });
   }
@@ -61,6 +62,7 @@ export class GameEditionsService {
       relations: {
         game: true,
         platform: true,
+        digitalKeys: true,
       },
     });
 
@@ -98,25 +100,5 @@ export class GameEditionsService {
   async remove(id: number) {
     const edition = await this.findOne(id);
     return await this.editionRepository.remove(edition);
-  }
-
-  // Métodos de control de stock físico (idéntico al estilo del proyecto de referencia)
-  async descontarStockFisico(id: number, cantidad: number) {
-    const edition = await this.findOne(id);
-
-    if (edition.stockPhysical < cantidad) {
-      throw new BadRequestException(
-        `Stock físico insuficiente para '${edition.editionName}'. Solicitado: ${cantidad}, Disponible: ${edition.stockPhysical}`,
-      );
-    }
-
-    edition.stockPhysical -= cantidad;
-    return await this.editionRepository.save(edition);
-  }
-
-  async devolverStockFisico(id: number, cantidad: number) {
-    const edition = await this.findOne(id);
-    edition.stockPhysical += cantidad;
-    return await this.editionRepository.save(edition);
   }
 }

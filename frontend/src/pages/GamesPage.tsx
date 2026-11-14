@@ -11,6 +11,7 @@ import type { GameFilterValues } from '@/components/molecules/GameFilters';
 import { GameCard } from '@/components/molecules/GameCard';
 import { useCart } from '@/context/CartContext';
 import { useSession } from '@/context/SessionContext';
+import { getActiveGameDiscount } from '@/utils/discount';
 import {
   developersApi,
   errorMessage,
@@ -18,11 +19,19 @@ import {
   gamesApi,
   genresApi,
   platformsApi,
-  publishersApi,
 } from '@/api';
 import type { Game } from '@/types';
 
 const PAGE_SIZE = 12;
+
+function getEffectiveMinPrice(game: Game): number | null {
+  const prices = (game.editions ?? [])
+    .map((edition) => Number(edition.basePrice))
+    .filter((price) => Number.isFinite(price));
+  if (prices.length === 0) return null;
+  const minBase = Math.min(...prices);
+  return getActiveGameDiscount(game).computePrice(minBase);
+}
 
 export function GamesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -32,10 +41,17 @@ export function GamesPage() {
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState(() => searchParams.get('q') ?? '');
 
+  const maxPriceParam = searchParams.get('maxPrice');
+  const parsedMaxPrice = maxPriceParam ? Number(maxPriceParam) : null;
+  const maxPrice =
+    parsedMaxPrice !== null && Number.isFinite(parsedMaxPrice) && parsedMaxPrice > 0
+      ? parsedMaxPrice
+      : null;
+
   const filters: GameFilterValues = {
     genreId: searchParams.get('genreId') ?? '',
     platformId: searchParams.get('platformId') ?? '',
-    publisherId: searchParams.get('publisherId') ?? '',
+    maxPrice: maxPrice !== null ? String(maxPrice) : '',
     developerId: searchParams.get('developerId') ?? '',
   };
   const term = searchParams.get('q') ?? '';
@@ -43,7 +59,6 @@ export function GamesPage() {
   const gamesQuery = useQuery({ queryKey: ['games'], queryFn: () => gamesApi.list() });
   const genresQuery = useQuery({ queryKey: ['genres'], queryFn: () => genresApi.list() });
   const platformsQuery = useQuery({ queryKey: ['platforms'], queryFn: () => platformsApi.list() });
-  const publishersQuery = useQuery({ queryKey: ['publishers'], queryFn: () => publishersApi.list() });
   const developersQuery = useQuery({ queryKey: ['developers'], queryFn: () => developersApi.list() });
   const editionsQuery = useQuery({
     queryKey: ['game-editions'],
@@ -85,10 +100,6 @@ export function GamesPage() {
         return false;
       }
 
-      if (filters.publisherId && String(game.publisher?.id) !== filters.publisherId) {
-        return false;
-      }
-
       if (filters.developerId && String(game.developer?.id) !== filters.developerId) {
         return false;
       }
@@ -98,9 +109,14 @@ export function GamesPage() {
         if (!matchingGames?.has(game.id)) return false;
       }
 
+      if (maxPrice !== null) {
+        const effectivePrice = getEffectiveMinPrice(game);
+        if (effectivePrice === null || effectivePrice > maxPrice) return false;
+      }
+
       return true;
     });
-  }, [gamesQuery.data, term, filters, gameIdsByPlatform]);
+  }, [gamesQuery.data, term, filters, gameIdsByPlatform, maxPrice]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -135,14 +151,14 @@ export function GamesPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#F4F4F6] text-[#0F172A] font-sans antialiased py-10">
-      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+    <div className="relative min-h-screen bg-[#F4F4F6] text-[#0F172A] font-sans antialiased py-5 sm:py-6">
+      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 space-y-4 sm:space-y-5">
         {/* Header Strip */}
-        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#E2E8F0]">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 sm:pb-4 border-b border-[#E2E8F0]">
           <div className="flex items-center gap-3">
-            <span className="w-2.5 h-6 bg-[#FF2A5F] rounded-full" />
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-wider text-[#0F172A]">
+            <span className="w-2 h-5 bg-[#FF2A5F] rounded-full" />
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+              <h1 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-[#0F172A]">
                 Catálogo de Videojuegos
               </h1>
               <p className="text-xs text-[#475569]">
@@ -165,12 +181,12 @@ export function GamesPage() {
           )}
         </header>
 
-        {/* Search & Filters Card */}
-        <section className="bg-[#FFFFFF] rounded-2xl border border-[#E2E8F0] p-5 sm:p-6 shadow-sm space-y-6">
-          <form onSubmit={handleSearchSubmit} className="relative max-w-2xl">
-            <div className="relative flex items-center bg-[#F4F4F6] rounded-xl px-4 py-2.5 border border-[#E2E8F0] focus-within:bg-[#FFFFFF] focus-within:border-[#FF2A5F] focus-within:ring-2 focus-within:ring-[#FF2A5F]/20 transition-all">
+        {/* Compact Search & Filters Toolbar */}
+        <section className="bg-[#FFFFFF] rounded-xl border border-[#E2E8F0] px-3 py-2.5 shadow-sm flex flex-col xl:flex-row xl:items-center gap-2.5">
+          <form onSubmit={handleSearchSubmit} className="xl:w-72 shrink-0">
+            <div className="relative flex items-center bg-[#F4F4F6] rounded-lg px-2.5 py-1.5 border border-[#E2E8F0] focus-within:bg-[#FFFFFF] focus-within:border-[#FF2A5F] focus-within:ring-2 focus-within:ring-[#FF2A5F]/20 transition-all">
               <svg
-                className="w-4 h-4 text-[#94A3B8] mr-3 shrink-0"
+                className="w-3.5 h-3.5 text-[#94A3B8] mr-2 shrink-0"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -186,34 +202,32 @@ export function GamesPage() {
                 type="text"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Busca por título, publisher o desarrolladora..."
-                className="w-full bg-transparent text-xs sm:text-sm text-[#0F172A] placeholder-[#94A3B8] focus:outline-none"
+                placeholder="Buscar título, estudio..."
+                className="w-full bg-transparent text-xs text-[#0F172A] placeholder-[#94A3B8] focus:outline-none"
               />
               <button
                 type="submit"
-                className="ml-2 px-3 py-1 rounded-lg bg-[#FF2A5F] hover:bg-[#E01E4F] text-xs font-bold text-white transition-colors"
+                className="ml-1.5 px-2.5 py-0.5 rounded-md bg-[#FF2A5F] hover:bg-[#E01E4F] text-[11px] font-bold text-white transition-colors shrink-0"
               >
                 Buscar
               </button>
             </div>
           </form>
 
-          {/* Filters Selects */}
-          <div className="border-t border-[#E2E8F0] pt-4">
-            <GameFilters
-              value={filters}
-              onChange={updateFilters}
-              genres={genresQuery.data ?? []}
-              platforms={platformsQuery.data ?? []}
-              publishers={publishersQuery.data ?? []}
-              developers={developersQuery.data ?? []}
-              onReset={() => {
-                setSearchParams(new URLSearchParams());
-                setSearchInput('');
-                setPage(1);
-              }}
-            />
-          </div>
+          <div className="hidden xl:block w-px h-6 bg-[#E2E8F0] shrink-0" aria-hidden="true" />
+
+          <GameFilters
+            value={filters}
+            onChange={updateFilters}
+            genres={genresQuery.data ?? []}
+            platforms={platformsQuery.data ?? []}
+            developers={developersQuery.data ?? []}
+            onReset={() => {
+              setSearchParams(new URLSearchParams());
+              setSearchInput('');
+              setPage(1);
+            }}
+          />
         </section>
 
         {/* Content Section */}

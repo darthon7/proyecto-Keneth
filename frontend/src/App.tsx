@@ -1,8 +1,9 @@
-import { lazy, Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { Spinner } from '@/components/atoms/Spinner';
 import { Footer } from '@/components/molecules/Footer';
 import { NavBar } from '@/components/molecules/NavBar';
+import { WelcomeCouponPopup } from '@/components/molecules/WelcomeCouponPopup';
 import { AdminControlPanelLayout } from '@/components/organisms/AdminControlPanelLayout';
 import { AdminRouteGuard } from '@/components/organisms/AdminRouteGuard';
 
@@ -17,6 +18,9 @@ const PromotionsPublicPage = lazy(() =>
   })),
 );
 const OrdersPage = lazy(() => import('@/pages/OrdersPage').then((module) => ({ default: module.OrdersPage })));
+const CheckoutPage = lazy(() =>
+  import('@/pages/CheckoutPage').then((module) => ({ default: module.CheckoutPage })),
+);
 const OrderDetailPage = lazy(() =>
   import('@/pages/OrderDetailPage').then((module) => ({ default: module.OrderDetailPage })),
 );
@@ -27,7 +31,6 @@ const LibraryPage = lazy(() => import('@/pages/LibraryPage').then((module) => ({
 const WishlistPage = lazy(() =>
   import('@/pages/WishlistPage').then((module) => ({ default: module.WishlistPage })),
 );
-const ReviewsPage = lazy(() => import('@/pages/ReviewsPage').then((module) => ({ default: module.ReviewsPage })));
 const NotFoundPage = lazy(() =>
   import('@/pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })),
 );
@@ -35,11 +38,6 @@ const NotFoundPage = lazy(() =>
 const AdminOverviewPage = lazy(() =>
   import('@/pages/admin/AdminOverviewPage').then((module) => ({
     default: module.AdminOverviewPage,
-  })),
-);
-const AdminUsersPage = lazy(() =>
-  import('@/pages/admin/AdminUsersPage').then((module) => ({
-    default: module.AdminUsersPage,
   })),
 );
 const AdminOrdersPage = lazy(() =>
@@ -77,10 +75,34 @@ const SystemRequirementsPage = lazy(() =>
 const PromotionsPage = lazy(() =>
   import('@/pages/catalog/PromotionsPage').then((module) => ({ default: module.PromotionsPage })),
 );
+const DiscountCampaignsPage = lazy(() =>
+  import('@/pages/admin/DiscountCampaignsPage').then((module) => ({
+    default: module.DiscountCampaignsPage,
+  })),
+);
+const FeaturedTrailersPage = lazy(() =>
+  import('@/pages/admin/FeaturedTrailersPage').then((module) => ({
+    default: module.FeaturedTrailersPage,
+  })),
+);
+const MyCouponsPage = lazy(() =>
+  import('@/pages/MyCouponsPage').then((module) => ({ default: module.MyCouponsPage })),
+);
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [pathname]);
+
+  return null;
+}
 
 export function App() {
   return (
     <div className="flex min-h-screen flex-col bg-[#F4F4F6] text-[#0F172A]">
+      <ScrollToTop />
       <NavBar />
 
       <main className="flex-1">
@@ -92,11 +114,13 @@ export function App() {
             <Route path="/games/:id" element={<GameDetailPage />} />
             <Route path="/promotions" element={<PromotionsPublicPage />} />
             <Route path="/orders" element={<OrdersPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/orders/:id" element={<OrderDetailPage />} />
             <Route path="/users/:id" element={<UserProfilePage />} />
+            <Route path="/my-coupons" element={<MyCouponsPage />} />
             <Route path="/library" element={<LibraryPage />} />
             <Route path="/wishlist" element={<WishlistPage />} />
-            <Route path="/reviews" element={<ReviewsPage />} />
+            <Route path="/reviews" element={<Navigate to="/games" replace />} />
 
             {/* Panel de Control Operativo (exclusivo ADMIN) */}
             <Route
@@ -117,8 +141,9 @@ export function App() {
               <Route path="digital-keys" element={<DigitalKeysPage embedded />} />
               <Route path="system-requirements" element={<SystemRequirementsPage embedded />} />
               <Route path="promotions" element={<PromotionsPage embedded />} />
+              <Route path="discount-campaigns" element={<DiscountCampaignsPage />} />
+              <Route path="featured-trailers" element={<FeaturedTrailersPage />} />
               <Route path="orders" element={<AdminOrdersPage />} />
-              <Route path="users" element={<AdminUsersPage />} />
             </Route>
 
             {/* Rutas legacy protegidas con redirección al Panel de Control */}
@@ -194,19 +219,12 @@ export function App() {
                 </AdminRouteGuard>
               }
             />
-            <Route
-              path="/users"
-              element={
-                <AdminRouteGuard>
-                  <Navigate to="/admin/users" replace />
-                </AdminRouteGuard>
-              }
-            />
 
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>
       </main>
+      <WelcomeCouponPopup />
 
       <Footer />
     </div>

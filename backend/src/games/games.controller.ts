@@ -16,6 +16,7 @@ import { UserRole } from '../users/entities/user-role.enum.js';
 import { GamesService } from './games.service.js';
 import { CreateGameDto } from './dto/create-game.dto.js';
 import { UpdateGameDto } from './dto/update-game.dto.js';
+import { ApplyDiscountCampaignDto } from './dto/apply-discount-campaign.dto.js';
 
 @Controller('games')
 export class GamesController {
@@ -26,6 +27,13 @@ export class GamesController {
   @Post()
   create(@Body() createGameDto: CreateGameDto) {
     return this.gamesService.create(createGameDto);
+  }
+
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('discount-campaign')
+  applyDiscountCampaign(@Body() dto: ApplyDiscountCampaignDto) {
+    return this.gamesService.applyDiscountCampaign(dto);
   }
 
   @Get()

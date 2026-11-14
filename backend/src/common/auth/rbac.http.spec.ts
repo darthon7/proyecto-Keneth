@@ -445,7 +445,10 @@ describe('RBAC HTTP Integration (Developers, Games, DigitalKeys, Orders, Librari
         .get('/orders')
         .set('Authorization', `Bearer ${customerToken}`)
         .expect(200);
-      expect(mockOrdersService.findByUser).toHaveBeenCalledWith(2);
+      expect(mockOrdersService.findByUser).toHaveBeenCalledWith(2, {
+        limit: undefined,
+        offset: undefined,
+      });
 
       await request(app.getHttpServer())
         .get('/orders')

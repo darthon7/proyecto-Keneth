@@ -1,42 +1,93 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
+import { IsNull, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 import { Promotion } from './entities/promotion.entity.js';
+import { CouponRedemption } from './entities/coupon-redemption.entity.js';
 import { CreatePromotionDto } from './dto/create-promotion.dto.js';
 import { UpdatePromotionDto } from './dto/update-promotion.dto.js';
+
+export type PromotionWithUsage = Promotion & {
+  usageLimitPerUser: number;
+  isClaimed: boolean;
+};
 
 @Injectable()
 export class PromotionsService {
   constructor(
     @InjectRepository(Promotion)
     private readonly promotionRepository: Repository<Promotion>,
+
+    @InjectRepository(CouponRedemption)
+    private readonly couponRedemptionRepository: Repository<CouponRedemption>,
   ) {}
+
+  private async attachUsageMetadata(
+    promotions: Promotion[],
+    userId?: number,
+  ): Promise<PromotionWithUsage[]> {
+    let claimedPromotionIds = new Set<number>();
+    if (userId !== undefined && promotions.length > 0) {
+      const redemptions = await this.couponRedemptionRepository.find({
+        where: { userId },
+        select: { promotionId: true },
+      });
+      claimedPromotionIds = new Set(redemptions.map((r) => r.promotionId));
+    }
+
+    return promotions.map((promo) => ({
+      ...promo,
+      usageLimitPerUser: 1,
+      isClaimed: claimedPromotionIds.has(promo.id),
+    }));
+  }
+
+  async hasUserClaimed(promotionId: number, userId: number): Promise<boolean> {
+    return await this.couponRedemptionRepository.exists({
+      where: { promotionId, userId },
+    });
+  }
 
   async create(createDto: CreatePromotionDto) {
     const promo = this.promotionRepository.create({
       ...createDto,
+      couponCode: createDto.couponCode.trim().toUpperCase(),
       startDate: new Date(createDto.startDate),
       endDate: new Date(createDto.endDate),
     });
     return await this.promotionRepository.save(promo);
   }
 
-  async findAll() {
-    return await this.promotionRepository.find();
+  async findAll(userId?: number): Promise<PromotionWithUsage[]> {
+    const promotions = await this.promotionRepository.find({
+      where: { userId: IsNull() },
+      order: { endDate: 'ASC' },
+    });
+    return await this.attachUsageMetadata(promotions, userId);
+  }
+
+  async findForUser(userId: number): Promise<PromotionWithUsage[]> {
+    const promotions = await this.promotionRepository.find({
+      where: [{ userId: IsNull() }, { userId }],
+      order: { endDate: 'ASC' },
+    });
+    return await this.attachUsageMetadata(promotions, userId);
   }
 
   async findOne(id: number) {
     const promo = await this.promotionRepository.findOneBy({ id });
     if (!promo) {
-      throw new NotFoundException(`Promoción con ID ${id} no encontrada`);
+      throw new NotFoundException(`Cupón/promoción con ID ${id} no encontrada`);
     }
     return promo;
   }
 
   async update(id: number, updateDto: UpdatePromotionDto) {
     const promo = await this.findOne(id);
-    const { startDate, endDate, ...rest } = updateDto;
+    const { startDate, endDate, couponCode, ...rest } = updateDto;
     const datosModificados: Partial<Promotion> = { ...rest };
+    if (couponCode !== undefined) {
+      datosModificados.couponCode = couponCode.trim().toUpperCase();
+    }
     if (startDate) {
       datosModificados.startDate = new Date(startDate);
     }
@@ -53,15 +104,36 @@ export class PromotionsService {
     return await this.promotionRepository.remove(promo);
   }
 
-  async findByCoupon(couponCode: string) {
+  async findByCoupon(couponCode: string, userId?: number) {
+    const normalizedCode = couponCode.trim().toUpperCase();
     const now = new Date();
+    const whereClauses =
+      userId !== undefined
+        ? [
+            {
+              couponCode: normalizedCode,
+              isActive: true,
+              startDate: LessThanOrEqual(now),
+              endDate: MoreThanOrEqual(now),
+              userId: IsNull(),
+            },
+            {
+              couponCode: normalizedCode,
+              isActive: true,
+              startDate: LessThanOrEqual(now),
+              endDate: MoreThanOrEqual(now),
+              userId,
+            },
+          ]
+        : {
+            couponCode: normalizedCode,
+            isActive: true,
+            startDate: LessThanOrEqual(now),
+            endDate: MoreThanOrEqual(now),
+            userId: IsNull(),
+          };
     const promo = await this.promotionRepository.findOne({
-      where: {
-        couponCode,
-        isActive: true,
-        startDate: LessThanOrEqual(now),
-        endDate: MoreThanOrEqual(now),
-      },
+      where: whereClauses,
     });
     if (!promo || !promo.isActive) {
       return null;

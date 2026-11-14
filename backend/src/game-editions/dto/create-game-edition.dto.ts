@@ -14,8 +14,9 @@ export class CreateGameEditionDto {
   @IsString()
   editionName?: string;
 
+  @IsOptional()
   @IsEnum(EditionFormat)
-  format: EditionFormat;
+  format?: EditionFormat;
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
@@ -24,11 +25,6 @@ export class CreateGameEditionDto {
   @IsOptional()
   @IsBoolean()
   isDlc?: boolean;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  stockPhysical?: number;
 
   @IsInt()
   gameId: number;

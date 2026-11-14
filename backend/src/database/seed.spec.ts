@@ -13,6 +13,7 @@ import { Game } from '../games/entities/game.entity.js';
 import { GameEdition } from '../game-editions/entities/game-edition.entity.js';
 import { DigitalKey } from '../digital-keys/entities/digital-key.entity.js';
 import { SystemRequirement } from '../system-requirements/entities/system-requirement.entity.js';
+import { Promotion } from '../promotions/entities/promotion.entity.js';
 
 describe('Database Seeder Verification', () => {
   const seedFilePath = path.resolve(__dirname, 'seed.ts');
@@ -161,6 +162,7 @@ function createMockSeedDataSource() {
   const editionRepo = createInMemoryRepo<GameEdition & MockRecord>();
   const keyRepo = createInMemoryRepo<DigitalKey & MockRecord>();
   const sysReqRepo = createInMemoryRepo<SystemRequirement & MockRecord>();
+  const promotionRepo = createInMemoryRepo<Promotion & MockRecord>();
 
   const repoMap = new Map<EntityTarget<unknown>, unknown>([
     [User, userRepo],
@@ -172,6 +174,7 @@ function createMockSeedDataSource() {
     [GameEdition, editionRepo],
     [DigitalKey, keyRepo],
     [SystemRequirement, sysReqRepo],
+    [Promotion, promotionRepo],
   ]);
 
   const dataSource = {

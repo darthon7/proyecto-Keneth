@@ -22,4 +22,7 @@ export class Promotion {
 
   @Column({ default: true })
   isActive: boolean;
+
+  @Column({ type: 'int', nullable: true })
+  userId: number | null;
 }

@@ -40,6 +40,27 @@ export class Game {
   @Column({ length: 255, nullable: true })
   coverImageUrl: string;
 
+  @Column({ type: 'varchar', length: 120, nullable: true })
+  discountCampaignName: string | null;
+
+  @Column({
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    default: 0,
+    transformer: {
+      to: (value: number) => value ?? 0,
+      from: (value: string | number | null) => Number(value ?? 0),
+    },
+  })
+  discountPercentage: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  discountStartDate: Date | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  discountEndDate: Date | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

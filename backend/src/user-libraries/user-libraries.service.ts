@@ -104,6 +104,7 @@ export class UserLibrariesService {
       where: { user: { id: userId }, isRevoked: false },
       relations: {
         gameEdition: { game: true, platform: true },
+        order: { items: { digitalKey: true, gameEdition: true } },
       },
     });
   }

@@ -16,7 +16,6 @@ import { UserLibrary } from '../../user-libraries/entities/user-library.entity.j
 
 export enum EditionFormat {
   DIGITAL = 'DIGITAL',
-  PHYSICAL = 'PHYSICAL',
 }
 
 @Entity('game_editions')
@@ -48,9 +47,6 @@ export class GameEdition {
 
   @Column({ default: false })
   isDlc: boolean;
-
-  @Column({ type: 'int', default: 0 })
-  stockPhysical: number;
 
   @CreateDateColumn()
   createdAt: Date;

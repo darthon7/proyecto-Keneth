@@ -3,7 +3,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
+import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
+import { Checkbox } from '@/components/atoms/Checkbox';
 import { EmptyState } from '@/components/atoms/EmptyState';
 import { ErrorBanner } from '@/components/atoms/ErrorBanner';
 import { Input } from '@/components/atoms/Input';
@@ -11,9 +13,27 @@ import { Modal } from '@/components/atoms/Modal';
 import { Select } from '@/components/atoms/Select';
 import { Spinner } from '@/components/atoms/Spinner';
 import { Textarea } from '@/components/atoms/Textarea';
-import { developersApi, errorMessage, gamesApi, genresApi, publishersApi } from '@/api';
-import type { Game } from '@/types';
-import { formatDate } from '@/utils/format';
+import {
+  developersApi,
+  digitalKeysExtraApi,
+  errorMessage,
+  gameEditionsApi,
+  gamesApi,
+  genresApi,
+  platformsApi,
+  publishersApi,
+} from '@/api';
+import { KeyStatus, type Game } from '@/types';
+import { formatCurrency, formatDate } from '@/utils/format';
+
+function slugifyTitle(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
 
 const schema = z.object({
   title: z.string().min(1, 'El título es obligatorio').max(200),
@@ -48,6 +68,26 @@ export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
   const [gameToDelete, setGameToDelete] = useState<Game | null>(null);
   const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
+  const [slugTouched, setSlugTouched] = useState(false);
+
+  // Unified onboarding: optional initial digital edition + key batch on game creation
+  const [setupInitialEdition, setSetupInitialEdition] = useState(false);
+  const [initialEditionName, setInitialEditionName] = useState('Standard Edition');
+  const [initialPlatformId, setInitialPlatformId] = useState('');
+  const [initialPrice, setInitialPrice] = useState('59.99');
+  const [initialIsDlc, setInitialIsDlc] = useState(false);
+  const [initialKeysQty, setInitialKeysQty] = useState('10');
+
+  // Inline Stock & Keys modal state per game
+  const [stockGameId, setStockGameId] = useState<number | null>(null);
+  const [batchQuantities, setBatchQuantities] = useState<Record<number, string>>({});
+  const [stockFeedback, setStockFeedback] = useState<string | null>(null);
+  const [stockError, setStockError] = useState<string | null>(null);
+  const [newEditionName, setNewEditionName] = useState('Standard Edition');
+  const [newEditionPlatformId, setNewEditionPlatformId] = useState('');
+  const [newEditionPrice, setNewEditionPrice] = useState('59.99');
+  const [newEditionIsDlc, setNewEditionIsDlc] = useState(false);
+  const [newEditionKeysQty, setNewEditionKeysQty] = useState('10');
 
   const gamesQuery = useQuery({ queryKey: ['games'], queryFn: () => gamesApi.list() });
   const publishersQuery = useQuery({
@@ -59,6 +99,19 @@ export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
     queryFn: () => developersApi.list(),
   });
   const genresQuery = useQuery({ queryKey: ['genres'], queryFn: () => genresApi.list() });
+  const platformsQuery = useQuery({
+    queryKey: ['platforms'],
+    queryFn: () => platformsApi.list(),
+  });
+
+  const invalidateCatalogQueries = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['games'] }),
+      queryClient.invalidateQueries({ queryKey: ['game-editions'] }),
+      queryClient.invalidateQueries({ queryKey: ['digital-keys'] }),
+      queryClient.invalidateQueries({ queryKey: ['admin', 'summary'] }),
+    ]);
+  };
 
   const form = useForm<GameFormValues>({
     resolver: zodResolver(schema),
@@ -79,15 +132,23 @@ export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
         developerId: editingGame.developer?.id ?? 0,
       });
       setSelectedGenres((editingGame.genres ?? []).map((genre) => genre.id));
+      setSlugTouched(true);
     } else {
       form.reset(EMPTY_FORM);
       setSelectedGenres([]);
+      setSlugTouched(false);
+      setSetupInitialEdition(false);
+      setInitialEditionName('Standard Edition');
+      setInitialPlatformId('');
+      setInitialPrice('59.99');
+      setInitialIsDlc(false);
+      setInitialKeysQty('10');
     }
     setFormError(null);
   }, [isModalOpen, editingGame, form]);
 
   const saveMutation = useMutation({
-    mutationFn: (payload: {
+    mutationFn: async (payload: {
       title: string;
       slug: string;
       synopsis?: string;
@@ -97,12 +158,31 @@ export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
       publisherId: number;
       developerId: number;
       genreIds: number[];
-    }) =>
-      editingGame
-        ? gamesApi.update(editingGame.id, payload)
-        : gamesApi.create(payload),
+    }) => {
+      if (editingGame) {
+        return await gamesApi.update(editingGame.id, payload);
+      }
+      const createdGame = await gamesApi.create(payload);
+      if (setupInitialEdition) {
+        const edition = await gameEditionsApi.create({
+          editionName: initialEditionName.trim() || 'Standard Edition',
+          basePrice: Number(initialPrice),
+          isDlc: initialIsDlc,
+          gameId: createdGame.id,
+          platformId: Number(initialPlatformId),
+        });
+        const qty = Number(initialKeysQty);
+        if (qty > 0) {
+          await digitalKeysExtraApi.createBulk({
+            gameEditionId: edition.id,
+            quantity: Math.min(100, Math.max(1, Math.floor(qty))),
+          });
+        }
+      }
+      return createdGame;
+    },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['games'] });
+      await invalidateCatalogQueries();
       setIsModalOpen(false);
       setEditingGame(null);
       setFormError(null);
@@ -113,15 +193,84 @@ export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
   const deleteMutation = useMutation({
     mutationFn: (game: Game) => gamesApi.remove(game.id),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['games'] });
+      await invalidateCatalogQueries();
       setGameToDelete(null);
     },
   });
 
+  const bulkKeysMutation = useMutation({
+    mutationFn: ({ gameEditionId, quantity }: { gameEditionId: number; quantity: number }) =>
+      digitalKeysExtraApi.createBulk({ gameEditionId, quantity }),
+    onSuccess: async (result) => {
+      await invalidateCatalogQueries();
+      setStockError(null);
+      setStockFeedback(
+        `Se generaron ${result.createdCount} claves disponibles (lote ${result.batchId}).`,
+      );
+    },
+    onError: (error) => setStockError(errorMessage(error)),
+  });
+
+  const addEditionMutation = useMutation({
+    mutationFn: async () => {
+      if (!stockGameId) {
+        throw new Error('Videojuego no seleccionado');
+      }
+      const platformId = Number(newEditionPlatformId);
+      const basePrice = Number(newEditionPrice);
+      if (!platformId || Number.isNaN(basePrice) || basePrice < 0) {
+        throw new Error('Selecciona una plataforma y un precio válido');
+      }
+      const edition = await gameEditionsApi.create({
+        editionName: newEditionName.trim() || 'Standard Edition',
+        basePrice,
+        isDlc: newEditionIsDlc,
+        gameId: stockGameId,
+        platformId,
+      });
+      const qty = Number(newEditionKeysQty);
+      let createdKeys = 0;
+      if (qty > 0) {
+        const res = await digitalKeysExtraApi.createBulk({
+          gameEditionId: edition.id,
+          quantity: Math.min(100, Math.max(1, Math.floor(qty))),
+        });
+        createdKeys = res.createdCount;
+      }
+      return { edition, createdKeys };
+    },
+    onSuccess: async ({ edition, createdKeys }) => {
+      await invalidateCatalogQueries();
+      setStockError(null);
+      setStockFeedback(
+        createdKeys > 0
+          ? `Edición «${edition.editionName}» creada con ${createdKeys} claves digitales disponibles.`
+          : `Edición «${edition.editionName}» creada correctamente.`,
+      );
+      setNewEditionName('Standard Edition');
+      setNewEditionIsDlc(false);
+    },
+    onError: (error) => setStockError(errorMessage(error)),
+  });
+
   const games = useMemo(() => gamesQuery.data ?? [], [gamesQuery.data]);
+  const stockGame = useMemo(
+    () => games.find((game) => game.id === stockGameId) ?? null,
+    [games, stockGameId],
+  );
 
   const submit = form.handleSubmit((values) => {
     setFormError(null);
+    if (!editingGame && setupInitialEdition) {
+      const parsedPlatform = Number(initialPlatformId);
+      const parsedPrice = Number(initialPrice);
+      if (!parsedPlatform || Number.isNaN(parsedPrice) || parsedPrice < 0) {
+        setFormError(
+          'Selecciona una plataforma y un precio válido para configurar la edición digital inicial.',
+        );
+        return;
+      }
+    }
     saveMutation.mutate({
       title: values.title,
       slug: values.slug,
@@ -149,8 +298,7 @@ export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
         <div>
           <h1 className="text-heading-sm font-extrabold text-[#0F172A]">Administrar videojuegos</h1>
           <p className="mt-2 max-w-2xl text-body-sm text-[#475569]">
-            Alta y edición de juegos con sus relaciones anidadas: publisher → desarrolladora →
-            géneros.
+            Gestiona juegos, ediciones digitales y lotes de claves sin cambiar de pantalla.
           </p>
         </div>
         <Button
@@ -179,17 +327,17 @@ export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
 
         {games.length > 0 && (
           <div className="overflow-x-auto rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] shadow-xs px-4 py-2">
-            <table className="w-full min-w-[720px] border-collapse text-left">
+            <table className="w-full min-w-[780px] border-collapse text-left">
               <thead>
                 <tr className="border-b border-[#E2E8F0]">
                   <th scope="col" className="px-3 py-3 text-caption font-bold uppercase tracking-wider text-[#475569]">
                     Título
                   </th>
                   <th scope="col" className="px-3 py-3 text-caption font-bold uppercase tracking-wider text-[#475569]">
-                    Publisher
+                    Publisher / Estudio
                   </th>
                   <th scope="col" className="px-3 py-3 text-caption font-bold uppercase tracking-wider text-[#475569]">
-                    Desarrolladora
+                    Ediciones / Stock Digital
                   </th>
                   <th scope="col" className="px-3 py-3 text-caption font-bold uppercase tracking-wider text-[#475569]">
                     Géneros
@@ -203,40 +351,79 @@ export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
                 </tr>
               </thead>
               <tbody>
-                {games.map((game) => (
-                  <tr key={game.id} className="border-b border-[#E2E8F0] last:border-b-0 hover:bg-[#F8FAFC] transition-colors">
-                    <td className="px-3 py-3 text-body-sm font-semibold text-[#0F172A]">{game.title}</td>
-                    <td className="px-3 py-3 text-body-sm text-[#475569]">{game.publisher?.name ?? '—'}</td>
-                    <td className="px-3 py-3 text-body-sm text-[#475569]">{game.developer?.name ?? '—'}</td>
-                    <td className="px-3 py-3 text-body-sm text-[#475569]">
-                      {(game.genres ?? []).map((genre) => genre.name).join(', ') || '—'}
-                    </td>
-                    <td className="px-3 py-3 text-body-sm text-[#475569]">{formatDate(game.releaseDate)}</td>
-                    <td className="px-3 py-3 text-right">
-                      <div className="inline-flex items-center gap-3">
-                        <button
-                          type="button"
-                          data-testid={`games-admin-edit-btn-${game.id}`}
-                          onClick={() => {
-                            setEditingGame(game);
-                            setIsModalOpen(true);
-                          }}
-                          className="text-body-sm font-semibold text-[#1E1B4B] hover:text-[#FF2A5F] btn-nintendo-animation"
+                {games.map((game) => {
+                  const editionsCount = game.editions?.length ?? 0;
+                  const availableKeys = (game.editions ?? []).reduce(
+                    (sum, edition) =>
+                      sum +
+                      (edition.digitalKeys ?? []).filter(
+                        (key) => key.status === KeyStatus.AVAILABLE,
+                      ).length,
+                    0,
+                  );
+
+                  return (
+                    <tr key={game.id} className="border-b border-[#E2E8F0] last:border-b-0 hover:bg-[#F8FAFC] transition-colors">
+                      <td className="px-3 py-3 text-body-sm font-semibold text-[#0F172A]">{game.title}</td>
+                      <td className="px-3 py-3 text-body-sm text-[#475569]">
+                        <div className="font-medium text-[#0F172A]">{game.publisher?.name ?? '—'}</div>
+                        <div className="text-xs text-[#64748B]">{game.developer?.name ?? '—'}</div>
+                      </td>
+                      <td className="px-3 py-3 text-body-sm">
+                        <Badge
+                          tone={
+                            editionsCount === 0 || availableKeys === 0
+                              ? 'danger'
+                              : availableKeys < 3
+                                ? 'warning'
+                                : 'success'
+                          }
                         >
-                          Editar
-                        </button>
-                        <button
-                          type="button"
-                          data-testid={`games-admin-delete-btn-${game.id}`}
-                          onClick={() => setGameToDelete(game)}
-                          className="text-body-sm font-semibold text-[#EF4444] hover:text-[#991B1B] btn-nintendo-animation"
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {editionsCount} ed. · {availableKeys} claves disp.
+                        </Badge>
+                      </td>
+                      <td className="px-3 py-3 text-body-sm text-[#475569]">
+                        {(game.genres ?? []).map((genre) => genre.name).join(', ') || '—'}
+                      </td>
+                      <td className="px-3 py-3 text-body-sm text-[#475569]">{formatDate(game.releaseDate)}</td>
+                      <td className="px-3 py-3 text-right">
+                        <div className="inline-flex items-center gap-3">
+                          <button
+                            type="button"
+                            data-testid={`games-admin-stock-btn-${game.id}`}
+                            onClick={() => {
+                              setStockFeedback(null);
+                              setStockError(null);
+                              setStockGameId(game.id);
+                            }}
+                            className="text-body-sm font-bold text-[#065F46] hover:text-[#10B981] btn-nintendo-animation"
+                          >
+                            Stock y Claves
+                          </button>
+                          <button
+                            type="button"
+                            data-testid={`games-admin-edit-btn-${game.id}`}
+                            onClick={() => {
+                              setEditingGame(game);
+                              setIsModalOpen(true);
+                            }}
+                            className="text-body-sm font-semibold text-[#1E1B4B] hover:text-[#FF2A5F] btn-nintendo-animation"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            data-testid={`games-admin-delete-btn-${game.id}`}
+                            onClick={() => setGameToDelete(game)}
+                            className="text-body-sm font-semibold text-[#EF4444] hover:text-[#991B1B] btn-nintendo-animation"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -270,13 +457,26 @@ export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
           <Input
             label="Título"
             error={form.formState.errors.title?.message}
-            {...form.register('title')}
+            {...form.register('title', {
+              onChange: (event) => {
+                if (!editingGame && !slugTouched) {
+                  form.setValue('slug', slugifyTitle(event.target.value), {
+                    shouldValidate: form.formState.isSubmitted,
+                  });
+                }
+              },
+            })}
           />
           <Input
             label="Slug"
             placeholder="the-last-of-us-part-ii"
+            hint="Se genera automáticamente desde el título (puedes editarlo)"
             error={form.formState.errors.slug?.message}
-            {...form.register('slug')}
+            {...form.register('slug', {
+              onChange: () => {
+                setSlugTouched(true);
+              },
+            })}
           />
           <Textarea
             label="Sinopsis"
@@ -350,7 +550,221 @@ export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
               })}
             </div>
           </fieldset>
+
+          {!editingGame && (
+            <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 space-y-3">
+              <Checkbox
+                label="Configurar primera edición digital y lote inicial de claves ahora"
+                checked={setupInitialEdition}
+                onChange={(event) => setSetupInitialEdition(event.target.checked)}
+              />
+
+              {setupInitialEdition && (
+                <div className="grid gap-3 sm:grid-cols-2 pt-2 border-t border-[#E2E8F0]">
+                  <Input
+                    label="Nombre de edición"
+                    value={initialEditionName}
+                    onChange={(event) => setInitialEditionName(event.target.value)}
+                  />
+                  <Select
+                    label="Plataforma"
+                    value={initialPlatformId}
+                    onChange={(event) => setInitialPlatformId(event.target.value)}
+                    placeholder="Selecciona plataforma"
+                    options={(platformsQuery.data ?? []).map((platform) => ({
+                      value: platform.id,
+                      label: platform.name,
+                    }))}
+                  />
+                  <Input
+                    label="Precio (USD/MXN)"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={initialPrice}
+                    onChange={(event) => setInitialPrice(event.target.value)}
+                  />
+                  <Input
+                    label="Claves digitales iniciales"
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={initialKeysQty}
+                    onChange={(event) => setInitialKeysQty(event.target.value)}
+                  />
+                  <div className="sm:col-span-2">
+                    <Checkbox
+                      label="Marcar esta edición como DLC digital"
+                      checked={initialIsDlc}
+                      onChange={(event) => setInitialIsDlc(event.target.checked)}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </form>
+      </Modal>
+
+      <Modal
+        isOpen={stockGame !== null}
+        onClose={() => setStockGameId(null)}
+        title={stockGame ? `Stock y Claves · ${stockGame.title}` : 'Stock y Claves'}
+        size="lg"
+        footer={
+          <Button variant="ghost" onClick={() => setStockGameId(null)}>
+            Cerrar
+          </Button>
+        }
+      >
+        {stockGame && (
+          <div className="space-y-6">
+            {stockError && <ErrorBanner message={stockError} />}
+            {stockFeedback && (
+              <div className="rounded-xl border border-[#A7F3D0] bg-[#ECFDF5] px-4 py-3 text-body-sm font-medium text-[#065F46]">
+                {stockFeedback}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <h3 className="text-body-sm font-extrabold uppercase tracking-wider text-[#0F172A]">
+                Ediciones digitales registradas
+              </h3>
+
+              {(stockGame.editions ?? []).length === 0 ? (
+                <p className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 text-body-sm text-[#475569]">
+                  Este título aún no tiene ediciones digitales. Crea la primera abajo.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {(stockGame.editions ?? []).map((edition) => {
+                    const keys = edition.digitalKeys ?? [];
+                    const available = keys.filter(
+                      (key) => key.status === KeyStatus.AVAILABLE,
+                    ).length;
+                    const qtyValue = batchQuantities[edition.id] ?? '10';
+
+                    return (
+                      <div
+                        key={edition.id}
+                        className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-extrabold text-[#0F172A]">
+                              {edition.editionName}
+                            </span>
+                            <Badge tone={edition.isDlc ? 'warning' : 'blue'}>
+                              {edition.isDlc ? 'DLC Digital' : edition.platform?.name ?? 'Digital'}
+                            </Badge>
+                            <Badge tone={available > 0 ? 'success' : 'danger'}>
+                              {available} disponibles / {keys.length} total
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-[#475569]">
+                            Plataforma: {edition.platform?.name ?? '—'} · Precio:{' '}
+                            {formatCurrency(edition.basePrice)}
+                          </p>
+                        </div>
+
+                        <div className="flex items-end gap-2 shrink-0">
+                          <div className="w-24">
+                            <Input
+                              label="Cantidad"
+                              type="number"
+                              min={1}
+                              max={100}
+                              value={qtyValue}
+                              onChange={(event) =>
+                                setBatchQuantities((prev) => ({
+                                  ...prev,
+                                  [edition.id]: event.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="brand"
+                            isLoading={bulkKeysMutation.isPending}
+                            onClick={() => {
+                              const parsedQty = Math.min(
+                                100,
+                                Math.max(1, Number(qtyValue) || 1),
+                              );
+                              bulkKeysMutation.mutate({
+                                gameEditionId: edition.id,
+                                quantity: parsedQty,
+                              });
+                            }}
+                          >
+                            Generar lote
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] p-4 space-y-3">
+              <h3 className="text-body-sm font-extrabold uppercase tracking-wider text-[#0F172A]">
+                + Añadir nueva edición digital
+              </h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Input
+                  label="Nombre de edición"
+                  value={newEditionName}
+                  onChange={(event) => setNewEditionName(event.target.value)}
+                />
+                <Select
+                  label="Plataforma"
+                  value={newEditionPlatformId}
+                  onChange={(event) => setNewEditionPlatformId(event.target.value)}
+                  placeholder="Selecciona plataforma"
+                  options={(platformsQuery.data ?? []).map((platform) => ({
+                    value: platform.id,
+                    label: platform.name,
+                  }))}
+                />
+                <Input
+                  label="Precio"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={newEditionPrice}
+                  onChange={(event) => setNewEditionPrice(event.target.value)}
+                />
+                <Input
+                  label="Claves iniciales (0 - 100)"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={newEditionKeysQty}
+                  onChange={(event) => setNewEditionKeysQty(event.target.value)}
+                />
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                <Checkbox
+                  label="Es DLC digital"
+                  checked={newEditionIsDlc}
+                  onChange={(event) => setNewEditionIsDlc(event.target.checked)}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  isLoading={addEditionMutation.isPending}
+                  onClick={() => addEditionMutation.mutate()}
+                >
+                  Crear edición y claves
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </Modal>
 
       <Modal

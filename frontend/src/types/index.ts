@@ -7,7 +7,6 @@ export enum PaymentStatus {
 
 export enum EditionFormat {
   DIGITAL = 'DIGITAL',
-  PHYSICAL = 'PHYSICAL',
 }
 
 export enum KeyStatus {
@@ -69,6 +68,10 @@ export interface Game {
   esrbRating: string;
   releaseDate: string;
   coverImageUrl: string | null;
+  discountCampaignName?: string | null;
+  discountPercentage?: number;
+  discountStartDate?: string | null;
+  discountEndDate?: string | null;
   createdAt: string;
   publisher: Publisher;
   developer: Developer;
@@ -97,7 +100,6 @@ export interface GameEdition {
   format: EditionFormat;
   basePrice: number;
   isDlc: boolean;
-  stockPhysical: number;
   createdAt: string;
   game: Game;
   platform: Platform;
@@ -122,6 +124,40 @@ export interface Promotion {
   startDate: string;
   endDate: string;
   isActive: boolean;
+  userId?: number | null;
+  usageLimitPerUser?: number;
+  isClaimed?: boolean;
+}
+
+export interface ApplyDiscountCampaignPayload {
+  gameIds: number[];
+  discountCampaignName?: string;
+  discountPercentage: number;
+  discountStartDate?: string;
+  discountEndDate?: string;
+}
+
+export interface ApplyDiscountCampaignResponse {
+  updatedCount: number;
+  discountPercentage: number;
+  discountCampaignName: string | null;
+  games: Game[];
+}
+
+export interface FeaturedTrailer {
+  id: number;
+  slot: number;
+  title: string;
+  imageUrl: string;
+  youtubeUrl: string;
+  description?: string | null;
+}
+
+export interface UpsertFeaturedTrailerPayload {
+  title: string;
+  imageUrl: string;
+  youtubeUrl: string;
+  description?: string;
 }
 
 export interface User {
@@ -276,26 +312,38 @@ export interface CreateSystemRequirementPayload {
 
 export interface CreateGameEditionPayload {
   editionName?: string;
-  format: EditionFormat;
+  format?: EditionFormat;
   basePrice: number;
   isDlc?: boolean;
-  stockPhysical?: number;
   gameId: number;
   platformId: number;
 }
 
 export interface CreateDigitalKeyPayload {
-  code: string;
-  codeHash: string;
+  code?: string;
+  codeHash?: string;
   status?: KeyStatus;
   batchId?: string;
   gameEditionId: number;
 }
 
+export interface CreateBulkDigitalKeysPayload {
+  gameEditionId: number;
+  quantity?: number;
+  codes?: string[];
+  batchId?: string;
+}
+
+export interface BulkDigitalKeysResponse {
+  createdCount: number;
+  batchId: string;
+  keys: DigitalKey[];
+}
+
 export interface CreatePromotionPayload {
   name: string;
   discountPercentage: number;
-  couponCode?: string;
+  couponCode: string;
   startDate: string;
   endDate: string;
   isActive?: boolean;

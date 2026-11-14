@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { wishlistsExtraApi } from '@/api';
 import { BrandLogo } from '@/components/atoms/BrandLogo';
 import { LoginModal } from '@/components/molecules/LoginModal';
 import type { AuthModalMode } from '@/components/molecules/LoginModal';
@@ -12,35 +10,18 @@ import { initials } from '@/utils/format';
 
 const MAIN_NAV_LINKS = [
   { to: '/games', label: 'TIENDA' },
-  { to: '/reviews', label: 'COMUNIDAD' },
   { to: '/promotions', label: 'OFERTAS' },
-  { to: '/orders', label: 'SOPORTE' },
+  { to: '/library', label: 'MIS JUEGOS' },
 ];
-
-const USER_SECTION_LINKS = [
-  { to: '/library', label: 'Mi Biblioteca' },
-  { to: '/wishlist', label: 'Lista de Deseados' },
-  { to: '/orders', label: 'Mis Compras' },
-];
-
-const EXPLORE_STORE_LINKS = [
-  { to: '/games', label: 'Tienda de Juegos' },
-  { to: '/promotions', label: 'Ofertas y Cupones' },
-  { to: '/reviews', label: 'Comunidad' },
-];
-
-const MORE_LINKS = [...USER_SECTION_LINKS, ...EXPLORE_STORE_LINKS];
 
 export function NavBar() {
   const navigate = useNavigate();
   const location = useLocation();
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const catalogMenuRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isCatalogOpen, setIsCatalogOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<AuthModalMode | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -48,18 +29,9 @@ export function NavBar() {
   const { currentUser, logout } = useSession();
   const isAdmin = currentUser?.role === UserRole.ADMIN;
 
-  // Dynamic wishlist count for logged-in user
-  const { data: userWishlist = [] } = useQuery({
-    queryKey: ['wishlists', 'user', currentUser?.id],
-    queryFn: () => wishlistsExtraApi.byUser(currentUser!.id),
-    enabled: Boolean(currentUser),
-  });
-  const wishlistCount = currentUser ? userWishlist.length : 0;
-
   // Close menus on page navigation
   useEffect(() => {
     setIsMenuOpen(false);
-    setIsCatalogOpen(false);
     setIsProfileOpen(false);
   }, [location.pathname]);
 
@@ -70,7 +42,6 @@ export function NavBar() {
         e.preventDefault();
         searchInputRef.current?.focus();
       } else if (e.key === 'Escape') {
-        setIsCatalogOpen(false);
         setIsProfileOpen(false);
         setIsMenuOpen(false);
       }
@@ -83,16 +54,13 @@ export function NavBar() {
   useEffect(() => {
     const handlePointerDown = (e: MouseEvent) => {
       const target = e.target as Node;
-      if (isCatalogOpen && !catalogMenuRef.current?.contains(target)) {
-        setIsCatalogOpen(false);
-      }
       if (isProfileOpen && !profileMenuRef.current?.contains(target)) {
         setIsProfileOpen(false);
       }
     };
     document.addEventListener('mousedown', handlePointerDown);
     return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, [isCatalogOpen, isProfileOpen]);
+  }, [isProfileOpen]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,17 +71,15 @@ export function NavBar() {
     }
   };
 
+  if (location.pathname.startsWith('/admin')) {
+    return null;
+  }
+
   return (
     <header
       data-testid="navbar-header"
       className="sticky top-0 z-50 w-full bg-[#1E1B4B] border-b border-[#312E81] shadow-[0_8px_28px_rgba(30,27,75,0.22)]"
     >
-      {/* Pop contrast bottom hairline accent */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-[#FF2A5F] via-[#FFC700] to-[#FF2A5F]"
-      />
-
       <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8">
         <div className="h-16 sm:h-[68px] flex items-center justify-between gap-2 sm:gap-5">
           {/* Left: Brand Identity + Primary Navigation */}
@@ -149,77 +115,6 @@ export function NavBar() {
               ))}
 
               {/* Customer Catalog & Space Dropdown */}
-              <div ref={catalogMenuRef} className="relative">
-                <button
-                  type="button"
-                  data-testid="navbar-catalog-trigger"
-                  onClick={() => setIsCatalogOpen((open) => !open)}
-                  aria-expanded={isCatalogOpen}
-                  aria-haspopup="menu"
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-bold uppercase tracking-[0.08em] transition-colors duration-200 ${
-                    isCatalogOpen
-                      ? 'text-[#0F172A] bg-[#FFC700]'
-                      : 'text-indigo-100 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <span>CATÁLOGO</span>
-                  <svg
-                    className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                      isCatalogOpen ? 'rotate-180 text-[#0F172A]' : ''
-                    }`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-
-                {isCatalogOpen && (
-                  <div
-                    role="menu"
-                    aria-label="Secciones de la tienda y tu espacio"
-                    className="absolute top-full left-0 mt-2.5 w-[380px] rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-4 shadow-[0_20px_48px_rgba(15,23,42,0.2)] z-50"
-                  >
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <p className="px-2.5 pb-1 text-[10px] font-mono font-bold uppercase tracking-widest text-[#1E1B4B] border-b border-[#E2E8F0]">
-                          Mi Espacio
-                        </p>
-                        {USER_SECTION_LINKS.map((item) => (
-                          <Link
-                            key={item.to}
-                            to={item.to}
-                            role="menuitem"
-                            onClick={() => setIsCatalogOpen(false)}
-                            className="block px-2.5 py-2 rounded-lg text-xs font-semibold text-[#475569] hover:text-[#FF2A5F] hover:bg-[#F4F4F6] transition-colors"
-                          >
-                            {item.label}
-                          </Link>
-                        ))}
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <p className="px-2.5 pb-1 text-[10px] font-mono font-bold uppercase tracking-widest text-[#FF2A5F] border-b border-[#E2E8F0]">
-                          Explorar
-                        </p>
-                        {EXPLORE_STORE_LINKS.map((item) => (
-                          <Link
-                            key={item.to}
-                            to={item.to}
-                            role="menuitem"
-                            onClick={() => setIsCatalogOpen(false)}
-                            className="block px-2.5 py-2 rounded-lg text-xs font-semibold text-[#475569] hover:text-[#1E1B4B] hover:bg-[#F4F4F6] transition-colors"
-                          >
-                            {item.label}
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
             </nav>
           </div>
 
@@ -270,31 +165,8 @@ export function NavBar() {
             </form>
           </div>
 
-          {/* Right: Wishlist, Cart, Admin Panel CTA (ADMIN only), Account / Auth CTA */}
+          {/* Right: Cart, Admin Panel CTA (ADMIN only), Account / Auth CTA */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-            {/* Wishlist Link with Dynamic Badge */}
-            <Link
-              to="/wishlist"
-              data-testid="navbar-wishlist-link"
-              aria-label="Lista de deseados"
-              title="Lista de deseados"
-              className="relative p-2 sm:p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/15 transition-colors"
-            >
-              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                />
-              </svg>
-              {wishlistCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#FFC700] text-[#0F172A] px-1 text-[10px] font-black shadow-sm">
-                  {wishlistCount}
-                </span>
-              )}
-            </Link>
-
             {/* Cart Link with High-Conversion Pill & Dynamic Badge */}
             <Link
               to="/orders"
@@ -382,78 +254,105 @@ export function NavBar() {
                   <div
                     role="menu"
                     aria-label="Menú de usuario"
-                    className="absolute right-0 top-full mt-2.5 w-60 rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-2 shadow-[0_20px_48px_rgba(15,23,42,0.2)] z-50"
+                    className="absolute right-0 top-full mt-2.5 w-64 rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-2 shadow-[0_20px_48px_rgba(15,23,42,0.22)] z-50"
                   >
-                    <div className="px-3 py-2.5 border-b border-[#E2E8F0]">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-bold text-[#0F172A] truncate">{currentUser.username}</p>
-                        {isAdmin && (
-                          <span
-                            data-testid="navbar-profile-admin-badge"
-                            className="shrink-0 rounded px-1.5 py-0.5 bg-[#FFC700] text-[#0F172A] text-[9px] font-black uppercase tracking-wider"
-                          >
-                            ADMIN
-                          </span>
-                        )}
+                    <div className="rounded-xl bg-[#1E1B4B] border border-[#312E81] px-3 py-3 text-white mb-1.5">
+                      <div className="flex items-center gap-2.5">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-[#0F122E] text-xs font-black text-white">
+                          {currentUser.username.slice(0, 2).toUpperCase()}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-1.5">
+                            <p className="text-xs font-extrabold text-white truncate">
+                              {currentUser.username}
+                            </p>
+                            {isAdmin && (
+                              <span
+                                data-testid="navbar-profile-admin-badge"
+                                className="shrink-0 rounded px-1.5 py-0.5 bg-[#FFC700] text-[#0F172A] text-[9px] font-black uppercase tracking-wider"
+                              >
+                                ADMIN
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-indigo-200 truncate">
+                            {currentUser.email}
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-[11px] text-[#475569] truncate">{currentUser.email}</p>
                     </div>
 
-                    <div className="py-1.5 space-y-0.5">
-                      {isAdmin && (
-                        <Link
-                          to="/admin"
-                          role="menuitem"
-                          data-testid="navbar-profile-admin-link"
-                          onClick={() => setIsProfileOpen(false)}
-                          className="block px-3 py-1.5 rounded-lg text-xs font-bold text-[#1E1B4B] bg-[#FEF3C7]/70 hover:bg-[#FFC700] transition-colors"
-                        >
-                          Panel de Control
-                        </Link>
-                      )}
+                    <div className="py-1 space-y-0.5">
                       <Link
                         to={`/users/${currentUser.id}`}
                         role="menuitem"
                         onClick={() => setIsProfileOpen(false)}
-                        className="block px-3 py-1.5 rounded-lg text-xs font-semibold text-[#475569] hover:text-[#1E1B4B] hover:bg-[#F4F4F6] transition-colors"
+                        className="group flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-[#475569] hover:text-[#1E1B4B] hover:bg-[#F4F4F6] transition-colors"
                       >
-                        Mi Perfil
+                        <svg className="w-4 h-4 shrink-0 text-[#94A3B8] group-hover:text-[#FF2A5F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        <span>Mi Perfil</span>
+                      </Link>
+                      <Link
+                        to="/my-coupons"
+                        role="menuitem"
+                        data-testid="navbar-profile-coupons-link"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="group flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-[#475569] hover:text-[#1E1B4B] hover:bg-[#F4F4F6] transition-colors"
+                      >
+                        <svg className="w-4 h-4 shrink-0 text-[#94A3B8] group-hover:text-[#FF2A5F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                        </svg>
+                        <span>Mis Cupones</span>
                       </Link>
                       <Link
                         to="/library"
                         role="menuitem"
                         onClick={() => setIsProfileOpen(false)}
-                        className="block px-3 py-1.5 rounded-lg text-xs font-semibold text-[#475569] hover:text-[#1E1B4B] hover:bg-[#F4F4F6] transition-colors"
+                        className="group flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-[#475569] hover:text-[#1E1B4B] hover:bg-[#F4F4F6] transition-colors"
                       >
-                        Mi Biblioteca
+                        <svg className="w-4 h-4 shrink-0 text-[#94A3B8] group-hover:text-[#FF2A5F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                        <span>Mi Biblioteca</span>
                       </Link>
                       <Link
                         to="/wishlist"
                         role="menuitem"
                         onClick={() => setIsProfileOpen(false)}
-                        className="block px-3 py-1.5 rounded-lg text-xs font-semibold text-[#475569] hover:text-[#1E1B4B] hover:bg-[#F4F4F6] transition-colors"
+                        className="group flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-[#475569] hover:text-[#1E1B4B] hover:bg-[#F4F4F6] transition-colors"
                       >
-                        Lista de Deseados
+                        <svg className="w-4 h-4 shrink-0 text-[#94A3B8] group-hover:text-[#FF2A5F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                        <span>Lista de Deseados</span>
                       </Link>
                       <Link
-                        to="/orders"
+                        to="/orders?tab=history"
                         role="menuitem"
                         onClick={() => setIsProfileOpen(false)}
-                        className="block px-3 py-1.5 rounded-lg text-xs font-semibold text-[#475569] hover:text-[#1E1B4B] hover:bg-[#F4F4F6] transition-colors"
+                        className="group flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-[#475569] hover:text-[#1E1B4B] hover:bg-[#F4F4F6] transition-colors"
                       >
-                        Historial de Compras
+                        <svg className="w-4 h-4 shrink-0 text-[#94A3B8] group-hover:text-[#FF2A5F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        <span>Historial de Compras</span>
                       </Link>
                     </div>
 
-                    <div className="border-t border-[#E2E8F0] pt-1.5">
+                    <div className="border-t border-[#E2E8F0] pt-1.5 mt-1">
                       <button
                         type="button"
                         role="menuitem"
                         data-testid="navbar-logout-btn"
                         onClick={logout}
-                        className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-bold text-[#EF4444] hover:bg-[#FEE2E2] transition-colors"
+                        className="flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-[#EF4444] hover:bg-[#FEE2E2] transition-colors cursor-pointer"
                       >
-                        Cerrar Sesión
+                        <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        <span>Cerrar Sesión</span>
                       </button>
                     </div>
                   </div>
@@ -575,24 +474,6 @@ export function NavBar() {
                 {link.label}
               </NavLink>
             ))}
-          </div>
-
-          <div className="space-y-2 border-t border-white/15 pt-3">
-            <p className="px-3 text-[10px] font-mono font-bold uppercase tracking-widest text-[#FFC700]">
-              Explorar y Mi Espacio
-            </p>
-            <div className="grid grid-cols-2 gap-1">
-              {MORE_LINKS.map((link) => (
-                <Link
-                  key={`${link.to}-${link.label}`}
-                  to={link.to}
-                  onClick={() => setIsMenuOpen(false)}
-                  className="px-3 py-1.5 rounded-lg text-xs text-indigo-100 hover:text-white hover:bg-white/10 transition-colors truncate"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
           </div>
 
           {currentUser ? (

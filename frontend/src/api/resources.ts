@@ -1,7 +1,13 @@
 import { apiClient } from './client';
 import type {
   AdminSummary,
+  ApplyDiscountCampaignPayload,
+  ApplyDiscountCampaignResponse,
   AuthResponse,
+  FeaturedTrailer,
+  UpsertFeaturedTrailerPayload,
+  BulkDigitalKeysResponse,
+  CreateBulkDigitalKeysPayload,
   CreateDeveloperPayload,
   CreateDigitalKeyPayload,
   CreateGameEditionPayload,
@@ -217,6 +223,58 @@ export const adminApi = {
   /** Obtiene conteos agregados ligeros para el panel admin: GET /admin/summary */
   async summary(): Promise<AdminSummary> {
     const { data } = await apiClient.get<AdminSummary>('/admin/summary');
+    return data;
+  },
+};
+
+export const digitalKeysExtraApi = {
+  /** Genera o carga un lote de claves digitales: POST /digital-keys/bulk */
+  async createBulk(payload: CreateBulkDigitalKeysPayload): Promise<BulkDigitalKeysResponse> {
+    const { data } = await apiClient.post<BulkDigitalKeysResponse>('/digital-keys/bulk', payload);
+    return data;
+  },
+};
+
+export const gamesExtraApi = {
+  /** Aplica o retira campaña de descuento a múltiples juegos: POST /games/discount-campaign */
+  async applyDiscountCampaign(
+    payload: ApplyDiscountCampaignPayload,
+  ): Promise<ApplyDiscountCampaignResponse> {
+    const { data } = await apiClient.post<ApplyDiscountCampaignResponse>(
+      '/games/discount-campaign',
+      payload,
+    );
+    return data;
+  },
+};
+
+export const promotionsExtraApi = {
+  /** Obtiene los cupones disponibles y personales del usuario autenticado: GET /promotions/my */
+  async myCoupons(): Promise<Promotion[]> {
+    const { data } = await apiClient.get<Promotion[]>('/promotions/my');
+    return data;
+  },
+};
+
+export const featuredTrailersApi = {
+  /** Lista los tráilers destacados configurados (1 a 3): GET /featured-trailers */
+  async list(): Promise<FeaturedTrailer[]> {
+    const { data } = await apiClient.get<FeaturedTrailer[]>('/featured-trailers');
+    return data;
+  },
+  /** Configura o actualiza un espacio de tráiler (1, 2 o 3): PUT /featured-trailers/:slot */
+  async upsertSlot(
+    slot: number,
+    payload: UpsertFeaturedTrailerPayload,
+  ): Promise<FeaturedTrailer> {
+    const { data } = await apiClient.put<FeaturedTrailer>(`/featured-trailers/${slot}`, payload);
+    return data;
+  },
+  /** Elimina el tráiler de un espacio (1, 2 o 3): DELETE /featured-trailers/:slot */
+  async removeSlot(slot: number): Promise<{ deleted: boolean; slot: number }> {
+    const { data } = await apiClient.delete<{ deleted: boolean; slot: number }>(
+      `/featured-trailers/${slot}`,
+    );
     return data;
   },
 };

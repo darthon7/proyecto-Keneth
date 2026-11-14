@@ -1,6 +1,9 @@
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { AccountHeroHeader } from '@/components/molecules/AccountHeroHeader';
 import { Badge } from '@/components/atoms/Badge';
+import { Button } from '@/components/atoms/Button';
 import { EmptyState } from '@/components/atoms/EmptyState';
 import { ErrorBanner } from '@/components/atoms/ErrorBanner';
 import { Spinner } from '@/components/atoms/Spinner';
@@ -8,14 +11,81 @@ import { errorMessage, userLibrariesExtraApi } from '@/api';
 import { useSession } from '@/context/SessionContext';
 import { formatDate } from '@/utils/format';
 
+type LibraryFilter = 'all' | 'active' | 'revoked';
+
+function maskLicenseCode(code: string): string {
+  const trimmed = code.trim();
+  if (trimmed.length <= 4) return '••••';
+  return `••••-••••-••••-${trimmed.slice(-4)}`;
+}
+
 export function LibraryPage() {
   const { currentUser, isLoading: sessionLoading } = useSession();
+  const [revealedIds, setRevealedIds] = useState<Set<number>>(() => new Set());
+  const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<LibraryFilter>('all');
 
   const libraryQuery = useQuery({
     queryKey: ['user-libraries', 'user', currentUser?.id],
     queryFn: () => userLibrariesExtraApi.byUser(currentUser!.id),
     enabled: Boolean(currentUser?.id),
   });
+
+  const toggleReveal = (entryId: number) => {
+    setRevealedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(entryId)) {
+        next.delete(entryId);
+      } else {
+        next.add(entryId);
+      }
+      return next;
+    });
+  };
+
+  const handleCopyCode = async (entryId: number, code: string) => {
+    try {
+      await navigator.clipboard?.writeText(code);
+      setCopiedId(entryId);
+      setTimeout(() => {
+        setCopiedId((current) => (current === entryId ? null : current));
+      }, 2000);
+    } catch {
+      setRevealedIds((prev) => new Set(prev).add(entryId));
+    }
+  };
+
+  const entries = useMemo(() => libraryQuery.data ?? [], [libraryQuery.data]);
+
+  const stats = useMemo(() => {
+    const activeCount = entries.filter((entry) => !entry.isRevoked).length;
+    const platforms = new Set(
+      entries.map((entry) => entry.gameEdition?.platform?.name).filter(Boolean),
+    );
+    return {
+      total: entries.length,
+      activeCount,
+      platformsCount: platforms.size,
+    };
+  }, [entries]);
+
+  const filteredEntries = useMemo(() => {
+    const normalized = searchTerm.trim().toLowerCase();
+    return entries.filter((entry) => {
+      if (statusFilter === 'active' && entry.isRevoked) return false;
+      if (statusFilter === 'revoked' && !entry.isRevoked) return false;
+      if (!normalized) return true;
+      const haystack = [
+        entry.gameEdition?.game?.title ?? '',
+        entry.gameEdition?.editionName ?? '',
+        entry.gameEdition?.platform?.name ?? '',
+      ]
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(normalized);
+    });
+  }, [entries, searchTerm, statusFilter]);
 
   if (sessionLoading) {
     return <Spinner label="Verificando sesión…" />;
@@ -32,18 +102,79 @@ export function LibraryPage() {
     );
   }
 
-  const entries = libraryQuery.data ?? [];
-
   return (
-    <section className="page-container py-16">
-      <header>
-        <h1 className="text-heading-sm font-extrabold text-[#0F172A]">Biblioteca de {currentUser.username}</h1>
-        <p className="mt-2 text-body-sm text-[#475569]">
-          Juegos adquiridos a través de órdenes completadas.
-        </p>
-      </header>
+    <section
+      data-testid="library-page"
+      className="page-container min-h-[calc(100vh-14rem)] py-8 sm:py-12 space-y-6"
+    >
+      <AccountHeroHeader
+        eyebrow="Tu Colección Digital"
+        title={`Biblioteca de ${currentUser.username}`}
+        description="Accede a tus videojuegos adquiridos, consulta la plataforma de cada edición y gestiona tus claves digitales de activación."
+        stats={[
+          { label: 'Juegos', value: stats.total, tone: 'default' },
+          { label: 'Activos', value: stats.activeCount, tone: 'emerald' },
+          { label: 'Plataformas', value: stats.platformsCount, tone: 'gold' },
+        ]}
+        actions={
+          <Link to="/games">
+            <Button variant="brand" size="sm">Explorar tienda</Button>
+          </Link>
+        }
+      />
 
-      <div className="mt-10">
+      {/* Search & Status Filter Bar */}
+      {entries.length > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] p-3 shadow-xs">
+          <div className="relative flex-1 max-w-md">
+            <svg
+              className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#94A3B8]"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Buscar juego, edición o plataforma…"
+              className="w-full rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] pl-9 pr-3 py-2 text-xs text-[#0F172A] placeholder:text-[#94A3B8] focus:bg-[#FFFFFF] focus:border-[#FF2A5F] focus:outline-none"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            {(
+              [
+                { id: 'all', label: `Todos (${entries.length})` },
+                { id: 'active', label: `Activos (${stats.activeCount})` },
+                { id: 'revoked', label: `Revocados (${entries.length - stats.activeCount})` },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setStatusFilter(tab.id)}
+                className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-colors cursor-pointer ${
+                  statusFilter === tab.id
+                    ? 'bg-[#1E1B4B] text-white'
+                    : 'bg-[#F4F4F6] text-[#475569] hover:text-[#0F172A]'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div>
         {libraryQuery.isLoading && <Spinner label="Cargando biblioteca…" />}
         {libraryQuery.isError && (
           <ErrorBanner
@@ -54,43 +185,143 @@ export function LibraryPage() {
         {libraryQuery.isSuccess && entries.length === 0 && (
           <EmptyState
             title="Biblioteca vacía"
-            description="Compra un juego para que aparezca aquí."
+            description="Compra un juego para que aparezca aquí con su clave de activación."
             action={
-              <Link
-                to="/games"
-                className="rounded-lg bg-[#FF2A5F] hover:bg-[#E01E4F] px-4 py-2 text-body-sm font-bold text-white transition-colors"
-              >
-                Explorar juegos
+              <Link to="/games">
+                <Button variant="brand">Explorar juegos</Button>
               </Link>
             }
           />
         )}
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {entries.map((entry) => (
-            <article key={entry.id} className="product-card rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] hover:border-[#FF2A5F] p-4 shadow-xs transition-all">
-              <div className="flex items-start justify-between gap-3">
-                <h2 className="text-body font-bold text-[#0F172A]">
-                  {entry.gameEdition?.game?.title ?? 'Videojuego'}
-                </h2>
-                {entry.isRevoked && <Badge tone="danger">Revocado</Badge>}
-              </div>
-              <p className="mt-1 text-body-sm text-[#475569]">
-                {entry.gameEdition?.editionName} · {entry.gameEdition?.platform?.name}
-              </p>
-              <p className="mt-2 text-caption text-[#94A3B8]">
-                Adquirido el {formatDate(entry.acquiredAt)}
-              </p>
-              {entry.gameEdition?.game && (
-                <Link
-                  to={`/games/${entry.gameEdition.game.id}`}
-                  className="mt-3 inline-block text-body-sm font-semibold text-[#1E1B4B] hover:text-[#FF2A5F]"
-                >
-                  Ver ficha →
-                </Link>
-              )}
-            </article>
-          ))}
+        {libraryQuery.isSuccess && entries.length > 0 && filteredEntries.length === 0 && (
+          <EmptyState
+            title="Sin coincidencias"
+            description="Prueba con otro término de búsqueda o cambia el filtro de estado."
+            action={
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearchTerm('');
+                  setStatusFilter('all');
+                }}
+              >
+                Restablecer filtros
+              </Button>
+            }
+          />
+        )}
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filteredEntries.map((entry) => {
+            const matchedItem = entry.order?.items?.find(
+              (item) =>
+                item.gameEdition?.id === entry.gameEdition?.id &&
+                Boolean(item.digitalKey?.code),
+            );
+            const licenseCode = matchedItem?.digitalKey?.code ?? null;
+            const isRevealed = revealedIds.has(entry.id);
+            const isCopied = copiedId === entry.id;
+            const game = entry.gameEdition?.game;
+
+            return (
+              <article
+                key={entry.id}
+                className="group rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] hover:border-[#FF2A5F] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+              >
+                <div>
+                  <Link
+                    to={game ? `/games/${game.id}` : '/library'}
+                    className="relative block aspect-[16/9] w-full overflow-hidden bg-[#1E1B4B]"
+                  >
+                    {game?.coverImageUrl ? (
+                      <img
+                        src={game.coverImageUrl}
+                        alt={game.title}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    ) : null}
+                    <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                      <span className="rounded-md bg-[#0F122E]/85 backdrop-blur-xs px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white border border-white/15">
+                        {entry.gameEdition?.platform?.name ?? 'Digital'}
+                      </span>
+                    </div>
+                    <div className="absolute top-2.5 right-2.5">
+                      {entry.isRevoked ? (
+                        <Badge tone="danger">Revocado</Badge>
+                      ) : (
+                        <Badge tone="success">Digital</Badge>
+                      )}
+                    </div>
+                  </Link>
+
+                  <div className="p-4 pb-2 space-y-1">
+                    <h2 className="text-sm font-extrabold text-[#0F172A] line-clamp-1">
+                      {game?.title ?? 'Videojuego'}
+                    </h2>
+                    <p className="text-xs font-medium text-[#475569] line-clamp-1">
+                      {entry.gameEdition?.editionName}
+                    </p>
+                    <p className="text-[11px] text-[#94A3B8]">
+                      Adquirido el {formatDate(entry.acquiredAt)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-4 pt-2 space-y-3">
+                  {licenseCode ? (
+                    <div className="rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] p-3 text-[#0F172A] space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#475569]">
+                          Clave de activación
+                        </span>
+                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                      </div>
+                      <p
+                        data-testid={`library-key-code-${entry.id}`}
+                        className="font-mono text-xs font-bold tracking-wide text-[#0F172A] break-all select-all"
+                      >
+                        {isRevealed ? licenseCode : maskLicenseCode(licenseCode)}
+                      </p>
+                      <div className="flex items-center gap-2 pt-0.5">
+                        <button
+                          type="button"
+                          onClick={() => toggleReveal(entry.id)}
+                          className="flex-1 rounded-lg border border-[#E2E8F0] bg-[#FFFFFF] hover:bg-[#F4F4F6] hover:border-[#1E1B4B] px-2.5 py-1.5 text-[11px] font-bold text-[#0F172A] transition-colors cursor-pointer"
+                        >
+                          {isRevealed ? 'Ocultar' : 'Revelar clave'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleCopyCode(entry.id, licenseCode)}
+                          className="flex-1 rounded-lg bg-[#FF2A5F] hover:bg-[#E01E4F] px-2.5 py-1.5 text-[11px] font-bold text-white transition-colors cursor-pointer"
+                        >
+                          {isCopied ? '¡Copiada!' : 'Copiar'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : entry.order ? (
+                    <Link
+                      to={`/orders/${entry.order.id}`}
+                      className="block rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-center text-xs font-bold text-[#1E1B4B] hover:border-[#FF2A5F] hover:text-[#FF2A5F] transition-colors"
+                    >
+                      Ver clave en orden {entry.order.orderNumber} →
+                    </Link>
+                  ) : null}
+
+                  {game && (
+                    <Link
+                      to={`/games/${game.id}`}
+                      className="block w-full rounded-xl bg-[#F4F4F6] hover:bg-[#1E1B4B] py-2 text-center text-xs font-bold text-[#1E1B4B] hover:text-white transition-colors"
+                    >
+                      Ver ficha del juego →
+                    </Link>
+                  )}
+                </div>
+              </article>
+            );
+          })}
         </div>
       </div>
     </section>

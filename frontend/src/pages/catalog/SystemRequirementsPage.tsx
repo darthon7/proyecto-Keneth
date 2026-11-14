@@ -50,8 +50,8 @@ export function SystemRequirementsPage({ embedded = false }: { embedded?: boolea
   return (
     <CrudResourcePage<SystemRequirement, CreateSystemRequirementPayload>
       embedded={embedded}
-      title="Requisitos del sistema"
-      description="Niveles mínimos, recomendados y ultra para cada videojuego del catálogo."
+      title="Requisitos Técnicos (PC)"
+      description="Especificaciones técnicas mínimas, recomendadas y ultra aplicables a versiones de PC."
       queryKey={['system-requirements']}
       fetchList={() => systemRequirementsApi.list()}
       createItem={(payload) => systemRequirementsApi.create(payload)}

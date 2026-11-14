@@ -1,66 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ErrorBanner } from '@/components/atoms/ErrorBanner';
-import { adminApi, errorMessage } from '@/api';
-
-const QUICK_ACTIONS = [
-  {
-    to: '/admin/developers',
-    label: 'Crear Desarrolladora',
-    description: 'Registrar estudios desarrolladores',
-    testId: 'admin-quick-developers',
-    accent: 'bg-[#EEF2FF] text-[#1E1B4B] border-[#C7D2FE]',
-  },
-  {
-    to: '/admin/games',
-    label: 'Crear Videojuego',
-    description: 'Dar de alta títulos y géneros',
-    testId: 'admin-quick-games',
-    accent: 'bg-[#FFF1F2] text-[#FF2A5F] border-[#FECDD3]',
-  },
-  {
-    to: '/admin/publishers',
-    label: 'Crear Publisher',
-    description: 'Gestionar casas publicadoras',
-    testId: 'admin-quick-publishers',
-    accent: 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]',
-  },
-  {
-    to: '/admin/editions',
-    label: 'Crear Edición',
-    description: 'Configurar SKUs, precios y stock',
-    testId: 'admin-quick-editions',
-    accent: 'bg-[#D1FAE5] text-[#065F46] border-[#A7F3D0]',
-  },
-  {
-    to: '/admin/digital-keys',
-    label: 'Cargar Claves',
-    description: 'Inventario de llaves digitales',
-    testId: 'admin-quick-digital-keys',
-    accent: 'bg-[#EEF2FF] text-[#1E1B4B] border-[#C7D2FE]',
-  },
-  {
-    to: '/admin/promotions',
-    label: 'Nueva Promoción',
-    description: 'Cupones y campañas de descuento',
-    testId: 'admin-quick-promotions',
-    accent: 'bg-[#FFF1F2] text-[#FF2A5F] border-[#FECDD3]',
-  },
-  {
-    to: '/admin/orders',
-    label: 'Gestionar Órdenes',
-    description: 'Revisar pagos y estados',
-    testId: 'admin-quick-orders',
-    accent: 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]',
-  },
-  {
-    to: '/admin/users',
-    label: 'Usuarios y Roles',
-    description: 'Administrar cuentas y permisos',
-    testId: 'admin-quick-users',
-    accent: 'bg-[#D1FAE5] text-[#065F46] border-[#A7F3D0]',
-  },
-];
+import { Badge } from '@/components/atoms/Badge';
+import { adminApi, errorMessage, gameEditionsApi } from '@/api';
+import { KeyStatus } from '@/types';
+import { formatCurrency } from '@/utils/format';
 
 export function AdminOverviewPage() {
   const summaryQuery = useQuery({
@@ -68,10 +12,25 @@ export function AdminOverviewPage() {
     queryFn: () => adminApi.summary(),
   });
 
+  const editionsQuery = useQuery({
+    queryKey: ['game-editions'],
+    queryFn: () => gameEditionsApi.list(),
+  });
+
   const summary = summaryQuery.data;
   const availableKeysCount = summary?.availableKeys ?? 0;
   const completedOrdersCount = summary?.completedOrders ?? 0;
   const activePromosCount = summary?.activePromotions ?? 0;
+
+  const editionStockAlerts = (editionsQuery.data ?? [])
+    .map((edition) => {
+      const available = (edition.digitalKeys ?? []).filter(
+        (key) => key.status === KeyStatus.AVAILABLE,
+      ).length;
+      return { edition, available };
+    })
+    .sort((a, b) => a.available - b.available)
+    .slice(0, 8);
 
   const kpiCards = [
     {
@@ -116,9 +75,9 @@ export function AdminOverviewPage() {
     },
     {
       testId: 'admin-kpi-promotions',
-      label: 'Promociones',
+      label: 'Cupones de Descuento',
       value: summary?.promotions ?? 0,
-      detail: `${activePromosCount} activas`,
+      detail: `${activePromosCount} activos`,
       loading: summaryQuery.isLoading,
       error: summaryQuery.isError,
       to: '/admin/promotions',
@@ -131,7 +90,7 @@ export function AdminOverviewPage() {
       detail: 'Cuentas registradas',
       loading: summaryQuery.isLoading,
       error: summaryQuery.isError,
-      to: '/admin/users',
+      to: '/admin',
       stripe: 'bg-[#1E1B4B]',
     },
   ];
@@ -193,40 +152,73 @@ export function AdminOverviewPage() {
         ))}
       </div>
 
-      {/* Operational Quick Shortcuts */}
-      <section aria-labelledby="admin-quick-actions-title" className="space-y-4">
-        <div>
-          <h2
-            id="admin-quick-actions-title"
-            className="text-subheading font-extrabold text-[#0F172A]"
+      {/* Live Digital Stock Alerts per Edition */}
+      <section aria-labelledby="admin-stock-overview-title" className="space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2
+              id="admin-stock-overview-title"
+              className="text-subheading font-extrabold text-[#0F172A]"
+            >
+              Control Rápido de Stock Digital (Ediciones)
+            </h2>
+            <p className="text-xs text-[#475569]">
+              Ediciones ordenadas por menor cantidad de claves digitales disponibles para reposición inmediata.
+            </p>
+          </div>
+          <Link
+            to="/admin/games"
+            className="text-xs font-bold text-[#1E1B4B] hover:text-[#FF2A5F] transition-colors"
           >
-            Accesos rápidos operativos
-          </h2>
-          <p className="text-xs text-[#475569]">
-            Atajos directos para crear entidades del catálogo, cargar llaves o gestionar órdenes.
-          </p>
+            Ir a Videojuegos y Stock →
+          </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {QUICK_ACTIONS.map((action) => (
-            <Link
-              key={action.testId}
-              to={action.to}
-              data-testid={action.testId}
-              className="rounded-xl bg-[#FFFFFF] border border-[#E2E8F0] hover:border-[#1E1B4B] p-4 transition-all hover:-translate-y-0.5 shadow-xs flex flex-col justify-between gap-2"
-            >
-              <span
-                className={`inline-block w-fit rounded-md border px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider ${action.accent}`}
-              >
-                Acceso directo
-              </span>
-              <div>
-                <p className="text-sm font-extrabold text-[#0F172A]">{action.label}</p>
-                <p className="mt-0.5 text-xs text-[#475569]">{action.description}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
+        {editionsQuery.isError ? (
+          <ErrorBanner
+            message={errorMessage(editionsQuery.error)}
+            onRetry={() => void editionsQuery.refetch()}
+          />
+        ) : editionStockAlerts.length === 0 ? (
+          <p className="rounded-xl bg-[#FFFFFF] border border-[#E2E8F0] p-4 text-xs text-[#475569]">
+            Aún no hay ediciones digitales registradas. Crea una desde Videojuegos o Ediciones Digitales.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {editionStockAlerts.map(({ edition, available }) => {
+              const isOut = available === 0;
+              const isLow = available > 0 && available < 3;
+              return (
+                <Link
+                  key={edition.id}
+                  to={`/admin/digital-keys?editionId=${edition.id}`}
+                  data-testid={`admin-stock-alert-${edition.id}`}
+                  className="rounded-xl bg-[#FFFFFF] border border-[#E2E8F0] hover:border-[#FF2A5F] p-4 transition-all hover:-translate-y-0.5 shadow-xs flex flex-col justify-between gap-2"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <Badge tone={isOut ? 'danger' : isLow ? 'warning' : 'success'}>
+                      {isOut ? 'Sin claves (0)' : `${available} disponibles`}
+                    </Badge>
+                    <span className="text-[11px] font-mono text-[#64748B]">
+                      {formatCurrency(edition.basePrice)}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-extrabold text-[#0F172A] line-clamp-1">
+                      {edition.game?.title ?? 'Juego'}
+                    </p>
+                    <p className="mt-0.5 text-xs text-[#475569] line-clamp-1">
+                      {edition.editionName} · {edition.platform?.name ?? 'Digital'}
+                    </p>
+                  </div>
+                  <span className="text-[11px] font-bold text-[#1E1B4B]">
+                    Reponer claves →
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </section>
     </div>
   );
