@@ -4,13 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 import { ErrorBanner } from '@/components/atoms/ErrorBanner';
 import { EmptyState } from '@/components/atoms/EmptyState';
 import { Spinner } from '@/components/atoms/Spinner';
-import { Button } from '@/components/atoms/Button';
 import { Pagination } from '@/components/molecules/Pagination';
 import { GameFilters } from '@/components/molecules/GameFilters';
 import type { GameFilterValues } from '@/components/molecules/GameFilters';
 import { GameCard } from '@/components/molecules/GameCard';
 import { useCart } from '@/context/CartContext';
-import { useSession } from '@/context/SessionContext';
 import { getActiveGameDiscount } from '@/utils/discount';
 import {
   developersApi,
@@ -37,7 +35,6 @@ export function GamesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { addItem } = useCart();
-  const { isAdmin } = useSession();
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState(() => searchParams.get('q') ?? '');
 
@@ -157,28 +154,10 @@ export function GamesPage() {
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 sm:pb-4 border-b border-[#E2E8F0]">
           <div className="flex items-center gap-3">
             <span className="w-2 h-5 bg-[#FF2A5F] rounded-full" />
-            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-              <h1 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-[#0F172A]">
-                Catálogo de Videojuegos
-              </h1>
-              <p className="text-xs text-[#475569]">
-                {gamesQuery.isSuccess
-                  ? `${filtered.length} títulos disponibles en la plataforma`
-                  : 'Cargando catálogo…'}
-              </p>
-            </div>
+            <h1 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-[#0F172A]">
+              Catálogo de Videojuegos
+            </h1>
           </div>
-
-          {isAdmin && (
-            <Button
-              variant="brand"
-              size="sm"
-              onClick={() => navigate('/admin/games')}
-              className="self-start sm:self-auto uppercase tracking-wider font-black"
-            >
-              Administrar Juegos
-            </Button>
-          )}
         </header>
 
         {/* Compact Search & Filters Toolbar */}

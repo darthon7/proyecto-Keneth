@@ -15,6 +15,7 @@ import { Textarea } from '@/components/atoms/Textarea';
 import { errorMessage } from '@/api';
 import { buildInitialValues, buildPayload, buildSchema } from '@/utils/fields';
 import type { FieldConfig, FormValues } from '@/utils/fields';
+import { getTodayLocalDateMin, getTodayLocalDateTimeMin } from '@/utils/format';
 
 export interface CrudColumn<T> {
   header: string;
@@ -66,7 +67,22 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
   const [itemToDelete, setItemToDelete] = useState<T | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const schema = useMemo(() => buildSchema(fields), [fields]);
+  const initialEditValues = useMemo(
+    () =>
+      modalState?.mode === 'edit'
+        ? buildInitialValues(fields, toFormValues(modalState.item))
+        : undefined,
+    [fields, modalState, toFormValues],
+  );
+
+  const schema = useMemo(
+    () =>
+      buildSchema(fields, {
+        mode: modalState?.mode ?? 'create',
+        initialValues: initialEditValues,
+      }),
+    [fields, modalState?.mode, initialEditValues],
+  );
 
   const listQuery = useQuery({
     queryKey,
@@ -304,7 +320,15 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
                     {...form.register(field.name, { valueAsNumber: true })}
                   />
                 );
-              default:
+              default: {
+                const minValue =
+                  field.notBeforeToday && modalState?.mode === 'create'
+                    ? field.type === 'datetime'
+                      ? getTodayLocalDateTimeMin()
+                      : field.type === 'date'
+                        ? getTodayLocalDateMin()
+                        : undefined
+                    : undefined;
                 return (
                   <Input
                     key={field.name}
@@ -313,9 +337,11 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
                     placeholder={field.placeholder}
                     error={errorText}
                     hint={field.help}
+                    min={minValue}
                     {...form.register(field.name)}
                   />
                 );
+              }
             }
           })}
         </form>

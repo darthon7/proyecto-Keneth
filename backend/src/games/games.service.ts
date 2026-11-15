@@ -5,6 +5,7 @@ import {
   normalizePagination,
   type PaginationOptions,
 } from '../common/pagination.util.js';
+import { validateActivationDateRange } from '../common/date-validation.util.js';
 import { Game } from './entities/game.entity.js';
 import { Publisher } from '../publishers/entities/publisher.entity.js';
 import { Developer } from '../developers/entities/developer.entity.js';
@@ -56,10 +57,21 @@ export class GamesService {
       });
     }
 
+    const parsedDiscountStart = discountStartDate ? new Date(discountStartDate) : null;
+    const parsedDiscountEnd = discountEndDate ? new Date(discountEndDate) : null;
+    if ((datos.discountPercentage ?? 0) > 0 && (parsedDiscountStart || parsedDiscountEnd)) {
+      validateActivationDateRange({
+        startDate: parsedDiscountStart,
+        endDate: parsedDiscountEnd,
+        requireNotBeforeTodayOnStart: Boolean(parsedDiscountStart),
+        requireNotBeforeTodayOnEnd: Boolean(parsedDiscountEnd),
+      });
+    }
+
     const nuevoJuego = this.gameRepository.create({
       ...datos,
-      discountStartDate: discountStartDate ? new Date(discountStartDate) : null,
-      discountEndDate: discountEndDate ? new Date(discountEndDate) : null,
+      discountStartDate: parsedDiscountStart,
+      discountEndDate: parsedDiscountEnd,
       publisher,
       developer,
       genres,
@@ -136,14 +148,39 @@ export class GamesService {
       });
     }
 
+    const nextDiscountStart =
+      discountStartDate !== undefined
+        ? discountStartDate
+          ? new Date(discountStartDate)
+          : null
+        : game.discountStartDate;
+    const nextDiscountEnd =
+      discountEndDate !== undefined
+        ? discountEndDate
+          ? new Date(discountEndDate)
+          : null
+        : game.discountEndDate;
+    const effectiveDiscountPercentage =
+      datos.discountPercentage ?? Number(game.discountPercentage ?? 0);
+
+    if (
+      effectiveDiscountPercentage > 0 &&
+      (discountStartDate !== undefined || discountEndDate !== undefined)
+    ) {
+      validateActivationDateRange({
+        startDate: nextDiscountStart,
+        endDate: nextDiscountEnd,
+        requireNotBeforeTodayOnStart:
+          discountStartDate !== undefined && nextDiscountStart !== null,
+        requireNotBeforeTodayOnEnd:
+          discountEndDate !== undefined && nextDiscountEnd !== null,
+      });
+    }
+
     this.gameRepository.merge(game, {
       ...datos,
-      ...(discountStartDate !== undefined
-        ? { discountStartDate: discountStartDate ? new Date(discountStartDate) : null }
-        : {}),
-      ...(discountEndDate !== undefined
-        ? { discountEndDate: discountEndDate ? new Date(discountEndDate) : null }
-        : {}),
+      ...(discountStartDate !== undefined ? { discountStartDate: nextDiscountStart } : {}),
+      ...(discountEndDate !== undefined ? { discountEndDate: nextDiscountEnd } : {}),
     });
     return await this.gameRepository.save(game);
   }
@@ -172,6 +209,15 @@ export class GamesService {
       : dto.discountEndDate
         ? new Date(dto.discountEndDate)
         : null;
+
+    if (!isClearing) {
+      validateActivationDateRange({
+        startDate,
+        endDate,
+        requireNotBeforeTodayOnStart: startDate !== null,
+        requireNotBeforeTodayOnEnd: endDate !== null,
+      });
+    }
 
     for (const game of games) {
       game.discountPercentage = isClearing ? 0 : dto.discountPercentage;

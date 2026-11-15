@@ -60,13 +60,9 @@ export function LibraryPage() {
 
   const stats = useMemo(() => {
     const activeCount = entries.filter((entry) => !entry.isRevoked).length;
-    const platforms = new Set(
-      entries.map((entry) => entry.gameEdition?.platform?.name).filter(Boolean),
-    );
     return {
       total: entries.length,
       activeCount,
-      platformsCount: platforms.size,
     };
   }, [entries]);
 
@@ -113,8 +109,6 @@ export function LibraryPage() {
         description="Accede a tus videojuegos adquiridos, consulta la plataforma de cada edición y gestiona tus claves digitales de activación."
         stats={[
           { label: 'Juegos', value: stats.total, tone: 'default' },
-          { label: 'Activos', value: stats.activeCount, tone: 'emerald' },
-          { label: 'Plataformas', value: stats.platformsCount, tone: 'gold' },
         ]}
         actions={
           <Link to="/games">

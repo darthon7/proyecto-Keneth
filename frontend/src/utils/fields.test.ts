@@ -137,4 +137,98 @@ describe('buildSchema', () => {
       data: { gameId: 7 },
     });
   });
+
+  it('rechaza fechas anteriores a hoy al crear y exige endDate posterior a startDate', () => {
+    const promoFields: FieldConfig[] = [
+      { name: 'startDate', label: 'Inicio', type: 'datetime', required: true, notBeforeToday: true },
+      {
+        name: 'endDate',
+        label: 'Fin',
+        type: 'datetime',
+        required: true,
+        notBeforeToday: true,
+        afterField: 'startDate',
+      },
+      { name: 'isActive', label: 'Activo', type: 'checkbox' },
+    ];
+    const schema = buildSchema(promoFields, { mode: 'create' });
+
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const toLocal = (d: Date) =>
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+    const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 12, 0);
+    const todayMorning = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0);
+    const todayEvening = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 21, 0);
+
+    expect(
+      schema.safeParse({
+        startDate: toLocal(yesterday),
+        endDate: toLocal(todayEvening),
+        isActive: true,
+      }).success,
+    ).toBe(false);
+
+    expect(
+      schema.safeParse({
+        startDate: toLocal(todayEvening),
+        endDate: toLocal(todayMorning),
+        isActive: true,
+      }).success,
+    ).toBe(false);
+
+    expect(
+      schema.safeParse({
+        startDate: toLocal(todayMorning),
+        endDate: toLocal(todayEvening),
+        isActive: true,
+      }).success,
+    ).toBe(true);
+  });
+
+  it('en edición permite mantener startDate histórico si no se modifica pero impide activar con endDate expirado', () => {
+    const promoFields: FieldConfig[] = [
+      { name: 'startDate', label: 'Inicio', type: 'datetime', required: true, notBeforeToday: true },
+      {
+        name: 'endDate',
+        label: 'Fin',
+        type: 'datetime',
+        required: true,
+        notBeforeToday: true,
+        afterField: 'startDate',
+      },
+      { name: 'isActive', label: 'Activo', type: 'checkbox' },
+    ];
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const toLocal = (d: Date) =>
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+    const pastStart = toLocal(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 3, 10, 0));
+    const pastEnd = toLocal(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 10, 0));
+    const futureEnd = toLocal(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 3, 10, 0));
+
+    const runningEditSchema = buildSchema(promoFields, {
+      mode: 'edit',
+      initialValues: { startDate: pastStart, endDate: futureEnd, isActive: true },
+    });
+    expect(
+      runningEditSchema.safeParse({ startDate: pastStart, endDate: futureEnd, isActive: true })
+        .success,
+    ).toBe(true);
+
+    const expiredEditSchema = buildSchema(promoFields, {
+      mode: 'edit',
+      initialValues: { startDate: pastStart, endDate: pastEnd, isActive: false },
+    });
+    expect(
+      expiredEditSchema.safeParse({ startDate: pastStart, endDate: pastEnd, isActive: true })
+        .success,
+    ).toBe(false);
+    expect(
+      expiredEditSchema.safeParse({ startDate: pastStart, endDate: pastEnd, isActive: false })
+        .success,
+    ).toBe(true);
+  });
 });

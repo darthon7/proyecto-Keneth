@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
+import { validateActivationDateRange } from '../common/date-validation.util.js';
 import { Promotion } from './entities/promotion.entity.js';
 import { CouponRedemption } from './entities/coupon-redemption.entity.js';
 import { CreatePromotionDto } from './dto/create-promotion.dto.js';
@@ -48,11 +49,22 @@ export class PromotionsService {
   }
 
   async create(createDto: CreatePromotionDto) {
+    const startDate = new Date(createDto.startDate);
+    const endDate = new Date(createDto.endDate);
+
+    validateActivationDateRange({
+      startDate,
+      endDate,
+      requireNotBeforeTodayOnStart: true,
+      requireNotBeforeTodayOnEnd: true,
+      isActivating: createDto.isActive ?? true,
+    });
+
     const promo = this.promotionRepository.create({
       ...createDto,
       couponCode: createDto.couponCode.trim().toUpperCase(),
-      startDate: new Date(createDto.startDate),
-      endDate: new Date(createDto.endDate),
+      startDate,
+      endDate,
     });
     return await this.promotionRepository.save(promo);
   }
@@ -84,15 +96,31 @@ export class PromotionsService {
   async update(id: number, updateDto: UpdatePromotionDto) {
     const promo = await this.findOne(id);
     const { startDate, endDate, couponCode, ...rest } = updateDto;
+    const nextStartDate = startDate ? new Date(startDate) : new Date(promo.startDate);
+    const nextEndDate = endDate ? new Date(endDate) : new Date(promo.endDate);
+    const startChanged =
+      startDate !== undefined && nextStartDate.getTime() !== new Date(promo.startDate).getTime();
+    const endChanged =
+      endDate !== undefined && nextEndDate.getTime() !== new Date(promo.endDate).getTime();
+    const effectiveIsActive = updateDto.isActive ?? promo.isActive;
+
+    validateActivationDateRange({
+      startDate: nextStartDate,
+      endDate: nextEndDate,
+      requireNotBeforeTodayOnStart: startChanged,
+      requireNotBeforeTodayOnEnd: endChanged,
+      isActivating: effectiveIsActive,
+    });
+
     const datosModificados: Partial<Promotion> = { ...rest };
     if (couponCode !== undefined) {
       datosModificados.couponCode = couponCode.trim().toUpperCase();
     }
     if (startDate) {
-      datosModificados.startDate = new Date(startDate);
+      datosModificados.startDate = nextStartDate;
     }
     if (endDate) {
-      datosModificados.endDate = new Date(endDate);
+      datosModificados.endDate = nextEndDate;
     }
 
     this.promotionRepository.merge(promo, datosModificados);

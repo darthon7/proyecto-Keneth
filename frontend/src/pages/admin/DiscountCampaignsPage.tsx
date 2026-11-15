@@ -7,7 +7,12 @@ import { Input } from '@/components/atoms/Input';
 import { Spinner } from '@/components/atoms/Spinner';
 import { errorMessage, gamesApi, gamesExtraApi } from '@/api';
 import { getActiveGameDiscount } from '@/utils/discount';
-import { formatCurrency, formatDate } from '@/utils/format';
+import {
+  formatCurrency,
+  formatDate,
+  getTodayLocalDateTimeMin,
+  isBeforeToday,
+} from '@/utils/format';
 
 export function DiscountCampaignsPage() {
   const queryClient = useQueryClient();
@@ -87,6 +92,35 @@ export function DiscountCampaignsPage() {
       return;
     }
 
+    if (startDate) {
+      const parsedStart = new Date(startDate);
+      if (Number.isNaN(parsedStart.getTime())) {
+        setValidationError('La fecha de inicio no es válida.');
+        return;
+      }
+      if (isBeforeToday(parsedStart)) {
+        setValidationError('La fecha de inicio no puede ser anterior al día de hoy.');
+        return;
+      }
+    }
+
+    if (endDate) {
+      const parsedEnd = new Date(endDate);
+      if (Number.isNaN(parsedEnd.getTime())) {
+        setValidationError('La fecha de fin no es válida.');
+        return;
+      }
+      if (isBeforeToday(parsedEnd)) {
+        setValidationError('La fecha de fin no puede ser anterior al día de hoy.');
+        return;
+      }
+    }
+
+    if (startDate && endDate && new Date(endDate).getTime() <= new Date(startDate).getTime()) {
+      setValidationError('La fecha de fin debe ser posterior a la fecha de inicio.');
+      return;
+    }
+
     applyCampaignMutation.mutate({
       gameIds: selectedIds,
       discountCampaignName: campaignName.trim() || 'Campaña de Ofertas',
@@ -110,6 +144,7 @@ export function DiscountCampaignsPage() {
   };
 
   const previewPct = Number(discountPercent);
+  const todayMin = getTodayLocalDateTimeMin();
 
   return (
     <div data-testid="admin-discount-campaigns-page" className="space-y-6">
@@ -163,12 +198,14 @@ export function DiscountCampaignsPage() {
           <Input
             label="Inicio (opcional)"
             type="datetime-local"
+            min={todayMin}
             value={startDate}
             onChange={(event) => setStartDate(event.target.value)}
           />
           <Input
             label="Fin (opcional)"
             type="datetime-local"
+            min={todayMin}
             value={endDate}
             onChange={(event) => setEndDate(event.target.value)}
           />

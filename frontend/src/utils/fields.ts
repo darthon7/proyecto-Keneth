@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isBeforeToday } from './format';
 
 export type FieldType =
   | 'text'
@@ -29,6 +30,10 @@ export interface FieldConfig {
   step?: number;
   minLength?: number;
   maxLength?: number;
+  /** Exige que la fecha/hora no sea anterior al día de hoy (en creación o al modificarla). */
+  notBeforeToday?: boolean;
+  /** Nombre de otro campo fecha/hora respecto al cual este debe ser estrictamente posterior. */
+  afterField?: string;
   /** Valor inicial usado al abrir el modal de creación. */
   defaultValue?: string | number | boolean;
 }
@@ -120,13 +125,75 @@ function fieldSchema(field: FieldConfig): z.ZodType {
   }
 }
 
+export interface BuildSchemaOptions {
+  mode?: 'create' | 'edit';
+  initialValues?: FormValues;
+}
+
 /** Construye el esquema Zod a partir de la configuración declarativa de campos. */
-export function buildSchema(fields: FieldConfig[]): z.ZodType<FormValues, FormValues> {
+export function buildSchema(
+  fields: FieldConfig[],
+  options: BuildSchemaOptions = {},
+): z.ZodType<FormValues, FormValues> {
+  const { mode = 'create', initialValues } = options;
   const shape: Record<string, z.ZodType> = {};
   for (const field of fields) {
     shape[field.name] = fieldSchema(field);
   }
-  return z.object(shape) as unknown as z.ZodType<FormValues, FormValues>;
+  const fieldsByName = new Map(fields.map((field) => [field.name, field]));
+
+  return z
+    .object(shape)
+    .superRefine((values, ctx) => {
+      for (const field of fields) {
+        if (field.type !== 'date' && field.type !== 'datetime') continue;
+        const rawValue = values[field.name];
+        if (typeof rawValue !== 'string' || rawValue.trim() === '') continue;
+
+        const parsedDate = new Date(rawValue);
+        if (Number.isNaN(parsedDate.getTime())) {
+          ctx.addIssue({
+            code: 'custom',
+            path: [field.name],
+            message: `${field.label} no es una fecha válida`,
+          });
+          continue;
+        }
+
+        if (field.notBeforeToday) {
+          const isModifiedInEdit =
+            mode === 'edit' && rawValue !== initialValues?.[field.name];
+          const isActivatingExpiredEndDate =
+            mode === 'edit' && Boolean(field.afterField) && values.isActive === true;
+
+          if ((mode === 'create' || isModifiedInEdit || isActivatingExpiredEndDate) && isBeforeToday(parsedDate)) {
+            ctx.addIssue({
+              code: 'custom',
+              path: [field.name],
+              message:
+                isActivatingExpiredEndDate && !isModifiedInEdit
+                  ? `No se puede activar con ${field.label.toLowerCase()} anterior al día de hoy`
+                  : `${field.label} no puede ser anterior al día de hoy`,
+            });
+          }
+        }
+
+        if (field.afterField) {
+          const otherRaw = values[field.afterField];
+          if (typeof otherRaw === 'string' && otherRaw.trim() !== '') {
+            const otherDate = new Date(otherRaw);
+            if (!Number.isNaN(otherDate.getTime()) && parsedDate.getTime() <= otherDate.getTime()) {
+              const otherLabel = fieldsByName.get(field.afterField)?.label ?? field.afterField;
+              ctx.addIssue({
+                code: 'custom',
+                path: [field.name],
+                message: `${field.label} debe ser posterior a ${otherLabel}`,
+              });
+            }
+          }
+        }
+      }
+    }) as unknown as z.ZodType<FormValues, FormValues>;
 }
 
 /** Genera los valores iniciales del formulario a partir de la configuración. */
