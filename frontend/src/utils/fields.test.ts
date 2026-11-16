@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildInitialValues, buildPayload, buildSchema } from '@/utils/fields';
+import { buildInitialValues, buildPayload, buildSchema, VALIDATION_PATTERNS } from '@/utils/fields';
 import type { FieldConfig } from '@/utils/fields';
 
 const fields: FieldConfig[] = [
@@ -230,5 +230,137 @@ describe('buildSchema', () => {
       expiredEditSchema.safeParse({ startDate: pastStart, endDate: pastEnd, isActive: false })
         .success,
     ).toBe(true);
+  });
+
+  it('valida pattern y patternMessage en campos requeridos y opcionales (permitiendo vacío opcional)', () => {
+    const schema = buildSchema([
+      {
+        name: 'slug',
+        label: 'Slug',
+        type: 'text',
+        required: true,
+        pattern: VALIDATION_PATTERNS.SLUG,
+        patternMessage: 'Slug inválido',
+      },
+      {
+        name: 'country',
+        label: 'País',
+        type: 'text',
+        minLength: 2,
+        maxLength: 2,
+        pattern: VALIDATION_PATTERNS.ISO_COUNTRY,
+        patternMessage: 'Debe ser código ISO-2',
+      },
+    ]);
+
+    const invalidSlug = schema.safeParse({ slug: 'Slug Con Espacios!', country: '' });
+    expect(invalidSlug.success).toBe(false);
+    if (!invalidSlug.success) {
+      expect(invalidSlug.error.issues[0]?.message).toBe('Slug inválido');
+    }
+
+    const invalidCountry = schema.safeParse({ slug: 'action-rpg', country: '12' });
+    expect(invalidCountry.success).toBe(false);
+    if (!invalidCountry.success) {
+      expect(invalidCountry.error.issues[0]?.message).toBe('Debe ser código ISO-2');
+    }
+
+    expect(schema.safeParse({ slug: 'action-rpg', country: '' })).toEqual({
+      success: true,
+      data: { slug: 'action-rpg', country: undefined },
+    });
+
+    expect(schema.safeParse({ slug: 'action-rpg', country: 'MX' })).toEqual({
+      success: true,
+      data: { slug: 'action-rpg', country: 'MX' },
+    });
+  });
+
+  it('rechaza cadenas de solo espacios en campos requeridos y valida patrones con espacios', () => {
+    const schema = buildSchema([
+      {
+        name: 'name',
+        label: 'Nombre',
+        type: 'text',
+        required: true,
+        pattern: VALIDATION_PATTERNS.ENTITY_NAME,
+        patternMessage: 'Nombre inválido',
+      },
+      {
+        name: 'description',
+        label: 'Descripción',
+        type: 'textarea',
+        required: true,
+      },
+    ]);
+
+    expect(schema.safeParse({ name: '   ', description: 'Texto válido' }).success).toBe(false);
+    expect(schema.safeParse({ name: 'Nintendo', description: '   ' }).success).toBe(false);
+    expect(schema.safeParse({ name: '  Nintendo EPD  ', description: '  Estudio  ' })).toEqual({
+      success: true,
+      data: { name: 'Nintendo EPD', description: 'Estudio' },
+    });
+  });
+
+  it('rechaza números negativos (-1) y letras o notación científica en campos numéricos requeridos y opcionales', () => {
+    const schema = buildSchema([
+      { name: 'price', label: 'Precio', type: 'number', required: true, step: 0.01 },
+      { name: 'optionalQty', label: 'Cantidad opcional', type: 'number' },
+    ]);
+
+    const negativeReq = schema.safeParse({ price: -1 });
+    expect(negativeReq.success).toBe(false);
+    if (!negativeReq.success) {
+      expect(negativeReq.error.issues[0]?.message).toBe('Precio no puede ser negativo (mínimo 0)');
+    }
+
+    expect(schema.safeParse({ price: '-1' }).success).toBe(false);
+    expect(schema.safeParse({ price: 'abc' }).success).toBe(false);
+    expect(schema.safeParse({ price: '12abc' }).success).toBe(false);
+    expect(schema.safeParse({ price: '1e5' }).success).toBe(false);
+    expect(schema.safeParse({ price: true }).success).toBe(false);
+
+    expect(schema.safeParse({ price: 10, optionalQty: -1 }).success).toBe(false);
+    expect(schema.safeParse({ price: 10, optionalQty: '-1' }).success).toBe(false);
+    expect(schema.safeParse({ price: 10, optionalQty: 'abc' }).success).toBe(false);
+    expect(schema.safeParse({ price: 10, optionalQty: '12abc' }).success).toBe(false);
+    expect(schema.safeParse({ price: 10, optionalQty: '1e5' }).success).toBe(false);
+
+    expect(schema.safeParse({ price: '59.99', optionalQty: '' })).toEqual({
+      success: true,
+      data: { price: 59.99, optionalQty: undefined },
+    });
+    expect(schema.safeParse({ price: 59.99, optionalQty: 5 })).toEqual({
+      success: true,
+      data: { price: 59.99, optionalQty: 5 },
+    });
+  });
+});
+
+describe('VALIDATION_PATTERNS', () => {
+  it('valida correctamente correos, slugs, códigos ISO-2, cupones, claves digitales, URLs y tarjetas', () => {
+    expect(VALIDATION_PATTERNS.EMAIL.test('jugador@tienda.com')).toBe(true);
+    expect(VALIDATION_PATTERNS.EMAIL.test('jugador@localhost')).toBe(false);
+
+    expect(VALIDATION_PATTERNS.SLUG.test('the-witcher-3')).toBe(true);
+    expect(VALIDATION_PATTERNS.SLUG.test('The-Witcher')).toBe(false);
+
+    expect(VALIDATION_PATTERNS.ISO_COUNTRY.test('MX')).toBe(true);
+    expect(VALIDATION_PATTERNS.ISO_COUNTRY.test('M1')).toBe(false);
+
+    expect(VALIDATION_PATTERNS.COUPON_CODE.test('VERANO_2026-10')).toBe(true);
+    expect(VALIDATION_PATTERNS.COUPON_CODE.test('CON ESPACIO')).toBe(false);
+
+    expect(VALIDATION_PATTERNS.DIGITAL_KEY_CODE.test('ABCD-EFGH-1234-5678')).toBe(true);
+    expect(VALIDATION_PATTERNS.DIGITAL_KEY_CODE.test('clave invalida')).toBe(false);
+
+    expect(VALIDATION_PATTERNS.URL_OR_PATH.test('https://ejemplo.com/portada.jpg')).toBe(true);
+    expect(VALIDATION_PATTERNS.URL_OR_PATH.test('/banner-gta-6.jpg')).toBe(true);
+    expect(VALIDATION_PATTERNS.URL_OR_PATH.test('javascript:alert(1)')).toBe(false);
+
+    expect(VALIDATION_PATTERNS.CARD_EXPIRY.test('12/28')).toBe(true);
+    expect(VALIDATION_PATTERNS.CARD_EXPIRY.test('13/28')).toBe(false);
+    expect(VALIDATION_PATTERNS.CARD_CVV.test('123')).toBe(true);
+    expect(VALIDATION_PATTERNS.CARD_CVV.test('12')).toBe(false);
   });
 });

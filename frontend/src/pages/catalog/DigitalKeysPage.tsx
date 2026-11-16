@@ -12,7 +12,7 @@ import { Textarea } from '@/components/atoms/Textarea';
 import { digitalKeysApi, digitalKeysExtraApi, errorMessage, gameEditionsApi } from '@/api';
 import { KeyStatus, type CreateDigitalKeyPayload, type DigitalKey } from '@/types';
 import { formatDateTime, humanizeEnum } from '@/utils/format';
-import type { FieldConfig } from '@/utils/fields';
+import { VALIDATION_PATTERNS, type FieldConfig } from '@/utils/fields';
 
 export function DigitalKeysPage({ embedded = false }: { embedded?: boolean }) {
   const queryClient = useQueryClient();
@@ -81,6 +81,57 @@ export function DigitalKeysPage({ embedded = false }: { embedded?: boolean }) {
     },
   });
 
+  const handleBulkSubmit = () => {
+    setBulkError(null);
+    const gameEditionId = Number(bulkEditionId);
+    if (!Number.isInteger(gameEditionId) || gameEditionId < 1) {
+      setBulkError('Selecciona una edición digital');
+      return;
+    }
+
+    const trimmedBatch = bulkBatchId.trim();
+    if (trimmedBatch && !VALIDATION_PATTERNS.BATCH_ID.test(trimmedBatch)) {
+      setBulkError(
+        'El identificador de lote solo permite letras, números, guiones y guion bajo (2 a 50 caracteres).',
+      );
+      return;
+    }
+
+    if (bulkMode === 'manual') {
+      const codes = bulkCodesText
+        .split(/[\n,;]+/)
+        .map((code) => code.trim())
+        .filter(Boolean);
+      if (codes.length === 0) {
+        setBulkError('Ingresa al menos una clave digital.');
+        return;
+      }
+      if (codes.some((code) => !VALIDATION_PATTERNS.DIGITAL_KEY_CODE.test(code))) {
+        setBulkError(
+          'Cada clave debe tener formato alfanumérico separado por guiones (ej. ABCD-EFGH-IJKL-MNOP).',
+        );
+        return;
+      }
+      if (new Set(codes.map((code) => code.toUpperCase())).size !== codes.length) {
+        setBulkError('La lista contiene códigos duplicados.');
+        return;
+      }
+    } else {
+      const trimmedQty = bulkQuantity.trim();
+      if (!/^\d+$/.test(trimmedQty)) {
+        setBulkError('La cantidad debe ser un número entero entre 1 y 100.');
+        return;
+      }
+      const quantity = Number(trimmedQty);
+      if (quantity < 1 || quantity > 100) {
+        setBulkError('La cantidad debe estar entre 1 y 100.');
+        return;
+      }
+    }
+
+    bulkMutation.mutate();
+  };
+
   const editions = useMemo(() => editionsQuery.data ?? [], [editionsQuery.data]);
 
   const editionOptions = useMemo(
@@ -106,6 +157,8 @@ export function DigitalKeysPage({ embedded = false }: { embedded?: boolean }) {
         label: 'Código de la llave (opcional)',
         type: 'text',
         maxLength: 255,
+        pattern: VALIDATION_PATTERNS.DIGITAL_KEY_CODE,
+        patternMessage: 'Formato de clave inválido (ej. XXXX-XXXX-XXXX-XXXX)',
         placeholder: 'Ej. XXXX-XXXX-XXXX-XXXX (vacío = autogenerado)',
         help: 'Si lo dejas vacío, el servidor genera el código y calcula su hash SHA-256 automáticamente.',
       },
@@ -121,7 +174,14 @@ export function DigitalKeysPage({ embedded = false }: { embedded?: boolean }) {
         ],
         defaultValue: KeyStatus.AVAILABLE,
       },
-      { name: 'batchId', label: 'Lote', type: 'text', maxLength: 50 },
+      {
+        name: 'batchId',
+        label: 'Lote',
+        type: 'text',
+        maxLength: 50,
+        pattern: VALIDATION_PATTERNS.BATCH_ID,
+        patternMessage: 'El lote solo permite letras, números, guiones y guion bajo (2 a 50 caracteres)',
+      },
     ],
     [editionOptions],
   );
@@ -285,7 +345,7 @@ export function DigitalKeysPage({ embedded = false }: { embedded?: boolean }) {
               variant="brand"
               data-testid="digital-keys-bulk-submit"
               isLoading={bulkMutation.isPending}
-              onClick={() => bulkMutation.mutate()}
+              onClick={handleBulkSubmit}
             >
               Generar claves
             </Button>
@@ -329,7 +389,7 @@ export function DigitalKeysPage({ embedded = false }: { embedded?: boolean }) {
               min={1}
               max={100}
               value={bulkQuantity}
-              onChange={(event) => setBulkQuantity(event.target.value)}
+              onChange={(event) => setBulkQuantity(event.target.value.replace(/\D/g, ''))}
             />
           ) : (
             <Textarea

@@ -5,7 +5,7 @@ import { Badge } from '@/components/atoms/Badge';
 import { gamesApi, systemRequirementsApi } from '@/api';
 import type { CreateSystemRequirementPayload, SystemRequirement } from '@/types';
 import { humanizeEnum } from '@/utils/format';
-import type { FieldConfig } from '@/utils/fields';
+import { VALIDATION_PATTERNS, type FieldConfig } from '@/utils/fields';
 
 export function SystemRequirementsPage({ embedded = false }: { embedded?: boolean }) {
   const gamesQuery = useQuery({ queryKey: ['games'], queryFn: () => gamesApi.list() });
@@ -24,18 +24,43 @@ export function SystemRequirementsPage({ embedded = false }: { embedded?: boolea
         ],
         defaultValue: 'MINIMUM',
       },
-      { name: 'os', label: 'Sistema operativo', type: 'text', required: true, maxLength: 100 },
-      { name: 'processor', label: 'Procesador', type: 'text', required: true, maxLength: 150 },
-      { name: 'ramGb', label: 'Memoria RAM (GB)', type: 'number', required: true, min: 1 },
+      {
+        name: 'os',
+        label: 'Sistema operativo',
+        type: 'text',
+        required: true,
+        maxLength: 100,
+        pattern: VALIDATION_PATTERNS.HARDWARE_SPEC,
+        patternMessage: 'Sistema operativo contiene caracteres no válidos',
+      },
+      {
+        name: 'processor',
+        label: 'Procesador',
+        type: 'text',
+        required: true,
+        maxLength: 150,
+        pattern: VALIDATION_PATTERNS.HARDWARE_SPEC,
+        patternMessage: 'Procesador contiene caracteres no válidos',
+      },
+      { name: 'ramGb', label: 'Memoria RAM (GB)', type: 'number', required: true, min: 1, max: 512 },
       {
         name: 'graphicsCard',
         label: 'Tarjeta de video',
         type: 'text',
         required: true,
         maxLength: 150,
+        pattern: VALIDATION_PATTERNS.HARDWARE_SPEC,
+        patternMessage: 'Tarjeta de video contiene caracteres no válidos',
       },
-      { name: 'storageGb', label: 'Almacenamiento (GB)', type: 'number', required: true, min: 1 },
-      { name: 'directxVersion', label: 'Versión de DirectX', type: 'text', maxLength: 50 },
+      { name: 'storageGb', label: 'Almacenamiento (GB)', type: 'number', required: true, min: 1, max: 10000 },
+      {
+        name: 'directxVersion',
+        label: 'Versión de DirectX',
+        type: 'text',
+        maxLength: 50,
+        pattern: VALIDATION_PATTERNS.DIRECTX_VERSION,
+        patternMessage: 'Versión de DirectX inválida (ej. DirectX 12)',
+      },
       {
         name: 'gameId',
         label: 'Videojuego',

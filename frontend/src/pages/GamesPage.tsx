@@ -38,6 +38,9 @@ export function GamesPage() {
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState(() => searchParams.get('q') ?? '');
 
+  const sanitizePositiveIntParam = (raw: string | null): string =>
+    raw && /^[1-9]\d*$/.test(raw) ? raw : '';
+
   const maxPriceParam = searchParams.get('maxPrice');
   const parsedMaxPrice = maxPriceParam ? Number(maxPriceParam) : null;
   const maxPrice =
@@ -46,10 +49,10 @@ export function GamesPage() {
       : null;
 
   const filters: GameFilterValues = {
-    genreId: searchParams.get('genreId') ?? '',
-    platformId: searchParams.get('platformId') ?? '',
+    genreId: sanitizePositiveIntParam(searchParams.get('genreId')),
+    platformId: sanitizePositiveIntParam(searchParams.get('platformId')),
     maxPrice: maxPrice !== null ? String(maxPrice) : '',
-    developerId: searchParams.get('developerId') ?? '',
+    developerId: sanitizePositiveIntParam(searchParams.get('developerId')),
   };
   const term = searchParams.get('q') ?? '';
 
@@ -179,6 +182,7 @@ export function GamesPage() {
               </svg>
               <input
                 type="text"
+                maxLength={100}
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Buscar título, estudio..."

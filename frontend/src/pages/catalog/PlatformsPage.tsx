@@ -1,19 +1,37 @@
 import { CrudResourcePage } from '@/components/organisms/CrudResourcePage';
 import { platformsApi } from '@/api';
 import type { CreatePlatformPayload, Platform } from '@/types';
-import type { FieldConfig } from '@/utils/fields';
+import { VALIDATION_PATTERNS, type FieldConfig } from '@/utils/fields';
 
 const fields: FieldConfig[] = [
-  { name: 'name', label: 'Nombre', type: 'text', required: true, maxLength: 50 },
+  {
+    name: 'name',
+    label: 'Nombre',
+    type: 'text',
+    required: true,
+    maxLength: 50,
+    pattern: VALIDATION_PATTERNS.ENTITY_NAME,
+    patternMessage: 'Nombre contiene caracteres no válidos',
+  },
   {
     name: 'code',
     label: 'Código',
     type: 'text',
     required: true,
     maxLength: 20,
+    pattern: VALIDATION_PATTERNS.PLATFORM_CODE,
+    patternMessage: 'El código solo permite letras, números, guiones y guion bajo (2 a 20 caracteres)',
     help: 'Código corto, por ejemplo PC, PS5, XBOX',
   },
-  { name: 'iconUrl', label: 'Icono (URL)', type: 'text', placeholder: 'https://…' },
+  {
+    name: 'iconUrl',
+    label: 'Icono (URL)',
+    type: 'text',
+    maxLength: 255,
+    placeholder: 'https://…',
+    pattern: VALIDATION_PATTERNS.URL_OR_PATH,
+    patternMessage: 'Ingresa una URL http(s):// válida o ruta relativa /...',
+  },
 ];
 
 export function PlatformsPage({ embedded = false }: { embedded?: boolean }) {

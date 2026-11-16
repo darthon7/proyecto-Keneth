@@ -7,6 +7,7 @@ import { Input } from '@/components/atoms/Input';
 import { Spinner } from '@/components/atoms/Spinner';
 import { errorMessage, gamesApi, gamesExtraApi } from '@/api';
 import { getActiveGameDiscount } from '@/utils/discount';
+import { VALIDATION_PATTERNS } from '@/utils/fields';
 import {
   formatCurrency,
   formatDate,
@@ -86,8 +87,26 @@ export function DiscountCampaignsPage() {
       return;
     }
 
-    const pct = Number(discountPercent);
-    if (!Number.isFinite(pct) || pct <= 0 || pct > 95) {
+    const trimmedCampaignName = campaignName.trim();
+    if (
+      trimmedCampaignName &&
+      (trimmedCampaignName.length > 120 ||
+        !VALIDATION_PATTERNS.ENTITY_NAME.test(trimmedCampaignName))
+    ) {
+      setValidationError(
+        'El nombre de la campaña contiene caracteres no válidos o excede 120 caracteres.',
+      );
+      return;
+    }
+
+    const trimmedPercent = discountPercent.trim();
+    const pct = Number(trimmedPercent);
+    if (
+      !VALIDATION_PATTERNS.DECIMAL_PRICE.test(trimmedPercent) ||
+      !Number.isFinite(pct) ||
+      pct < 1 ||
+      pct > 95
+    ) {
       setValidationError('Ingresa un porcentaje de descuento válido entre 1% y 95%.');
       return;
     }
@@ -191,8 +210,9 @@ export function DiscountCampaignsPage() {
             type="number"
             min={1}
             max={95}
+            step={0.01}
             value={discountPercent}
-            onChange={(event) => setDiscountPercent(event.target.value)}
+            onChange={(event) => setDiscountPercent(event.target.value.replace(/[^0-9.]/g, ''))}
             placeholder="25"
           />
           <Input

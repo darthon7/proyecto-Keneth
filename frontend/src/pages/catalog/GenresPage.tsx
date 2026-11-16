@@ -1,19 +1,29 @@
 import { CrudResourcePage } from '@/components/organisms/CrudResourcePage';
 import { genresApi } from '@/api';
 import type { CreateGenrePayload, Genre } from '@/types';
-import type { FieldConfig } from '@/utils/fields';
+import { VALIDATION_PATTERNS, type FieldConfig } from '@/utils/fields';
 
 const fields: FieldConfig[] = [
-  { name: 'name', label: 'Nombre', type: 'text', required: true, maxLength: 50 },
+  {
+    name: 'name',
+    label: 'Nombre',
+    type: 'text',
+    required: true,
+    maxLength: 50,
+    pattern: VALIDATION_PATTERNS.ENTITY_NAME,
+    patternMessage: 'Nombre contiene caracteres no válidos',
+  },
   {
     name: 'slug',
     label: 'Slug',
     type: 'text',
     required: true,
     maxLength: 60,
+    pattern: VALIDATION_PATTERNS.SLUG,
+    patternMessage: 'El slug solo permite minúsculas, números y guiones (ej. action-rpg)',
     help: 'Identificador único en URL, por ejemplo action-rpg',
   },
-  { name: 'description', label: 'Descripción', type: 'textarea' },
+  { name: 'description', label: 'Descripción', type: 'textarea', maxLength: 500 },
 ];
 
 export function GenresPage({ embedded = false }: { embedded?: boolean }) {

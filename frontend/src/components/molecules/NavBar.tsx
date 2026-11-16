@@ -140,6 +140,7 @@ export function NavBar() {
                   ref={searchInputRef}
                   data-testid="navbar-search-input"
                   type="text"
+                  maxLength={100}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Buscar juegos, DLCs, estudios..."
@@ -435,6 +436,7 @@ export function NavBar() {
           <form onSubmit={handleSearchSubmit} role="search" className="relative">
             <input
               type="text"
+              maxLength={100}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Buscar juegos, DLCs, estudios..."

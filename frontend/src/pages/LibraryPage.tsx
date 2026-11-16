@@ -136,6 +136,7 @@ export function LibraryPage() {
             </svg>
             <input
               type="text"
+              maxLength={100}
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="Buscar juego, edición o plataforma…"

@@ -16,6 +16,7 @@ import { errorMessage, usersApi, usersExtraApi } from '@/api';
 import { useSession } from '@/context/SessionContext';
 import { UserRole } from '@/types';
 import type { SafeUser } from '@/types';
+import { VALIDATION_PATTERNS } from '@/utils/fields';
 
 interface UserFormValues {
   username: string;
@@ -38,16 +39,27 @@ const createUserSchema = z.object({
     .string()
     .trim()
     .min(1, 'Nombre de usuario es obligatorio')
-    .max(100, 'Máximo 100 caracteres'),
-  email: z.string().trim().min(1, 'Correo es obligatorio').email('Introduce un correo válido'),
+    .min(2, 'Nombre de usuario debe tener al menos 2 caracteres')
+    .max(100, 'Máximo 100 caracteres')
+    .regex(VALIDATION_PATTERNS.USERNAME, 'Nombre de usuario contiene caracteres no válidos'),
+  email: z
+    .string()
+    .trim()
+    .min(1, 'Correo es obligatorio')
+    .email('Introduce un correo válido')
+    .regex(VALIDATION_PATTERNS.EMAIL, 'Introduce un correo válido'),
   password: z
     .string()
     .min(4, 'Contraseña debe tener al menos 4 caracteres')
-    .max(50, 'Contraseña es muy larga'),
+    .max(50, 'Contraseña es muy larga')
+    .regex(
+      VALIDATION_PATTERNS.NON_WHITESPACE_PASSWORD,
+      'La contraseña no puede empezar ni terminar con espacios',
+    ),
   countryCode: z
     .string()
     .trim()
-    .refine((value) => value === '' || value.length === 2, {
+    .refine((value) => value === '' || VALIDATION_PATTERNS.ISO_COUNTRY.test(value), {
       message: 'País debe tener 2 letras (ISO-2)',
     })
     .optional(),
@@ -59,18 +71,33 @@ const editUserSchema = z.object({
     .string()
     .trim()
     .min(1, 'Nombre de usuario es obligatorio')
-    .max(100, 'Máximo 100 caracteres'),
-  email: z.string().trim().min(1, 'Correo es obligatorio').email('Introduce un correo válido'),
+    .min(2, 'Nombre de usuario debe tener al menos 2 caracteres')
+    .max(100, 'Máximo 100 caracteres')
+    .regex(VALIDATION_PATTERNS.USERNAME, 'Nombre de usuario contiene caracteres no válidos'),
+  email: z
+    .string()
+    .trim()
+    .min(1, 'Correo es obligatorio')
+    .email('Introduce un correo válido')
+    .regex(VALIDATION_PATTERNS.EMAIL, 'Introduce un correo válido'),
   password: z
     .string()
-    .refine((value) => value === '' || (value.length >= 4 && value.length <= 50), {
-      message: 'Si cambias la contraseña debe tener entre 4 y 50 caracteres',
-    })
+    .refine(
+      (value) =>
+        value === '' ||
+        (value.length >= 4 &&
+          value.length <= 50 &&
+          VALIDATION_PATTERNS.NON_WHITESPACE_PASSWORD.test(value)),
+      {
+        message:
+          'Si cambias la contraseña debe tener entre 4 y 50 caracteres sin espacios al inicio o final',
+      },
+    )
     .optional(),
   countryCode: z
     .string()
     .trim()
-    .refine((value) => value === '' || value.length === 2, {
+    .refine((value) => value === '' || VALIDATION_PATTERNS.ISO_COUNTRY.test(value), {
       message: 'País debe tener 2 letras (ISO-2)',
     })
     .optional(),

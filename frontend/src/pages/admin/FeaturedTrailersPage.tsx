@@ -5,6 +5,7 @@ import { ErrorBanner } from '@/components/atoms/ErrorBanner';
 import { Input } from '@/components/atoms/Input';
 import { Spinner } from '@/components/atoms/Spinner';
 import { errorMessage, featuredTrailersApi } from '@/api';
+import { VALIDATION_PATTERNS } from '@/utils/fields';
 import { extractYouTubeId } from '@/utils/youtube';
 
 const SLOTS = [
@@ -81,12 +82,35 @@ export function FeaturedTrailersPage() {
     setFeedback(null);
     setValidationError(null);
 
-    if (!title.trim()) {
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) {
       setValidationError('Ingresa el título del juego o tráiler.');
       return;
     }
-    if (!imageUrl.trim()) {
+    if (
+      trimmedTitle.length < 2 ||
+      trimmedTitle.length > 180 ||
+      !VALIDATION_PATTERNS.ENTITY_NAME.test(trimmedTitle)
+    ) {
+      setValidationError('El título debe tener entre 2 y 180 caracteres válidos.');
+      return;
+    }
+    const trimmedImageUrl = imageUrl.trim();
+    if (!trimmedImageUrl) {
       setValidationError('Ingresa la URL de la foto.');
+      return;
+    }
+    if (
+      trimmedImageUrl.length > 500 ||
+      !VALIDATION_PATTERNS.URL_OR_PATH.test(trimmedImageUrl)
+    ) {
+      setValidationError(
+        'Ingresa una URL http(s):// válida o ruta /... para la foto (máx. 500 caracteres).',
+      );
+      return;
+    }
+    if (description.trim().length > 600) {
+      setValidationError('La descripción no puede superar los 600 caracteres.');
       return;
     }
     if (!extractYouTubeId(youtubeUrl)) {

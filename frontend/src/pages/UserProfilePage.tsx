@@ -13,6 +13,7 @@ import { useSession } from '@/context/SessionContext';
 import { PaymentStatus, type Order, type SafeUser, type UpdatePayload, type CreateUserPayload } from '@/types';
 import { getActiveGameDiscount, getCouponStatus } from '@/utils/discount';
 import { formatCurrency, formatDate } from '@/utils/format';
+import { VALIDATION_PATTERNS } from '@/utils/fields';
 
 type ProfileTab = 'overview' | 'library' | 'orders' | 'wishlist' | 'reviews' | 'settings';
 
@@ -93,21 +94,33 @@ function ProfileSettingsForm({ user, onSuccess }: ProfileSettingsFormProps) {
     const trimmedEmail = email.trim().toLowerCase();
     const normalizedCountry = countryCode.trim().toUpperCase();
 
-    if (trimmedUsername.length < 2) {
-      setFormError('El nombre de usuario debe tener al menos 2 caracteres.');
+    if (trimmedUsername.length < 2 || trimmedUsername.length > 100) {
+      setFormError('El nombre de usuario debe tener entre 2 y 100 caracteres.');
       return;
     }
-    if (!trimmedEmail || !trimmedEmail.includes('@')) {
+    if (!VALIDATION_PATTERNS.USERNAME.test(trimmedUsername)) {
+      setFormError(
+        'El nombre de usuario solo permite letras, números, espacios, puntos, guiones y guion bajo.',
+      );
+      return;
+    }
+    if (!VALIDATION_PATTERNS.EMAIL.test(trimmedEmail) || trimmedEmail.length > 150) {
       setFormError('Ingresa un correo electrónico válido.');
       return;
     }
-    if (normalizedCountry.length !== 2) {
+    if (!VALIDATION_PATTERNS.ISO_COUNTRY.test(normalizedCountry)) {
       setFormError('El código de país debe tener exactamente 2 letras (ej. MX, US, ES).');
       return;
     }
-    if (password && password.length < 4) {
-      setFormError('La nueva contraseña debe tener al menos 4 caracteres.');
-      return;
+    if (password) {
+      if (password.length < 4 || password.length > 50) {
+        setFormError('La nueva contraseña debe tener entre 4 y 50 caracteres.');
+        return;
+      }
+      if (!VALIDATION_PATTERNS.NON_WHITESPACE_PASSWORD.test(password)) {
+        setFormError('La contraseña no puede empezar ni terminar con espacios.');
+        return;
+      }
     }
     if (password !== confirmPassword) {
       setFormError('Las contraseñas no coinciden.');
@@ -244,11 +257,12 @@ function ProfileSettingsForm({ user, onSuccess }: ProfileSettingsFormProps) {
 export function UserProfilePage() {
   const { id } = useParams<{ id: string }>();
   const userId = Number(id);
+  const isValidUserId = Number.isInteger(userId) && userId >= 1;
   const { currentUser, isAdmin, isLoading: sessionLoading } = useSession();
   const [activeTab, setActiveTab] = useState<ProfileTab>('overview');
 
   const canViewProfile = Boolean(
-    currentUser && Number.isFinite(userId) && (isAdmin || currentUser.id === userId),
+    currentUser && isValidUserId && (isAdmin || currentUser.id === userId),
   );
   const isOwnProfile = Boolean(currentUser && currentUser.id === userId);
 

@@ -26,6 +26,7 @@ const PAYMENT_STATUS_META: Record<
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const orderId = Number(id);
+  const isValidOrderId = Number.isInteger(orderId) && orderId >= 1;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { currentUser, isAdmin, isLoading: sessionLoading } = useSession();
@@ -34,7 +35,7 @@ export function OrderDetailPage() {
   const orderQuery = useQuery({
     queryKey: ['order', orderId],
     queryFn: () => ordersApi.get(orderId),
-    enabled: Number.isFinite(orderId) && Boolean(currentUser),
+    enabled: isValidOrderId && Boolean(currentUser),
   });
 
   const updateMutation = useMutation({
@@ -75,6 +76,14 @@ export function OrderDetailPage() {
           title="Inicia sesión"
           description="Entra en tu cuenta desde la barra superior para consultar el detalle de tu orden."
         />
+      </section>
+    );
+  }
+
+  if (!isValidOrderId) {
+    return (
+      <section className="page-container py-16">
+        <ErrorBanner message="El identificador de la orden no es válido." />
       </section>
     );
   }

@@ -66,28 +66,36 @@ const registerAuthResponse: AuthResponse = {
   user: createdUser,
 };
 
-function renderModal(initialMode: AuthModalMode = 'login') {
+function renderModal(initialMode: AuthModalMode = 'login', onClose = vi.fn()) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
 
   render(
     <QueryClientProvider client={queryClient}>
-      <LoginModal isOpen onClose={() => {}} initialMode={initialMode} />
+      <LoginModal isOpen onClose={onClose} initialMode={initialMode} />
     </QueryClientProvider>,
   );
+
+  return { onClose };
 }
 
 describe('LoginModal', () => {
+  const reloadMock = vi.fn();
+
   beforeEach(() => {
     vi.clearAllMocks();
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...window.location, reload: reloadMock },
+    });
   });
 
-  it('en modo login muestra únicamente Correo y Contraseña e inicia sesión con authApi.login', async () => {
+  it('en modo login muestra únicamente Correo y Contraseña, inicia sesión, cierra el modal y refresca la página', async () => {
     const user = userEvent.setup();
     loginApi.mockResolvedValue(loginAuthResponse);
 
-    renderModal('login');
+    const { onClose } = renderModal('login');
 
     expect(screen.getByTestId('login-email-input')).toBeInTheDocument();
     expect(screen.getByTestId('login-password-input')).toBeInTheDocument();
@@ -107,7 +115,11 @@ describe('LoginModal', () => {
 
     expect(setSession).toHaveBeenCalledWith(loginAuthResponse);
     expect(registerApi).not.toHaveBeenCalled();
-    expect(await screen.findByText('¡Sesión iniciada!')).toBeInTheDocument();
+    expect(screen.queryByTestId('login-success-state')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(onClose).toHaveBeenCalledTimes(1);
+      expect(reloadMock).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('muestra el error del backend cuando authApi.login falla con 401', async () => {
@@ -137,11 +149,11 @@ describe('LoginModal', () => {
     expect(loginApi).not.toHaveBeenCalled();
   });
 
-  it('registra una nueva cuenta en modo register usando authApi.register', async () => {
+  it('registra una nueva cuenta en modo register, cierra el modal y refresca la página', async () => {
     const user = userEvent.setup();
     registerApi.mockResolvedValue(registerAuthResponse);
 
-    renderModal('register');
+    const { onClose } = renderModal('register');
 
     await user.type(screen.getByLabelText('Correo'), 'nuevo@correo.com');
     await user.type(screen.getByLabelText('Contraseña'), 'secreto123');
@@ -159,7 +171,11 @@ describe('LoginModal', () => {
 
     expect(setSession).toHaveBeenCalledWith(registerAuthResponse);
     expect(loginApi).not.toHaveBeenCalled();
-    expect(await screen.findByText('¡Cuenta creada!')).toBeInTheDocument();
+    expect(screen.queryByTestId('login-success-state')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(onClose).toHaveBeenCalledTimes(1);
+      expect(reloadMock).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('exige nombre de usuario en modo register sin llamar a la API', async () => {

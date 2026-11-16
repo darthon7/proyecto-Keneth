@@ -1,6 +1,32 @@
 import { z } from 'zod';
 import { isBeforeToday } from './format';
 
+export const VALIDATION_PATTERNS = {
+  EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/,
+  ISO_COUNTRY: /^[A-Za-z]{2}$/,
+  SLUG: /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+  PLATFORM_CODE: /^[A-Za-z0-9_-]{2,20}$/,
+  COUPON_CODE: /^[A-Za-z0-9_-]{2,50}$/,
+  HTTP_URL: /^https?:\/\/[^\s/$.?#].[^\s]*$/i,
+  URL_OR_PATH: /^(\/[^\s]*|https?:\/\/[^\s/$.?#].[^\s]*)$/i,
+  USERNAME: /^(?=.*\S)[a-zA-ZÀ-ÿ0-9._\-\s]{2,100}$/,
+  ENTITY_NAME: /^(?=.*\S)[a-zA-ZÀ-ÿ0-9\s.,&'()/:|+!?¡¿-]{1,200}$/,
+  DIGITAL_KEY_CODE: /^[A-Za-z0-9]{2,10}(?:-[A-Za-z0-9]{2,10}){1,7}$/,
+  BATCH_ID: /^[A-Za-z0-9_-]{2,50}$/,
+  ESRB_RATING: /^(EC|E|E10\+|T|M|AO|RP)$/i,
+  ISO_DATE: /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/,
+  CARD_HOLDER: /^(?=.*\S)[a-zA-ZÀ-ÿ\s.'-]{3,100}$/,
+  CARD_NUMBER: /^\d{12,19}$/,
+  CARD_EXPIRY: /^(0[1-9]|1[0-2])\/\d{2}$/,
+  CARD_CVV: /^\d{3,4}$/,
+  DECIMAL_PRICE: /^\d+(\.\d{1,2})?$/,
+  DIRECTX_VERSION: /^(?=.*\S)[a-zA-Z0-9.\s_+-]{2,50}$/,
+  HARDWARE_SPEC: /^(?=.*\S)[a-zA-ZÀ-ÿ0-9\s.,/()+_™®-]{2,150}$/,
+  NON_WHITESPACE_PASSWORD: /^\S(?:.*\S)?$/,
+  POSITIVE_INT: /^\d+$/,
+  NON_NEGATIVE_NUMBER: /^\d+(\.\d+)?$/,
+} as const;
+
 export type FieldType =
   | 'text'
   | 'email'
@@ -30,6 +56,8 @@ export interface FieldConfig {
   step?: number;
   minLength?: number;
   maxLength?: number;
+  pattern?: RegExp;
+  patternMessage?: string;
   /** Exige que la fecha/hora no sea anterior al día de hoy (en creación o al modificarla). */
   notBeforeToday?: boolean;
   /** Nombre de otro campo fecha/hora respecto al cual este debe ser estrictamente posterior. */
@@ -56,23 +84,48 @@ function createOptionalNumberSchema(numberSchema: z.ZodType = z.coerce.number())
 function fieldSchema(field: FieldConfig): z.ZodType {
   switch (field.type) {
     case 'number': {
-      let schema = z.coerce.number({ error: `${field.label} debe ser un número válido` });
-      if (field.min !== undefined) {
-        schema = schema.min(field.min);
-      } else if (field.required) {
-        schema = schema.min(0);
+      const minLimit = field.min ?? 0;
+      const minMessage =
+        minLimit >= 0
+          ? `${field.label} no puede ser negativo (mínimo ${minLimit})`
+          : `${field.label} debe ser al menos ${minLimit}`;
+      let schema = z
+        .number({ error: `${field.label} debe ser un número válido` })
+        .min(minLimit, minMessage);
+      if (field.max !== undefined) {
+        schema = schema.max(field.max, `${field.label} no puede ser mayor a ${field.max}`);
       }
-      if (field.max !== undefined) schema = schema.max(field.max);
       if (field.step === undefined || field.step === 1) {
-        schema = schema.int();
+        schema = schema.int(`${field.label} debe ser un número entero`);
       }
-      if (field.required) {
-        return z.preprocess(
-          (value) => (value === '' || value === null || value === undefined ? NaN : value),
-          schema,
-        );
-      }
-      return createOptionalNumberSchema(schema);
+
+      const normalizeNumericInput = (value: unknown): unknown => {
+        if (value === null || value === undefined) {
+          return field.required ? Number.NaN : undefined;
+        }
+        if (typeof value === 'number') {
+          if (Number.isNaN(value)) {
+            return field.required ? Number.NaN : undefined;
+          }
+          return Number.isFinite(value) ? value : Number.NaN;
+        }
+        if (typeof value === 'string') {
+          const trimmed = value.trim();
+          if (trimmed === '') {
+            return field.required ? Number.NaN : undefined;
+          }
+          if (!/^-?\d+(\.\d+)?$/.test(trimmed)) {
+            return Number.NaN;
+          }
+          return Number(trimmed);
+        }
+        return Number.NaN;
+      };
+
+      return z.preprocess(
+        normalizeNumericInput,
+        field.required ? schema : schema.optional(),
+      );
     }
     case 'checkbox':
       return z.boolean().default(false);
@@ -96,8 +149,27 @@ function fieldSchema(field: FieldConfig): z.ZodType {
         : schema.optional();
     }
     case 'textarea': {
-      const schema = z.string();
-      return field.required ? schema.min(1, `${field.label} es obligatorio`) : schema.optional();
+      let schema = z.string().trim();
+      if (field.required) {
+        schema = schema.min(1, `${field.label} es obligatorio`);
+      }
+      if (field.minLength !== undefined) {
+        schema = schema.min(field.minLength, `${field.label} es muy corto`);
+      }
+      if (field.maxLength !== undefined) {
+        schema = schema.max(field.maxLength, `${field.label} es muy largo`);
+      }
+      if (field.pattern) {
+        schema = schema.regex(
+          field.pattern,
+          field.patternMessage ?? `${field.label} tiene un formato inválido`,
+        );
+      }
+      if (field.required) return schema;
+      return z.preprocess(
+        (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+        schema.optional(),
+      );
     }
     case 'date':
     case 'datetime': {
@@ -108,19 +180,32 @@ function fieldSchema(field: FieldConfig): z.ZodType {
     case 'password':
     case 'email':
     default: {
-      let schema = z.string();
-      if (field.type === 'email') {
-        schema = schema.email('Introduce un correo válido');
+      let schema = field.type === 'password' ? z.string() : z.string().trim();
+      if (field.required) {
+        schema = schema.min(1, `${field.label} es obligatorio`);
       }
-      if (field.required) schema = schema.min(1, `${field.label} es obligatorio`);
+      if (field.type === 'email') {
+        schema = schema
+          .email('Introduce un correo válido')
+          .regex(VALIDATION_PATTERNS.EMAIL, 'Introduce un correo válido');
+      }
       if (field.minLength !== undefined) {
         schema = schema.min(field.minLength, `${field.label} es muy corto`);
       }
       if (field.maxLength !== undefined) {
         schema = schema.max(field.maxLength, `${field.label} es muy largo`);
       }
+      if (field.pattern) {
+        schema = schema.regex(
+          field.pattern,
+          field.patternMessage ?? `${field.label} tiene un formato inválido`,
+        );
+      }
       if (field.required) return schema;
-      return z.union([z.literal(''), schema]).optional();
+      return z.preprocess(
+        (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+        schema.optional(),
+      );
     }
   }
 }
@@ -252,6 +337,13 @@ export function buildPayload(
     if (field.type === 'select') {
       const numeric = field.options?.some((option) => typeof option.value === 'number');
       payload[field.name] = numeric ? Number(value) : value;
+      continue;
+    }
+
+    if (field.type === 'text' || field.type === 'email' || field.type === 'textarea') {
+      const trimmed = String(value).trim();
+      if (trimmed === '') continue;
+      payload[field.name] = trimmed;
       continue;
     }
 

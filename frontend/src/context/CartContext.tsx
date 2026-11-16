@@ -19,6 +19,11 @@ interface CartContextValue {
 
 const CartContext = createContext<CartContextValue | null>(null);
 
+function normalizeQuantity(quantity: number): number {
+  if (!Number.isFinite(quantity)) return 1;
+  return Math.min(50, Math.max(1, Math.floor(quantity)));
+}
+
 function readStoredItems(): CartItem[] {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -29,8 +34,11 @@ function readStoredItems(): CartItem[] {
       (item): item is CartItem =>
         typeof item === 'object' &&
         item !== null &&
-        typeof (item as CartItem).gameEditionId === 'number' &&
-        typeof (item as CartItem).quantity === 'number',
+        Number.isInteger((item as CartItem).gameEditionId) &&
+        (item as CartItem).gameEditionId >= 1 &&
+        Number.isInteger((item as CartItem).quantity) &&
+        (item as CartItem).quantity >= 1 &&
+        (item as CartItem).quantity <= 50,
     );
   } catch {
     return [];
@@ -45,16 +53,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items]);
 
   const addItem = useCallback((gameEditionId: number, quantity = 1) => {
+    if (!Number.isInteger(gameEditionId) || gameEditionId < 1) return;
+    const safeQuantity = normalizeQuantity(quantity);
     setItems((current) => {
       const existing = current.find((item) => item.gameEditionId === gameEditionId);
       if (existing) {
         return current.map((item) =>
           item.gameEditionId === gameEditionId
-            ? { ...item, quantity: item.quantity + quantity }
+            ? { ...item, quantity: normalizeQuantity(item.quantity + safeQuantity) }
             : item,
         );
       }
-      return [...current, { gameEditionId, quantity }];
+      return [...current, { gameEditionId, quantity: safeQuantity }];
     });
   }, []);
 
@@ -63,10 +73,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setQuantity = useCallback((gameEditionId: number, quantity: number) => {
+    if (!Number.isInteger(gameEditionId) || gameEditionId < 1) return;
+    const safeQuantity = normalizeQuantity(quantity);
     setItems((current) =>
       current.map((item) =>
         item.gameEditionId === gameEditionId
-          ? { ...item, quantity: Math.max(1, quantity) }
+          ? { ...item, quantity: safeQuantity }
           : item,
       ),
     );

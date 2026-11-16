@@ -1,11 +1,28 @@
 import { CrudResourcePage } from '@/components/organisms/CrudResourcePage';
 import { developersApi } from '@/api';
 import type { CreateDeveloperPayload, Developer } from '@/types';
-import type { FieldConfig } from '@/utils/fields';
+import { VALIDATION_PATTERNS, type FieldConfig } from '@/utils/fields';
 
 const fields: FieldConfig[] = [
-  { name: 'name', label: 'Nombre', type: 'text', required: true, maxLength: 150 },
-  { name: 'country', label: 'País (ISO-2)', type: 'text', minLength: 2, maxLength: 2, placeholder: 'JP' },
+  {
+    name: 'name',
+    label: 'Nombre',
+    type: 'text',
+    required: true,
+    maxLength: 150,
+    pattern: VALIDATION_PATTERNS.ENTITY_NAME,
+    patternMessage: 'Nombre contiene caracteres no válidos',
+  },
+  {
+    name: 'country',
+    label: 'País (ISO-2)',
+    type: 'text',
+    minLength: 2,
+    maxLength: 2,
+    placeholder: 'JP',
+    pattern: VALIDATION_PATTERNS.ISO_COUNTRY,
+    patternMessage: 'El país debe ser un código ISO-2 de 2 letras (ej. JP, MX)',
+  },
   {
     name: 'foundedYear',
     label: 'Año de fundación',

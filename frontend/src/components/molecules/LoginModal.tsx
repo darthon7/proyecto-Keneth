@@ -10,8 +10,7 @@ import { Modal } from '@/components/atoms/Modal';
 import { Select } from '@/components/atoms/Select';
 import { authApi, errorMessage } from '@/api';
 import { useSession } from '@/context/SessionContext';
-import { initials } from '@/utils/format';
-import type { SafeUser } from '@/types';
+import { VALIDATION_PATTERNS } from '@/utils/fields';
 
 export type AuthModalMode = 'login' | 'register';
 
@@ -19,11 +18,6 @@ interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialMode?: AuthModalMode;
-}
-
-interface AccessResult {
-  user: SafeUser;
-  isNewAccount: boolean;
 }
 
 interface AuthFormValues {
@@ -72,27 +66,45 @@ const DEFAULT_VALUES: AuthFormValues = {
 };
 
 const loginSchema = z.object({
-  email: z.string().trim().min(1, 'Correo es obligatorio').email('Introduce un correo válido'),
+  email: z
+    .string()
+    .trim()
+    .min(1, 'Correo es obligatorio')
+    .email('Introduce un correo válido')
+    .regex(VALIDATION_PATTERNS.EMAIL, 'Introduce un correo válido'),
   password: z.string().min(1, 'Contraseña es obligatoria').max(50, 'Contraseña es muy larga'),
   username: z.string().optional(),
   countryCode: z.string().optional(),
 });
 
 const registerSchema = z.object({
-  email: z.string().trim().min(1, 'Correo es obligatorio').email('Introduce un correo válido'),
+  email: z
+    .string()
+    .trim()
+    .min(1, 'Correo es obligatorio')
+    .email('Introduce un correo válido')
+    .regex(VALIDATION_PATTERNS.EMAIL, 'Introduce un correo válido'),
   password: z
     .string()
     .min(4, 'Contraseña debe tener al menos 4 caracteres')
-    .max(50, 'Contraseña es muy larga'),
+    .max(50, 'Contraseña es muy larga')
+    .regex(
+      VALIDATION_PATTERNS.NON_WHITESPACE_PASSWORD,
+      'La contraseña no puede empezar ni terminar con espacios',
+    ),
   username: z
     .string()
     .trim()
     .min(2, 'Nombre de usuario debe tener al menos 2 caracteres')
-    .max(100, 'Nombre de usuario es muy largo'),
+    .max(100, 'Nombre de usuario es muy largo')
+    .regex(
+      VALIDATION_PATTERNS.USERNAME,
+      'Nombre de usuario solo permite letras, números, espacios, puntos, guiones y guion bajo',
+    ),
   countryCode: z
     .string()
     .trim()
-    .refine((value) => value === '' || value.length === 2, {
+    .refine((value) => value === '' || VALIDATION_PATTERNS.ISO_COUNTRY.test(value), {
       message: 'Selecciona un país válido',
     })
     .optional(),
@@ -107,7 +119,6 @@ export function LoginModal({ isOpen, onClose, initialMode = 'login' }: LoginModa
   const queryClient = useQueryClient();
   const { setSession } = useSession();
   const [mode, setMode] = useState<AuthModalMode>(initialMode);
-  const [result, setResult] = useState<AccessResult | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   const isRegister = mode === 'register';
@@ -118,8 +129,10 @@ export function LoginModal({ isOpen, onClose, initialMode = 'login' }: LoginModa
     defaultValues: DEFAULT_VALUES,
   });
 
+  const { reset: resetForm } = form;
+
   const accessMutation = useMutation({
-    mutationFn: async (values: AuthFormValues): Promise<AccessResult> => {
+    mutationFn: async (values: AuthFormValues): Promise<void> => {
       const email = values.email.trim().toLowerCase();
       const password = values.password;
 
@@ -133,29 +146,28 @@ export function LoginModal({ isOpen, onClose, initialMode = 'login' }: LoginModa
           ...(countryCode ? { countryCode } : {}),
         });
         setSession(authResponse);
-        return { user: authResponse.user, isNewAccount: true };
+        return;
       }
 
       const authResponse = await authApi.login({ email, password });
       setSession(authResponse);
-      return { user: authResponse.user, isNewAccount: false };
     },
-    onSuccess: async (accessResult) => {
+    onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['wishlists'] });
       await queryClient.invalidateQueries({ queryKey: ['orders'] });
       await queryClient.invalidateQueries({ queryKey: ['user-libraries'] });
-      setResult(accessResult);
-      form.reset(DEFAULT_VALUES);
+      setShowPassword(false);
+      resetForm(DEFAULT_VALUES);
+      onClose();
+      window.location.reload();
     },
   });
 
-  const { reset: resetForm } = form;
   const { reset: resetMutation } = accessMutation;
 
   useEffect(() => {
     if (!isOpen) return;
     setMode(initialMode);
-    setResult(null);
     setShowPassword(false);
     resetMutation();
     resetForm(DEFAULT_VALUES);
@@ -174,7 +186,6 @@ export function LoginModal({ isOpen, onClose, initialMode = 'login' }: LoginModa
   };
 
   const handleClose = () => {
-    setResult(null);
     setShowPassword(false);
     accessMutation.reset();
     form.reset(DEFAULT_VALUES);
@@ -197,51 +208,27 @@ export function LoginModal({ isOpen, onClose, initialMode = 'login' }: LoginModa
       }
       size="md"
       footer={
-        result ? (
-          <Button variant="brand" data-testid="login-continue-btn" onClick={handleClose}>
-            Continuar
+        <div className="flex w-full items-center justify-end gap-2.5">
+          <Button
+            variant="ghost"
+            data-testid="login-cancel-btn"
+            onClick={handleClose}
+            className="border border-[#E2E8F0] bg-[#FFFFFF] hover:border-[#CBD5E1]"
+          >
+            Cancelar
           </Button>
-        ) : (
-          <div className="flex w-full items-center justify-end gap-2.5">
-            <Button
-              variant="ghost"
-              data-testid="login-cancel-btn"
-              onClick={handleClose}
-              className="border border-[#E2E8F0] bg-[#FFFFFF] hover:border-[#CBD5E1]"
-            >
-              Cancelar
-            </Button>
-            <Button
-              variant={isRegister ? 'brand' : 'primary'}
-              data-testid="login-submit-btn"
-              onClick={submit}
-              isLoading={accessMutation.isPending}
-            >
-              {isRegister ? 'Crear cuenta' : 'Iniciar sesión'}
-            </Button>
-          </div>
-        )
+          <Button
+            variant={isRegister ? 'brand' : 'primary'}
+            data-testid="login-submit-btn"
+            onClick={submit}
+            isLoading={accessMutation.isPending}
+          >
+            {isRegister ? 'Crear cuenta' : 'Iniciar sesión'}
+          </Button>
+        </div>
       }
     >
-      {result ? (
-        <div
-          data-testid="login-success-state"
-          className="flex flex-col items-center gap-3 py-6 text-center"
-        >
-          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#D1FAE5] text-heading-sm font-bold text-[#065F46] ring-4 ring-[#ECFDF5]">
-            {initials(result.user.username)}
-          </span>
-          <p className="text-body font-semibold text-[#0F172A]">
-            {result.isNewAccount ? '¡Cuenta creada!' : '¡Sesión iniciada!'}
-          </p>
-          <p className="max-w-sm text-body-sm text-[#475569]">
-            {result.isNewAccount
-              ? `Tu cuenta quedó registrada en la base de datos. Bienvenido, ${result.user.username}.`
-              : `Bienvenido de nuevo, ${result.user.username}. Esta es tu sesión activa.`}
-          </p>
-        </div>
-      ) : (
-        <form data-testid="login-modal-form" onSubmit={submit} className="flex flex-col gap-4" noValidate>
+      <form data-testid="login-modal-form" onSubmit={submit} className="flex flex-col gap-4" noValidate>
           {/* Segmented Mode Switcher with Color Distinction */}
           <div
             role="tablist"
@@ -353,7 +340,6 @@ export function LoginModal({ isOpen, onClose, initialMode = 'login' }: LoginModa
             </button>
           </div>
         </form>
-      )}
     </Modal>
   );
 }

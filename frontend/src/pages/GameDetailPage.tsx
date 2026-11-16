@@ -24,6 +24,7 @@ type Tab = (typeof TABS)[number];
 export function GameDetailPage() {
   const { id } = useParams<{ id: string }>();
   const gameId = Number(id);
+  const isValidGameId = Number.isInteger(gameId) && gameId >= 1;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { addItem } = useCart();
@@ -40,13 +41,13 @@ export function GameDetailPage() {
   const gameQuery = useQuery({
     queryKey: ['game', gameId],
     queryFn: () => gamesApi.get(gameId),
-    enabled: Number.isFinite(gameId),
+    enabled: isValidGameId,
   });
 
   const reviewsQuery = useQuery({
     queryKey: ['reviews', 'game', gameId],
     queryFn: () => reviewsExtraApi.byGame(gameId),
-    enabled: Number.isFinite(gameId),
+    enabled: isValidGameId,
   });
 
   const userWishlistQuery = useQuery({
@@ -74,8 +75,8 @@ export function GameDetailPage() {
         userId: currentUser!.id,
         gameId,
         rating,
-        title: reviewTitle,
-        body: reviewBody,
+        title: reviewTitle.trim(),
+        body: reviewBody.trim(),
       }),
     onSuccess: async () => {
       setIsReviewOpen(false);
@@ -87,6 +88,41 @@ export function GameDetailPage() {
     },
     onError: (error) => setFormError(errorMessage(error)),
   });
+
+  const handlePublishReview = () => {
+    setFormError(null);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      setFormError('Selecciona una calificación válida entre 1 y 5 estrellas.');
+      return;
+    }
+    const trimmedTitle = reviewTitle.trim();
+    if (trimmedTitle.length < 2 || trimmedTitle.length > 150) {
+      setFormError('El título de la reseña debe tener entre 2 y 150 caracteres.');
+      return;
+    }
+    if (!/^(?=.*\S)[a-zA-ZÀ-ÿ0-9\s.,!?¡¿'"()&:-]{2,150}$/.test(trimmedTitle)) {
+      setFormError('El título de la reseña contiene caracteres no válidos.');
+      return;
+    }
+    const trimmedBody = reviewBody.trim();
+    if (trimmedBody.length < 3 || trimmedBody.length > 2000) {
+      setFormError('La reseña debe tener entre 3 y 2000 caracteres.');
+      return;
+    }
+    if (!/^(?=.*\S)[\s\S]{3,2000}$/.test(trimmedBody)) {
+      setFormError('La reseña no puede estar vacía.');
+      return;
+    }
+    reviewMutation.mutate();
+  };
+
+  if (!isValidGameId) {
+    return (
+      <section className="page-container py-16">
+        <ErrorBanner message="El identificador del videojuego no es válido." />
+      </section>
+    );
+  }
 
   if (gameQuery.isLoading) return <Spinner label="Cargando videojuego…" />;
 
@@ -574,10 +610,7 @@ export function GameDetailPage() {
             <Button
               variant="brand"
               isLoading={reviewMutation.isPending}
-              onClick={() => {
-                setFormError(null);
-                reviewMutation.mutate();
-              }}
+              onClick={handlePublishReview}
             >
               Publicar
             </Button>

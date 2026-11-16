@@ -12,6 +12,7 @@ import { useCart } from '@/context/CartContext';
 import { useSession } from '@/context/SessionContext';
 import { getActiveGameDiscount } from '@/utils/discount';
 import { formatCurrency } from '@/utils/format';
+import { VALIDATION_PATTERNS } from '@/utils/fields';
 
 export function CheckoutPage() {
   const { currentUser } = useSession();
@@ -124,20 +125,43 @@ export function CheckoutPage() {
     }
 
     const digits = cardNumber.replace(/\s+/g, '');
-    if (!cardHolder.trim()) {
-      setValidationError('Ingresa el nombre del titular de la tarjeta de prueba.');
+    const trimmedHolder = cardHolder.trim();
+    const trimmedExpiry = cardExpiry.trim();
+    const trimmedCvv = cardCvv.trim();
+    const trimmedCoupon = couponCode.trim();
+
+    if (!trimmedHolder || !VALIDATION_PATTERNS.CARD_HOLDER.test(trimmedHolder)) {
+      setValidationError(
+        'Ingresa un nombre de titular válido (solo letras y espacios, mínimo 3 caracteres).',
+      );
       return;
     }
-    if (!/^\d{12,19}$/.test(digits)) {
+    if (!VALIDATION_PATTERNS.CARD_NUMBER.test(digits)) {
       setValidationError('Ingresa un número de tarjeta de prueba válido (12 a 19 dígitos).');
       return;
     }
-    if (!/^\d{2}\/\d{2}$/.test(cardExpiry.trim())) {
-      setValidationError('La fecha de expiración debe tener formato MM/AA.');
+    if (!VALIDATION_PATTERNS.CARD_EXPIRY.test(trimmedExpiry)) {
+      setValidationError('La fecha de expiración debe tener formato MM/AA (ej. 12/28).');
       return;
     }
-    if (!/^\d{3,4}$/.test(cardCvv.trim())) {
+    const [expMonthStr, expYearStr] = trimmedExpiry.split('/');
+    const expMonth = Number(expMonthStr);
+    const expYear = 2000 + Number(expYearStr);
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    if (expYear < currentYear || (expYear === currentYear && expMonth < currentMonth)) {
+      setValidationError(
+        'La tarjeta de prueba está vencida. Ingresa una fecha de expiración vigente.',
+      );
+      return;
+    }
+    if (!VALIDATION_PATTERNS.CARD_CVV.test(trimmedCvv)) {
       setValidationError('El CVV debe tener 3 o 4 dígitos.');
+      return;
+    }
+    if (trimmedCoupon && !VALIDATION_PATTERNS.COUPON_CODE.test(trimmedCoupon)) {
+      setValidationError('El formato del cupón de descuento no es válido.');
       return;
     }
 
@@ -213,27 +237,42 @@ export function CheckoutPage() {
             <h2 className="text-body font-bold text-[#0F172A]">Pago con tarjeta</h2>
             <Input
               label="Titular de la tarjeta"
+              maxLength={100}
               value={cardHolder}
-              onChange={(event) => setCardHolder(event.target.value)}
+              onChange={(event) =>
+                setCardHolder(event.target.value.replace(/[^a-zA-ZÀ-ÿ\s.'-]/g, '').slice(0, 100))
+              }
               placeholder="Nombre completo"
             />
             <Input
               label="Número de tarjeta (prueba)"
+              inputMode="numeric"
+              maxLength={23}
               value={cardNumber}
-              onChange={(event) => setCardNumber(event.target.value)}
+              onChange={(event) =>
+                setCardNumber(event.target.value.replace(/[^\d\s]/g, '').slice(0, 23))
+              }
               placeholder="4242 4242 4242 4242"
             />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Input
                 label="Expiración (MM/AA)"
+                inputMode="numeric"
+                maxLength={5}
                 value={cardExpiry}
-                onChange={(event) => setCardExpiry(event.target.value)}
+                onChange={(event) =>
+                  setCardExpiry(event.target.value.replace(/[^\d/]/g, '').slice(0, 5))
+                }
                 placeholder="12/28"
               />
               <Input
                 label="CVV"
+                inputMode="numeric"
+                maxLength={4}
                 value={cardCvv}
-                onChange={(event) => setCardCvv(event.target.value)}
+                onChange={(event) =>
+                  setCardCvv(event.target.value.replace(/\D/g, '').slice(0, 4))
+                }
                 placeholder="123"
               />
             </div>

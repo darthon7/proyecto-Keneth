@@ -5,7 +5,7 @@ import { Badge } from '@/components/atoms/Badge';
 import { gamesApi, gameEditionsApi, platformsApi } from '@/api';
 import { KeyStatus, type CreateGameEditionPayload, type GameEdition } from '@/types';
 import { formatCurrency } from '@/utils/format';
-import type { FieldConfig } from '@/utils/fields';
+import { VALIDATION_PATTERNS, type FieldConfig } from '@/utils/fields';
 
 export function EditionsPage({ embedded = false }: { embedded?: boolean }) {
   const gamesQuery = useQuery({ queryKey: ['games'], queryFn: () => gamesApi.list() });
@@ -20,7 +20,11 @@ export function EditionsPage({ embedded = false }: { embedded?: boolean }) {
         name: 'editionName',
         label: 'Nombre de la edición',
         type: 'text',
+        required: true,
+        minLength: 2,
         maxLength: 100,
+        pattern: VALIDATION_PATTERNS.ENTITY_NAME,
+        patternMessage: 'El nombre de edición contiene caracteres no válidos',
         defaultValue: 'Standard Edition',
       },
       {
@@ -29,6 +33,7 @@ export function EditionsPage({ embedded = false }: { embedded?: boolean }) {
         type: 'number',
         required: true,
         min: 0,
+        max: 99999.99,
         step: 0.01,
       },
       { name: 'isDlc', label: 'Es DLC digital', type: 'checkbox', defaultValue: false },

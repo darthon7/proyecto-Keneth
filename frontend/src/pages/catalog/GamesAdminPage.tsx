@@ -25,6 +25,7 @@ import {
 } from '@/api';
 import { KeyStatus, type Game } from '@/types';
 import { formatCurrency, formatDate } from '@/utils/format';
+import { VALIDATION_PATTERNS } from '@/utils/fields';
 
 function slugifyTitle(value: string): string {
   return value
@@ -36,12 +37,47 @@ function slugifyTitle(value: string): string {
 }
 
 const schema = z.object({
-  title: z.string().min(1, 'El título es obligatorio').max(200),
-  slug: z.string().min(1, 'El slug es obligatorio').max(220),
-  synopsis: z.string().optional(),
-  esrbRating: z.string().max(10).optional(),
-  releaseDate: z.string().min(1, 'La fecha de lanzamiento es obligatoria'),
-  coverImageUrl: z.string().optional(),
+  title: z
+    .string()
+    .trim()
+    .min(1, 'El título es obligatorio')
+    .max(200)
+    .regex(VALIDATION_PATTERNS.ENTITY_NAME, 'El título contiene caracteres no válidos'),
+  slug: z
+    .string()
+    .trim()
+    .min(1, 'El slug es obligatorio')
+    .max(220)
+    .regex(
+      VALIDATION_PATTERNS.SLUG,
+      'El slug solo permite minúsculas, números y guiones (ej. the-last-of-us)',
+    ),
+  synopsis: z.string().trim().optional(),
+  esrbRating: z
+    .string()
+    .trim()
+    .max(10)
+    .regex(
+      VALIDATION_PATTERNS.ESRB_RATING,
+      'Clasificación ESRB inválida (usa EC, E, E10+, T, M, AO o RP)',
+    )
+    .optional()
+    .or(z.literal('')),
+  releaseDate: z
+    .string()
+    .trim()
+    .min(1, 'La fecha de lanzamiento es obligatoria')
+    .regex(VALIDATION_PATTERNS.ISO_DATE, 'Formato de fecha inválido (AAAA-MM-DD)'),
+  coverImageUrl: z
+    .string()
+    .trim()
+    .max(255)
+    .regex(
+      VALIDATION_PATTERNS.URL_OR_PATH,
+      'Ingresa una URL http(s):// válida o ruta /...',
+    )
+    .optional()
+    .or(z.literal('')),
   publisherId: z.number({ error: 'Selecciona un publisher' }).min(1, 'Selecciona un publisher'),
   developerId: z
     .number({ error: 'Selecciona una desarrolladora' })
@@ -216,24 +252,43 @@ export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
       if (!stockGameId) {
         throw new Error('Videojuego no seleccionado');
       }
+      const trimmedEditionName = newEditionName.trim();
+      if (
+        !trimmedEditionName ||
+        !VALIDATION_PATTERNS.ENTITY_NAME.test(trimmedEditionName) ||
+        trimmedEditionName.length > 100
+      ) {
+        throw new Error('Ingresa un nombre de edición válido (2 a 100 caracteres)');
+      }
       const platformId = Number(newEditionPlatformId);
-      const basePrice = Number(newEditionPrice);
-      if (!platformId || Number.isNaN(basePrice) || basePrice < 0) {
+      const trimmedPrice = newEditionPrice.trim();
+      const basePrice = Number(trimmedPrice);
+      if (
+        !platformId ||
+        !VALIDATION_PATTERNS.DECIMAL_PRICE.test(trimmedPrice) ||
+        Number.isNaN(basePrice) ||
+        basePrice < 0 ||
+        basePrice > 99999.99
+      ) {
         throw new Error('Selecciona una plataforma y un precio válido');
       }
+      const trimmedKeysQty = newEditionKeysQty.trim();
+      if (!/^\d+$/.test(trimmedKeysQty) || Number(trimmedKeysQty) < 0 || Number(trimmedKeysQty) > 100) {
+        throw new Error('La cantidad de claves iniciales debe ser un entero entre 0 y 100');
+      }
       const edition = await gameEditionsApi.create({
-        editionName: newEditionName.trim() || 'Standard Edition',
+        editionName: trimmedEditionName,
         basePrice,
         isDlc: newEditionIsDlc,
         gameId: stockGameId,
         platformId,
       });
-      const qty = Number(newEditionKeysQty);
+      const qty = Number(trimmedKeysQty);
       let createdKeys = 0;
       if (qty > 0) {
         const res = await digitalKeysExtraApi.createBulk({
           gameEditionId: edition.id,
-          quantity: Math.min(100, Math.max(1, Math.floor(qty))),
+          quantity: qty,
         });
         createdKeys = res.createdCount;
       }
@@ -262,12 +317,33 @@ export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
   const submit = form.handleSubmit((values) => {
     setFormError(null);
     if (!editingGame && setupInitialEdition) {
+      const trimmedEditionName = initialEditionName.trim();
+      if (
+        !trimmedEditionName ||
+        !VALIDATION_PATTERNS.ENTITY_NAME.test(trimmedEditionName) ||
+        trimmedEditionName.length > 100
+      ) {
+        setFormError('Ingresa un nombre de edición válido (2 a 100 caracteres).');
+        return;
+      }
       const parsedPlatform = Number(initialPlatformId);
-      const parsedPrice = Number(initialPrice);
-      if (!parsedPlatform || Number.isNaN(parsedPrice) || parsedPrice < 0) {
+      const trimmedPrice = initialPrice.trim();
+      const parsedPrice = Number(trimmedPrice);
+      if (
+        !parsedPlatform ||
+        !VALIDATION_PATTERNS.DECIMAL_PRICE.test(trimmedPrice) ||
+        Number.isNaN(parsedPrice) ||
+        parsedPrice < 0 ||
+        parsedPrice > 99999.99
+      ) {
         setFormError(
           'Selecciona una plataforma y un precio válido para configurar la edición digital inicial.',
         );
+        return;
+      }
+      const trimmedQty = initialKeysQty.trim();
+      if (!/^\d+$/.test(trimmedQty) || Number(trimmedQty) < 0 || Number(trimmedQty) > 100) {
+        setFormError('La cantidad de claves iniciales debe ser un entero entre 0 y 100.');
         return;
       }
     }
@@ -582,7 +658,9 @@ export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
                     step="0.01"
                     min="0"
                     value={initialPrice}
-                    onChange={(event) => setInitialPrice(event.target.value)}
+                    onChange={(event) =>
+                      setInitialPrice(event.target.value.replace(/[^0-9.]/g, ''))
+                    }
                   />
                   <Input
                     label="Claves digitales iniciales"
@@ -590,7 +668,9 @@ export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
                     min="0"
                     max="100"
                     value={initialKeysQty}
-                    onChange={(event) => setInitialKeysQty(event.target.value)}
+                    onChange={(event) =>
+                      setInitialKeysQty(event.target.value.replace(/\D/g, ''))
+                    }
                   />
                   <div className="sm:col-span-2">
                     <Checkbox
@@ -678,7 +758,7 @@ export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
                               onChange={(event) =>
                                 setBatchQuantities((prev) => ({
                                   ...prev,
-                                  [edition.id]: event.target.value,
+                                  [edition.id]: event.target.value.replace(/\D/g, ''),
                                 }))
                               }
                             />
@@ -689,13 +769,19 @@ export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
                             variant="brand"
                             isLoading={bulkKeysMutation.isPending}
                             onClick={() => {
-                              const parsedQty = Math.min(
-                                100,
-                                Math.max(1, Number(qtyValue) || 1),
-                              );
+                              const trimmedQty = qtyValue.trim();
+                              if (
+                                !/^\d+$/.test(trimmedQty) ||
+                                Number(trimmedQty) < 1 ||
+                                Number(trimmedQty) > 100
+                              ) {
+                                setStockError('La cantidad de claves debe ser un entero entre 1 y 100.');
+                                return;
+                              }
+                              setStockError(null);
                               bulkKeysMutation.mutate({
                                 gameEditionId: edition.id,
-                                quantity: parsedQty,
+                                quantity: Number(trimmedQty),
                               });
                             }}
                           >
@@ -735,7 +821,9 @@ export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
                   step="0.01"
                   min="0"
                   value={newEditionPrice}
-                  onChange={(event) => setNewEditionPrice(event.target.value)}
+                  onChange={(event) =>
+                    setNewEditionPrice(event.target.value.replace(/[^0-9.]/g, ''))
+                  }
                 />
                 <Input
                   label="Claves iniciales (0 - 100)"
@@ -743,7 +831,9 @@ export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
                   min="0"
                   max="100"
                   value={newEditionKeysQty}
-                  onChange={(event) => setNewEditionKeysQty(event.target.value)}
+                  onChange={(event) =>
+                    setNewEditionKeysQty(event.target.value.replace(/\D/g, ''))
+                  }
                 />
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3 pt-1">

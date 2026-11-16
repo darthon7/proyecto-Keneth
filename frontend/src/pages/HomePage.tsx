@@ -9,7 +9,7 @@ import { gamesApi, promotionsApi } from '@/api';
 import { useCart } from '@/context/CartContext';
 import { useSession } from '@/context/SessionContext';
 import { formatCurrency, formatDate } from '@/utils/format';
-import { getActiveGameDiscount } from '@/utils/discount';
+import { getActiveGameDiscount, getCouponStatus } from '@/utils/discount';
 import { KeyStatus } from '@/types';
 import type { Game, GameEdition, Promotion } from '@/types';
 
@@ -569,12 +569,14 @@ export function HomePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {activePromotions.map((promo: Promotion) => {
                 const isClaimed = Boolean(promo.isClaimed);
+                const isExpired = getCouponStatus(promo).status === 'expired';
+                const isUnavailable = isClaimed || isExpired;
                 return (
                   <article
                     key={promo.id}
                     data-testid={`home-promotion-card-${promo.id}`}
                     className={`product-card relative rounded-2xl overflow-hidden border p-6 shadow-sm flex flex-col justify-between space-y-5 transition-all ${
-                      isClaimed
+                      isUnavailable
                         ? 'bg-[#F8FAFC] border-[#CBD5E1] opacity-85'
                         : 'bg-[#FFFFFF] border-[#E2E8F0] hover:border-[#FF2A5F] hover:-translate-y-0.5'
                     }`}
@@ -582,7 +584,7 @@ export function HomePage() {
                     <div
                       aria-hidden="true"
                       className={`absolute inset-x-0 top-0 h-[3px] ${
-                        isClaimed
+                        isUnavailable
                           ? 'bg-[#CBD5E1]'
                           : 'bg-gradient-to-r from-[#FFC700] via-[#FF2A5F] to-[#1E1B4B]'
                       }`}
@@ -592,7 +594,7 @@ export function HomePage() {
                       <div className="flex items-center justify-between gap-2 flex-wrap">
                         <span
                           className={`text-xs font-black uppercase px-2.5 py-1 rounded-md ${
-                            isClaimed
+                            isUnavailable
                               ? 'bg-[#E2E8F0] text-[#64748B]'
                               : 'bg-[#FFC700] text-[#0F172A]'
                           }`}
@@ -605,6 +607,13 @@ export function HomePage() {
                             className="text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-md bg-[#E2E8F0] text-[#475569] border border-[#CBD5E1]"
                           >
                             Ya reclamado
+                          </span>
+                        ) : isExpired ? (
+                          <span
+                            data-testid={`home-promotion-expired-${promo.id}`}
+                            className="text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-md bg-[#FEE2E2] text-[#991B1B] border border-[#FECACA]"
+                          >
+                            Expirado
                           </span>
                         ) : (
                           promo.couponCode && (
@@ -620,7 +629,7 @@ export function HomePage() {
                         <p className="text-xs text-[#475569]">
                           Válido desde {formatDate(promo.startDate)} hasta {formatDate(promo.endDate)}.
                         </p>
-                        {isClaimed && promo.couponCode ? (
+                        {isUnavailable && promo.couponCode ? (
                           <p className="text-[11px] font-mono font-semibold text-[#94A3B8] line-through">
                             Cupón: {promo.couponCode}
                           </p>
@@ -635,6 +644,10 @@ export function HomePage() {
                     {isClaimed ? (
                       <span className="w-full py-2.5 rounded-xl bg-[#E2E8F0] text-[#64748B] font-bold text-xs uppercase tracking-wider text-center cursor-not-allowed">
                         Ya reclamado
+                      </span>
+                    ) : isExpired ? (
+                      <span className="w-full py-2.5 rounded-xl bg-[#E2E8F0] text-[#64748B] font-bold text-xs uppercase tracking-wider text-center cursor-not-allowed">
+                        Cupón expirado
                       </span>
                     ) : promo.couponCode ? (
                       <button

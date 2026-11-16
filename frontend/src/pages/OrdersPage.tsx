@@ -15,6 +15,7 @@ import { useCart } from '@/context/CartContext';
 import { useSession } from '@/context/SessionContext';
 import { getActiveGameDiscount } from '@/utils/discount';
 import { formatCurrency, formatDate } from '@/utils/format';
+import { VALIDATION_PATTERNS } from '@/utils/fields';
 
 const PAYMENT_STATUS_META: Record<
   PaymentStatus,
@@ -109,9 +110,12 @@ export function OrdersPage() {
   const isCouponAlreadyClaimed = Boolean(matchedPromotion?.isClaimed);
   const activePromotion = isCouponAlreadyClaimed ? null : matchedPromotion;
 
-  const hasCouponInput = couponCode.trim().length > 0;
+  const trimmedCoupon = couponCode.trim();
+  const hasCouponInput = trimmedCoupon.length > 0;
+  const isCouponFormatInvalid =
+    hasCouponInput && !VALIDATION_PATTERNS.COUPON_CODE.test(trimmedCoupon);
   const isCouponInvalid =
-    hasCouponInput && !promotionsQuery.isLoading && !matchedPromotion;
+    hasCouponInput && !isCouponFormatInvalid && !promotionsQuery.isLoading && !matchedPromotion;
 
   const discountPercentage = activePromotion ? Number(activePromotion.discountPercentage) : 0;
   const discount = (subtotal * discountPercentage) / 100;
@@ -349,6 +353,11 @@ export function OrdersPage() {
                 {isCouponAlreadyClaimed && (
                   <p className="mt-2 text-caption font-semibold text-[#EF4444]">
                     Este cupón ya fue reclamado por tu cuenta (límite: 1 uso por usuario).
+                  </p>
+                )}
+                {isCouponFormatInvalid && (
+                  <p className="mt-2 text-caption font-semibold text-[#EF4444]">
+                    Formato de cupón inválido: usa solo letras, números, guiones y guion bajo (2 a 50 caracteres).
                   </p>
                 )}
                 {isCouponInvalid && (

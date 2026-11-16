@@ -1,14 +1,17 @@
-import { IsBoolean, IsInt, IsOptional } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, Min } from 'class-validator';
 
 export class CreateUserLibraryDto {
   @IsInt()
+  @Min(1)
   userId: number;
 
   @IsInt()
+  @Min(1)
   gameEditionId: number;
 
   @IsOptional()
   @IsInt()
+  @Min(1)
   orderId?: number;
 
   @IsOptional()

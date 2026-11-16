@@ -130,14 +130,15 @@ describe('HomePage', () => {
   });
 
   it('renderiza promociones activas cuando existen en la base de datos', async () => {
+    const now = Date.now();
     const mockPromos: Promotion[] = [
       {
         id: 1,
         name: 'Oferta de Primavera',
         discountPercentage: 25,
         couponCode: 'SPRING25',
-        startDate: '2026-03-01T00:00:00.000Z',
-        endDate: '2026-03-31T00:00:00.000Z',
+        startDate: new Date(now - 24 * 60 * 60 * 1000).toISOString(),
+        endDate: new Date(now + 15 * 24 * 60 * 60 * 1000).toISOString(),
         isActive: true,
       },
     ];
@@ -156,6 +157,36 @@ describe('HomePage', () => {
 
     expect(screen.getByText('-25% OFF')).toBeInTheDocument();
     expect(screen.getByText('Cupón: SPRING25')).toBeInTheDocument();
+  });
+
+  it('muestra "Expirado" y deshabilita copiar cuando la fecha del cupón ya venció', async () => {
+    const mockPromos: Promotion[] = [
+      {
+        id: 3,
+        name: 'Especial de Temporada',
+        discountPercentage: 25,
+        couponCode: 'VERANO25',
+        startDate: '2026-10-15T00:00:00.000Z',
+        endDate: '2026-11-09T00:00:00.000Z',
+        isActive: true,
+      },
+    ];
+
+    vi.mocked(gamesApi.list).mockResolvedValue(mockGames);
+    vi.mocked(genresApi.list).mockResolvedValue(mockGenres);
+    vi.mocked(platformsApi.list).mockResolvedValue(mockPlatforms);
+    vi.mocked(promotionsApi.list).mockResolvedValue(mockPromos);
+    vi.mocked(reviewsApi.list).mockResolvedValue([]);
+
+    renderHomePage();
+
+    await waitFor(() => {
+      expect(screen.getByText('Especial de Temporada')).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId('home-promotion-expired-3')).toHaveTextContent('Expirado');
+    expect(screen.getByText('Cupón expirado')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Copiar' })).not.toBeInTheDocument();
   });
 
   it('muestra "Ya reclamado" en cupones que el usuario ya utilizó', async () => {

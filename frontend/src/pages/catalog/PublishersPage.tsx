@@ -1,13 +1,45 @@
 import { CrudResourcePage } from '@/components/organisms/CrudResourcePage';
 import { publishersApi } from '@/api';
 import type { CreatePublisherPayload, Publisher } from '@/types';
-import type { FieldConfig } from '@/utils/fields';
+import { VALIDATION_PATTERNS, type FieldConfig } from '@/utils/fields';
 
 const fields: FieldConfig[] = [
-  { name: 'name', label: 'Nombre', type: 'text', required: true, maxLength: 150 },
-  { name: 'websiteUrl', label: 'Sitio web', type: 'text', placeholder: 'https://…' },
-  { name: 'supportEmail', label: 'Correo de soporte', type: 'email' },
-  { name: 'country', label: 'País (ISO-2)', type: 'text', minLength: 2, maxLength: 2, placeholder: 'MX' },
+  {
+    name: 'name',
+    label: 'Nombre',
+    type: 'text',
+    required: true,
+    maxLength: 150,
+    pattern: VALIDATION_PATTERNS.ENTITY_NAME,
+    patternMessage: 'Nombre contiene caracteres no válidos',
+  },
+  {
+    name: 'websiteUrl',
+    label: 'Sitio web',
+    type: 'text',
+    maxLength: 255,
+    placeholder: 'https://…',
+    pattern: VALIDATION_PATTERNS.HTTP_URL,
+    patternMessage: 'Ingresa una URL válida con http:// o https://',
+  },
+  {
+    name: 'supportEmail',
+    label: 'Correo de soporte',
+    type: 'email',
+    maxLength: 100,
+    pattern: VALIDATION_PATTERNS.EMAIL,
+    patternMessage: 'Introduce un correo válido',
+  },
+  {
+    name: 'country',
+    label: 'País (ISO-2)',
+    type: 'text',
+    minLength: 2,
+    maxLength: 2,
+    placeholder: 'MX',
+    pattern: VALIDATION_PATTERNS.ISO_COUNTRY,
+    patternMessage: 'El país debe ser un código ISO-2 de 2 letras (ej. MX, US)',
+  },
 ];
 
 function safeHttpUrl(url: string | null | undefined): string | null {
