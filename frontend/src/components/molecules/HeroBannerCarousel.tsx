@@ -57,6 +57,7 @@ export function HeroBannerCarousel() {
             alt=""
             aria-hidden="true"
             referrerPolicy="no-referrer"
+            fetchPriority="low"
             className="block absolute inset-0 w-full h-full object-cover scale-125 blur-2xl opacity-80 brightness-75 select-none pointer-events-none hero-backdrop-motion"
           />
           <div
@@ -69,6 +70,7 @@ export function HeroBannerCarousel() {
               src={zeldaBannerSrc}
               alt="The Legend of Zelda: Ocarina of Time — Ya Disponible"
               referrerPolicy="no-referrer"
+              fetchPriority="high"
               onError={() => {
                 if (zeldaBannerSrc !== ZELDA_BANNER_FALLBACK_URL) {
                   setZeldaBannerSrc(ZELDA_BANNER_FALLBACK_URL);
@@ -106,6 +108,8 @@ export function HeroBannerCarousel() {
               src={slide.src}
               alt=""
               aria-hidden="true"
+              loading="lazy"
+              fetchPriority="low"
               className="block absolute inset-0 w-full h-full object-cover scale-125 blur-2xl opacity-80 brightness-75 select-none pointer-events-none hero-backdrop-motion"
             />
             <div
@@ -117,6 +121,8 @@ export function HeroBannerCarousel() {
               <img
                 src={slide.src}
                 alt={slide.alt}
+                loading="lazy"
+                fetchPriority="low"
                 className={`w-full h-full object-cover select-none pointer-events-none hero-motion-${slide.index} [mask-image:linear-gradient(to_right,transparent,black_9%,black_91%,transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_9%,black_91%,transparent)]`}
               />
             </div>

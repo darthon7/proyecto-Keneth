@@ -3,6 +3,14 @@ import type { ReactNode } from 'react';
 
 const STORAGE_KEY = 'keneth.cart';
 
+export function clearStoredCart(): void {
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Ignorar errores de almacenamiento en entornos restringidos
+  }
+}
+
 export interface CartItem {
   gameEditionId: number;
   quantity: number;

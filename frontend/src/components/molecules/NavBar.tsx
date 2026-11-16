@@ -58,7 +58,7 @@ export function NavBar() {
   const [authModalMode, setAuthModalMode] = useState<AuthModalMode | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  const { totalItems } = useCart();
+  const { totalItems, clear: clearCart } = useCart();
   const { currentUser, logout } = useSession();
   const isAdmin = currentUser?.role === UserRole.ADMIN;
 
@@ -143,8 +143,8 @@ export function NavBar() {
           </div>
 
           {/* Center: Retro Pop Search Bar */}
-          <div className="flex-1 max-w-md">
-            <form onSubmit={handleSearchSubmit} role="search" className="relative">
+          <search className="flex-1 max-w-md">
+            <form onSubmit={handleSearchSubmit} className="relative">
               <div className="relative flex items-center bg-[#FFFFFF] rounded-xl px-3.5 py-2 border border-white/20 focus-within:ring-2 focus-within:ring-[#FFC700] shadow-sm transition-all">
                 <svg
                   className="w-4 h-4 text-[#475569] mr-2.5 shrink-0"
@@ -163,7 +163,12 @@ export function NavBar() {
                 <input
                   ref={searchInputRef}
                   data-testid="navbar-search-input"
-                  type="text"
+                  type="search"
+                  enterKeyHint="search"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   maxLength={100}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -185,7 +190,7 @@ export function NavBar() {
                 )}
               </div>
             </form>
-          </div>
+          </search>
 
           {/* Right: Cart, Admin Panel CTA (ADMIN only), Account / Auth CTA */}
           <div className="flex items-center gap-2.5 shrink-0">
@@ -324,7 +329,10 @@ export function NavBar() {
                         type="button"
                         role="menuitem"
                         data-testid="navbar-logout-btn"
-                        onClick={logout}
+                        onClick={() => {
+                          clearCart();
+                          logout();
+                        }}
                         className="flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-[#EF4444] hover:bg-[#FEE2E2] transition-colors cursor-pointer"
                       >
                         <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

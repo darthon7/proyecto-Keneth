@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import type { ClipboardEvent, InputHTMLAttributes, KeyboardEvent, ReactNode } from 'react';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -33,7 +34,9 @@ export function Input({
   min,
   ...rest
 }: InputProps) {
-  const inputId = id ?? rest.name;
+  const generatedId = useId();
+  const inputId = id ?? rest.name ?? generatedId;
+  const messageId = error || hint ? `${inputId}-description` : undefined;
   const isNumberInput = rest.type === 'number';
   const effectiveMin = isNumberInput ? (min !== undefined ? min : 0) : min;
   const allowNegative = isNumberInput && Number(effectiveMin) < 0;
@@ -103,6 +106,8 @@ export function Input({
         <input
           id={inputId}
           min={effectiveMin}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={messageId}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           className={`w-full rounded-lg border bg-[#FFFFFF] px-4 py-2.5 text-body-sm text-[#0F172A] placeholder:text-[#94A3B8] focus:bg-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#FF2A5F]/20 transition-colors ${
@@ -112,9 +117,9 @@ export function Input({
         />
       </div>
       {error ? (
-        <p className="text-caption text-[#EF4444]">{error}</p>
+        <p id={messageId} className="text-caption text-[#EF4444]">{error}</p>
       ) : hint ? (
-        <p className="text-caption text-[#475569]">{hint}</p>
+        <p id={messageId} className="text-caption text-[#475569]">{hint}</p>
       ) : null}
     </div>
   );

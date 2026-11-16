@@ -190,9 +190,14 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
         )}
 
         {visibleItems.length > 0 && (
-          <div className="overflow-x-auto rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] shadow-xs px-4 py-2">
+          <div
+            tabIndex={0}
+            role="region"
+            aria-label={title}
+            className="overflow-x-auto rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] shadow-xs px-4 py-2"
+          >
             <table className="w-full min-w-[640px] border-collapse text-left">
-              <thead>
+              <thead className="sticky top-0 z-10 bg-[#FFFFFF]">
                 <tr className="border-b border-[#E2E8F0]">
                   {columns.map((column) => (
                     <th

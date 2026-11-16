@@ -273,6 +273,9 @@ export function LoginModal({ isOpen, onClose, initialMode = 'login' }: LoginModa
             label="Correo"
             placeholder="jugador@correo.com"
             autoComplete="email"
+            spellCheck={false}
+            autoCorrect="off"
+            autoCapitalize="none"
             error={form.formState.errors.email?.message}
             {...form.register('email')}
           />
@@ -292,6 +295,7 @@ export function LoginModal({ isOpen, onClose, initialMode = 'login' }: LoginModa
             <button
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
+              aria-pressed={showPassword}
               aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
               className="absolute right-3 top-[31px] text-[11px] font-bold uppercase tracking-wider text-[#1E1B4B] hover:text-[#FF2A5F] transition-colors"
             >
@@ -307,6 +311,9 @@ export function LoginModal({ isOpen, onClose, initialMode = 'login' }: LoginModa
                 label="Nombre de usuario"
                 placeholder="ElPibes"
                 autoComplete="username"
+                spellCheck={false}
+                autoCorrect="off"
+                autoCapitalize="none"
                 hint="Nickname único en la tienda."
                 error={form.formState.errors.username?.message}
                 {...form.register('username')}
@@ -316,6 +323,7 @@ export function LoginModal({ isOpen, onClose, initialMode = 'login' }: LoginModa
                 data-testid="login-country-input"
                 label="País"
                 options={COUNTRY_OPTIONS}
+                autoComplete="country"
                 hint="Región de tu cuenta."
                 error={form.formState.errors.countryCode?.message}
                 {...form.register('countryCode')}

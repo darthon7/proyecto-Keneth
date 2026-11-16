@@ -113,7 +113,7 @@ export function UserProfilePage() {
 
   if (!user) return null;
 
-  const sortedOrders = [...stats.orders].sort(
+  const sortedOrders = stats.orders.toSorted(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
 

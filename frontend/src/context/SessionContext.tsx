@@ -10,6 +10,7 @@ import {
   onUnauthorized,
   setStoredAuthToken,
 } from '@/api';
+import { clearStoredCart } from '@/context/CartContext';
 import { UserRole } from '@/types';
 import type { AuthResponse, SafeUser } from '@/types';
 
@@ -49,13 +50,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     clearStoredAuthToken();
+    clearStoredCart();
     setToken(null);
     clearProtectedCache();
+    window.location.reload();
   }, [clearProtectedCache]);
 
   useEffect(() => {
     return onUnauthorized(() => {
       clearStoredAuthToken();
+      clearStoredCart();
       setToken(null);
       clearProtectedCache();
     });

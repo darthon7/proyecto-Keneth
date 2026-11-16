@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import type { ReactNode, SelectHTMLAttributes } from 'react';
 
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
@@ -20,7 +21,9 @@ export function Select({
   children,
   ...rest
 }: SelectProps) {
-  const selectId = id ?? rest.name;
+  const generatedId = useId();
+  const selectId = id ?? rest.name ?? generatedId;
+  const messageId = error || hint ? `${selectId}-description` : undefined;
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
@@ -30,6 +33,8 @@ export function Select({
       )}
       <select
         id={selectId}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={messageId}
         className={`w-full rounded-xl bg-[#FFFFFF] border px-3.5 py-2.5 text-xs text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#FF2A5F]/20 transition-all ${
           error ? 'border-[#EF4444]' : 'border-[#E2E8F0] focus:border-[#1E1B4B]'
         } ${className}`}
@@ -44,9 +49,9 @@ export function Select({
         {children}
       </select>
       {error ? (
-        <p className="text-[11px] text-[#EF4444]">{error}</p>
+        <p id={messageId} className="text-[11px] text-[#EF4444]">{error}</p>
       ) : hint ? (
-        <p className="text-[11px] text-[#475569]">{hint}</p>
+        <p id={messageId} className="text-[11px] text-[#475569]">{hint}</p>
       ) : null}
     </div>
   );
