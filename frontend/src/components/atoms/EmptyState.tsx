@@ -20,7 +20,7 @@ export function EmptyState({ title, description, action }: EmptyStateProps) {
         </svg>
       </div>
       <h3 className="text-lg font-bold text-[#0F172A]">{title}</h3>
-      {description && <p className="max-w-md text-xs sm:text-sm text-[#475569]">{description}</p>}
+      {description && <p className="max-w-md text-sm text-[#475569]">{description}</p>}
       {action}
     </div>
   );

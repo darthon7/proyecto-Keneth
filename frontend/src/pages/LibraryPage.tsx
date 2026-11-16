@@ -9,6 +9,7 @@ import { ErrorBanner } from '@/components/atoms/ErrorBanner';
 import { Spinner } from '@/components/atoms/Spinner';
 import { errorMessage, userLibrariesExtraApi } from '@/api';
 import { useSession } from '@/context/SessionContext';
+import { useCopyFeedback } from '@/hooks/useCopyFeedback';
 import { formatDate } from '@/utils/format';
 
 type LibraryFilter = 'all' | 'active' | 'revoked';
@@ -22,7 +23,7 @@ function maskLicenseCode(code: string): string {
 export function LibraryPage() {
   const { currentUser, isLoading: sessionLoading } = useSession();
   const [revealedIds, setRevealedIds] = useState<Set<number>>(() => new Set());
-  const [copiedId, setCopiedId] = useState<number | null>(null);
+  const { copiedId, copy: copyLicenseCode } = useCopyFeedback<number>();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<LibraryFilter>('all');
 
@@ -42,18 +43,6 @@ export function LibraryPage() {
       }
       return next;
     });
-  };
-
-  const handleCopyCode = async (entryId: number, code: string) => {
-    try {
-      await navigator.clipboard?.writeText(code);
-      setCopiedId(entryId);
-      setTimeout(() => {
-        setCopiedId((current) => (current === entryId ? null : current));
-      }, 2000);
-    } catch {
-      setRevealedIds((prev) => new Set(prev).add(entryId));
-    }
   };
 
   const entries = useMemo(() => libraryQuery.data ?? [], [libraryQuery.data]);
@@ -101,7 +90,7 @@ export function LibraryPage() {
   return (
     <section
       data-testid="library-page"
-      className="page-container min-h-[calc(100vh-14rem)] py-8 sm:py-12 space-y-6"
+      className="page-container min-h-[calc(100vh-14rem)] py-12 space-y-6"
     >
       <AccountHeroHeader
         eyebrow="Tu Colección Digital"
@@ -119,7 +108,7 @@ export function LibraryPage() {
 
       {/* Search & Status Filter Bar */}
       {entries.length > 0 && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] p-3 shadow-xs">
+        <div className="flex flex-row items-center justify-between gap-3 rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] p-3 shadow-xs">
           <div className="relative flex-1 max-w-md">
             <svg
               className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#94A3B8]"
@@ -207,7 +196,7 @@ export function LibraryPage() {
           />
         )}
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-4 gap-4">
           {filteredEntries.map((entry) => {
             const matchedItem = entry.order?.items?.find(
               (item) =>
@@ -289,7 +278,11 @@ export function LibraryPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => void handleCopyCode(entry.id, licenseCode)}
+                          onClick={() =>
+                            void copyLicenseCode(entry.id, licenseCode, () =>
+                              setRevealedIds((prev) => new Set(prev).add(entry.id)),
+                            )
+                          }
                           className="flex-1 rounded-lg bg-[#FF2A5F] hover:bg-[#E01E4F] px-2.5 py-1.5 text-[11px] font-bold text-white transition-colors cursor-pointer"
                         >
                           {isCopied ? '¡Copiada!' : 'Copiar'}

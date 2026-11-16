@@ -44,7 +44,7 @@ export function Modal({
   if (typeof document === 'undefined') return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[#0F172A]/60 backdrop-blur-sm p-4 sm:p-6">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[#0F172A]/60 backdrop-blur-sm p-6">
       <button
         type="button"
         aria-label="Cerrar"

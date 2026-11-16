@@ -10,6 +10,7 @@ import { errorMessage, gamesApi } from '@/api';
 import { useCart } from '@/context/CartContext';
 import type { Game } from '@/types';
 import { getActiveGameDiscount } from '@/utils/discount';
+import { getLowestEdition } from '@/utils/domain';
 
 export function PromotionsPublicPage() {
   const navigate = useNavigate();
@@ -33,16 +34,13 @@ export function PromotionsPublicPage() {
   );
 
   const handleQuickAdd = (game: Game) => {
-    const editions = game.editions ?? [];
-    if (editions.length === 0) {
+    const lowest = getLowestEdition(game);
+    if (!lowest) {
       navigate(`/games/${game.id}`);
       return;
     }
-    const lowest = [...editions].sort((a, b) => Number(a.basePrice) - Number(b.basePrice))[0];
-    if (lowest) {
-      addItem(lowest.id, 1);
-      navigate('/orders');
-    }
+    addItem(lowest.id, 1);
+    navigate('/orders');
   };
 
   return (
@@ -51,7 +49,7 @@ export function PromotionsPublicPage() {
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-base sm:text-lg font-black uppercase tracking-wide text-[#0F172A]">
+            <h1 className="text-lg font-black uppercase tracking-wide text-[#0F172A]">
               Juegos en Descuento
             </h1>
             <p className="text-xs text-[#475569]">
@@ -85,7 +83,7 @@ export function PromotionsPublicPage() {
         {campaignGames.length > 0 && (
           <div
             data-testid="promotions-campaign-games-grid"
-            className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+            className="grid grid-cols-5 gap-3.5"
           >
             {campaignGames.map((game) => (
               <GameCard key={game.id} game={game} onAddToCart={handleQuickAdd} compact />

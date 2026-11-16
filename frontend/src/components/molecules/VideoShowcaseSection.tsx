@@ -144,11 +144,11 @@ export function VideoShowcaseSection({ games }: VideoShowcaseSectionProps) {
         )}
       </div>
       <div className="flex flex-1 flex-col justify-start gap-1.5 px-4 pt-2.5 pb-4">
-        <h3 className="text-base sm:text-lg font-black text-white transition-colors group-hover:text-[#FFC700] line-clamp-2">
+        <h3 className="text-lg font-black text-white transition-colors group-hover:text-[#FFC700] line-clamp-2">
           {currentSlide.title}
         </h3>
         {currentSlide.description && (
-          <p className="text-xs sm:text-sm leading-relaxed text-indigo-200/85 line-clamp-4">
+          <p className="text-sm leading-relaxed text-indigo-200/85 line-clamp-4">
             {currentSlide.description}
           </p>
         )}
@@ -160,7 +160,7 @@ export function VideoShowcaseSection({ games }: VideoShowcaseSectionProps) {
     <section
       data-testid="home-video-showcase"
       aria-labelledby="video-showcase-title"
-      className="relative overflow-hidden rounded-3xl border border-[#312E81] bg-[#1E1B4B] p-4 sm:p-6 shadow-[0_18px_42px_rgba(30,27,75,0.24)]"
+      className="relative overflow-hidden rounded-3xl border border-[#312E81] bg-[#1E1B4B] p-6 shadow-[0_18px_42px_rgba(30,27,75,0.24)]"
     >
       <div
         aria-hidden="true"
@@ -172,7 +172,7 @@ export function VideoShowcaseSection({ games }: VideoShowcaseSectionProps) {
           <span className="h-5 w-1.5 rounded-full bg-[#FFC700]" />
           <h2
             id="video-showcase-title"
-            className="text-base sm:text-lg font-black uppercase tracking-wide text-white"
+            className="text-lg font-black uppercase tracking-wide text-white"
           >
             Tráiler Destacado
           </h2>
@@ -218,9 +218,9 @@ export function VideoShowcaseSection({ games }: VideoShowcaseSectionProps) {
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-stretch">
+      <div className="grid grid-cols-12 gap-4 items-stretch">
         {/* Video principal estilo Steam */}
-        <div className="lg:col-span-8">
+        <div className="col-span-8">
           <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-white/15 bg-[#0F172A]">
             {hasActivated ? (
               <iframe
@@ -259,7 +259,7 @@ export function VideoShowcaseSection({ games }: VideoShowcaseSectionProps) {
         </div>
 
         {/* Panel lateral estilo Steam: únicamente foto del juego y título */}
-        <div className="lg:col-span-4 flex">
+        <div className="col-span-4 flex">
           {currentSlide.gameId ? (
             <Link
               to={`/games/${currentSlide.gameId}`}

@@ -59,20 +59,20 @@ export function BudgetSection() {
         </div>
         <h2
           id="budget-section-title"
-          className="text-xl sm:text-2xl font-black uppercase tracking-wide text-[#0F172A]"
+          className="text-2xl font-black uppercase tracking-wide text-[#0F172A]"
         >
           ¿Cuál es tu presupuesto?
         </h2>
       </div>
 
-      <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4 sm:gap-4">
+      <div className="grid grid-cols-4 gap-4">
         {BUDGET_TIERS.map(
           ({ amount, tag, subtitle, cardBg, borderClass, glowClass, badgeClass, orbClass }) => (
             <Link
               key={amount}
               to={`/games?maxPrice=${amount}`}
               data-testid={`budget-card-${amount}`}
-              className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border p-5 sm:p-6 shadow-md transition-all duration-300 hover:-translate-y-1.5 ${cardBg} ${borderClass} ${glowClass}`}
+              className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border p-6 shadow-md transition-all duration-300 hover:-translate-y-1.5 ${cardBg} ${borderClass} ${glowClass}`}
             >
               {/* Brillo ambiental */}
               <span
@@ -89,7 +89,7 @@ export function BudgetSection() {
               {/* Motivo decorativo de precio */}
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute -right-2 -bottom-5 select-none font-black text-7xl sm:text-8xl leading-none text-white/[0.08] transition-transform duration-300 group-hover:scale-110 group-hover:text-white/[0.14]"
+                className="pointer-events-none absolute -right-2 -bottom-5 select-none font-black text-8xl leading-none text-white/[0.08] transition-transform duration-300 group-hover:scale-110 group-hover:text-white/[0.14]"
               >
                 ${amount}
               </span>
@@ -109,7 +109,7 @@ export function BudgetSection() {
               {/* Fila inferior: precio grande + subtítulo + botón flecha */}
               <div className="relative z-10 mt-4 flex items-end justify-between gap-2">
                 <div className="space-y-0.5">
-                  <div className="text-3xl sm:text-4xl font-black tracking-tight text-white drop-shadow-xs">
+                  <div className="text-4xl font-black tracking-tight text-white drop-shadow-xs">
                     ${amount}
                   </div>
                   <p className="text-[11px] font-medium text-white/75">

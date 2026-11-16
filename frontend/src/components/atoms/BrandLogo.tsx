@@ -11,8 +11,8 @@ interface BrandLogoProps {
 export function BrandLogo({
   showSubtitle = true,
   subtitle = 'DIGITAL STORE',
-  subtitleClassName = 'hidden sm:block text-[9px] font-mono uppercase tracking-[0.24em] text-slate-400 mt-1',
-  titleClassName = 'text-base sm:text-xl',
+  subtitleClassName = 'block text-[9px] font-mono uppercase tracking-[0.24em] text-slate-400 mt-1',
+  titleClassName = 'text-xl',
 }: BrandLogoProps) {
   const uid = useId().replace(/:/g, '');
   const bodyGradId = `link-cap-body-${uid}`;
@@ -20,13 +20,13 @@ export function BrandLogo({
   const triforceGradId = `link-cap-triforce-${uid}`;
 
   return (
-    <div className="relative inline-flex flex-col pt-5 sm:pt-[22px] leading-none">
+    <div className="relative inline-flex flex-col pt-[22px] leading-none">
       {/* Gorrito de Link (Zelda) posado encima del texto EL PIBES */}
       <svg
         viewBox="0 0 84 44"
         fill="none"
         aria-hidden="true"
-        className="pointer-events-none select-none absolute -top-0.5 -left-1.5 w-[48px] sm:w-[54px] h-auto -rotate-[8deg] drop-shadow-[0_3px_8px_rgba(0,0,0,0.9)]"
+        className="pointer-events-none select-none absolute -top-0.5 -left-1.5 w-[54px] h-auto -rotate-[8deg] drop-shadow-[0_3px_8px_rgba(0,0,0,0.9)]"
       >
         <defs>
           <linearGradient id={bodyGradId} x1="16" y1="6" x2="74" y2="32" gradientUnits="userSpaceOnUse">

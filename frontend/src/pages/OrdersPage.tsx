@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { AccountHeroHeader } from '@/components/molecules/AccountHeroHeader';
 import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { EmptyState } from '@/components/atoms/EmptyState';
@@ -9,27 +8,17 @@ import { ErrorBanner } from '@/components/atoms/ErrorBanner';
 import { Input } from '@/components/atoms/Input';
 import { SectionHeader } from '@/components/atoms/SectionHeader';
 import { Spinner } from '@/components/atoms/Spinner';
-import { errorMessage, gameEditionsApi, ordersApi, promotionsApi, promotionsExtraApi } from '@/api';
-import { PaymentStatus, type GameEdition } from '@/types';
+import { errorMessage, ordersApi } from '@/api';
 import { useCart } from '@/context/CartContext';
 import { useSession } from '@/context/SessionContext';
-import { getActiveGameDiscount } from '@/utils/discount';
+import { useCartSummary } from '@/hooks/useCartSummary';
+import { PAYMENT_STATUS_META } from '@/utils/domain';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { VALIDATION_PATTERNS } from '@/utils/fields';
 
-const PAYMENT_STATUS_META: Record<
-  PaymentStatus,
-  { label: string; tone: 'success' | 'warning' | 'danger' | 'neutral' }
-> = {
-  [PaymentStatus.COMPLETED]: { label: 'Completada', tone: 'success' },
-  [PaymentStatus.PENDING]: { label: 'Pendiente', tone: 'warning' },
-  [PaymentStatus.FAILED]: { label: 'Fallida', tone: 'danger' },
-  [PaymentStatus.REFUNDED]: { label: 'Reembolsada', tone: 'neutral' },
-};
-
 export function OrdersPage() {
   const { currentUser } = useSession();
-  const { items, removeItem, setQuantity, totalItems } = useCart();
+  const { removeItem, setQuantity, totalItems } = useCart();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') === 'history' ? 'history' : 'cart';
@@ -46,10 +35,18 @@ export function OrdersPage() {
     setSearchParams(next, { replace: true });
   };
 
-  const editionsQuery = useQuery({
-    queryKey: ['game-editions'],
-    queryFn: () => gameEditionsApi.list(),
-  });
+  const {
+    editionsQuery,
+    promotionsQuery,
+    cartLines,
+    subtotal,
+    matchedPromotion,
+    isCouponAlreadyClaimed,
+    activePromotion,
+    discountPercentage,
+    discount,
+    total,
+  } = useCartSummary(couponCode, { excludeClaimed: true });
 
   const ordersQuery = useQuery({
     queryKey: ['orders', currentUser?.id],
@@ -57,69 +54,12 @@ export function OrdersPage() {
     enabled: Boolean(currentUser?.id),
   });
 
-  const promotionsQuery = useQuery({
-    queryKey: ['promotions', currentUser?.id ?? 'guest'],
-    queryFn: () => (currentUser ? promotionsExtraApi.myCoupons() : promotionsApi.list()),
-  });
-
-  const editionsById = useMemo(() => {
-    const map = new Map<number, GameEdition>();
-    for (const edition of editionsQuery.data ?? []) {
-      map.set(edition.id, edition);
-    }
-    return map;
-  }, [editionsQuery.data]);
-
-  const cartLines = useMemo(
-    () =>
-      items
-        .map((item) => {
-          const edition = editionsById.get(item.gameEditionId);
-          if (!edition) return null;
-          const discount = getActiveGameDiscount(edition.game);
-          const unitPrice = discount.computePrice(Number(edition.basePrice));
-          return {
-            ...item,
-            edition,
-            unitPrice,
-            lineTotal: unitPrice * item.quantity,
-          };
-        })
-        .filter((line): line is NonNullable<typeof line> => line !== null),
-    [items, editionsById],
-  );
-
-  const subtotal = cartLines.reduce((acc, line) => acc + line.lineTotal, 0);
-
-  const matchedPromotion = useMemo(() => {
-    const normalized = couponCode.trim().toLowerCase();
-    if (!normalized) return null;
-    const now = Date.now();
-    return (
-      (promotionsQuery.data ?? []).find((promotion) => {
-        if (!promotion.isActive || promotion.couponCode?.toLowerCase() !== normalized) {
-          return false;
-        }
-        const start = new Date(promotion.startDate).getTime();
-        const end = new Date(promotion.endDate).getTime();
-        return (!Number.isFinite(start) || start <= now) && (!Number.isFinite(end) || end >= now);
-      }) ?? null
-    );
-  }, [couponCode, promotionsQuery.data]);
-
-  const isCouponAlreadyClaimed = Boolean(matchedPromotion?.isClaimed);
-  const activePromotion = isCouponAlreadyClaimed ? null : matchedPromotion;
-
   const trimmedCoupon = couponCode.trim();
   const hasCouponInput = trimmedCoupon.length > 0;
   const isCouponFormatInvalid =
     hasCouponInput && !VALIDATION_PATTERNS.COUPON_CODE.test(trimmedCoupon);
   const isCouponInvalid =
     hasCouponInput && !isCouponFormatInvalid && !promotionsQuery.isLoading && !matchedPromotion;
-
-  const discountPercentage = activePromotion ? Number(activePromotion.discountPercentage) : 0;
-  const discount = (subtotal * discountPercentage) / 100;
-  const total = subtotal - discount;
 
   const goToCheckout = () => {
     const query = activePromotion?.couponCode
@@ -136,40 +76,13 @@ export function OrdersPage() {
     [ordersQuery.data, currentUser?.id],
   );
 
-  const completedTotal = useMemo(
-    () =>
-      userOrders
-        .filter((order) => order.paymentStatus === PaymentStatus.COMPLETED)
-        .reduce((acc, order) => acc + Number(order.totalAmount || 0), 0),
-    [userOrders],
-  );
-
   return (
-    <section className="page-container min-h-[calc(100vh-14rem)] py-8 sm:py-12 space-y-6">
-      <AccountHeroHeader
-        eyebrow="Compras y Facturación"
-        title="Carrito y Órdenes"
-        description="Revisa tus ediciones digitales antes de pagar, aplica cupones vigentes y consulta el historial completo de tus compras."
-        stats={[
-          { label: 'En carrito', value: totalItems, tone: 'pink' },
-          { label: 'Órdenes', value: userOrders.length, tone: 'default' },
-          { label: 'Total invertido', value: formatCurrency(completedTotal), tone: 'gold' },
-        ]}
-        actions={
-          <Link to="/my-coupons">
-            <Button variant="outline" size="sm" className="!border-white/25 !bg-white/10 !text-white hover:!bg-white/20">
-              Mis cupones
-            </Button>
-          </Link>
-        }
-      />
-
+    <section className="page-container min-h-[calc(100vh-14rem)] py-12 space-y-6">
       {paidOrderNumber && (
         <div>
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#D1FAE5] border border-[#10B981]/30 px-4 py-3 text-body-sm text-[#065F46] font-medium">
             <span>
-              Orden {paidOrderNumber} completada (pago simulado). Tus claves digitales ya están
-              disponibles.
+              Orden {paidOrderNumber} completada. Tus claves digitales ya están disponibles.
             </span>
             <Link to="/library" className="font-bold text-[#1E1B4B] hover:text-[#FF2A5F]">
               Ver mi biblioteca →
@@ -213,7 +126,7 @@ export function OrdersPage() {
       </div>
 
       {activeTab === 'cart' ? (
-        <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
+        <div className="grid grid-cols-[1fr_360px] gap-8">
           <div>
             <SectionHeader title="Tu carrito" description={`${totalItems} artículos`} />
 
@@ -311,7 +224,7 @@ export function OrdersPage() {
             </div>
           </div>
 
-          <aside className="lg:sticky lg:top-24 lg:self-start">
+          <aside className="sticky top-24 self-start">
             <div className="relative overflow-hidden rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-6 shadow-sm">
               <div
                 aria-hidden="true"

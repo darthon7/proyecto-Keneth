@@ -121,9 +121,6 @@ describe('NavBar', () => {
     await user.click(screen.getByTestId('navbar-profile-trigger'));
     expect(screen.queryByTestId('navbar-profile-admin-link')).not.toBeInTheDocument();
     expect(screen.queryByTestId('navbar-profile-admin-badge')).not.toBeInTheDocument();
-
-    await user.click(screen.getByTestId('navbar-mobile-toggle'));
-    expect(screen.queryByTestId('navbar-mobile-admin-panel-btn')).not.toBeInTheDocument();
   });
 
   it('muestra el botón Panel de Control apuntando a /admin exclusivamente para usuarios ADMIN', async () => {
@@ -141,9 +138,6 @@ describe('NavBar', () => {
     await user.click(screen.getByTestId('navbar-profile-trigger'));
     expect(screen.getByTestId('navbar-profile-admin-badge')).toHaveTextContent('ADMIN');
     expect(screen.queryByTestId('navbar-profile-admin-link')).not.toBeInTheDocument();
-
-    await user.click(screen.getByTestId('navbar-mobile-toggle'));
-    expect(screen.getByTestId('navbar-mobile-admin-panel-btn')).toHaveAttribute('href', '/admin');
   });
 
   it('abre el modal de login con solo Correo y Contraseña al hacer clic en "Iniciar sesión"', async () => {

@@ -43,15 +43,15 @@ export function Footer() {
         className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[#FF2A5F] via-[#FFC700] to-[#FF2A5F]"
       />
 
-      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-9">
+      <div className="w-full max-w-[1440px] mx-auto px-8 py-9">
         {/* Primary Footbar Strip */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center justify-between gap-6">
           <Link
             to="/"
             className="inline-flex items-center group w-fit rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFC700]"
           >
             <BrandLogo
-              titleClassName="text-sm sm:text-base"
+              titleClassName="text-base"
               subtitle="Tienda digital de videojuegos y claves oficiales"
               subtitleClassName="text-[11px] text-indigo-200 mt-1"
             />
@@ -76,13 +76,9 @@ export function Footer() {
         {/* Support Notice */}
         <FooterSupportNotice />
 
-        {/* Minimal Copyright & Trust Baseline */}
-        <div className="mt-5 pt-5 border-t border-white/15 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-indigo-200">
+        {/* Minimal Copyright Baseline */}
+        <div className="mt-5 pt-5 border-t border-white/15 flex items-center justify-between gap-2 text-[11px] text-indigo-200">
           <p>© {currentYear} EL PIBES Digital Store. Todos los derechos reservados.</p>
-          <p className="inline-flex items-center gap-2">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#FFC700]" aria-hidden="true" />
-            <span>Claves digitales · Activación inmediata</span>
-          </p>
         </div>
       </div>
     </footer>

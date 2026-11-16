@@ -14,6 +14,40 @@ const MAIN_NAV_LINKS = [
   { to: '/library', label: 'MIS JUEGOS' },
 ];
 
+const PROFILE_MENU_LINKS: readonly {
+  to: (userId: number) => string;
+  label: string;
+  testId?: string;
+  iconPath: string;
+}[] = [
+  {
+    to: (userId) => `/users/${userId}`,
+    label: 'Mi Perfil',
+    iconPath: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
+  },
+  {
+    to: () => '/my-coupons',
+    label: 'Mis Cupones',
+    testId: 'navbar-profile-coupons-link',
+    iconPath: 'M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z',
+  },
+  {
+    to: () => '/library',
+    label: 'Mi Biblioteca',
+    iconPath: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10',
+  },
+  {
+    to: () => '/wishlist',
+    label: 'Lista de Deseados',
+    iconPath: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z',
+  },
+  {
+    to: () => '/orders?tab=history',
+    label: 'Historial de Compras',
+    iconPath: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
+  },
+];
+
 export function NavBar() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -21,7 +55,6 @@ export function NavBar() {
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<AuthModalMode | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -29,13 +62,10 @@ export function NavBar() {
   const { currentUser, logout } = useSession();
   const isAdmin = currentUser?.role === UserRole.ADMIN;
 
-  // Close menus on page navigation
   useEffect(() => {
-    setIsMenuOpen(false);
     setIsProfileOpen(false);
   }, [location.pathname]);
 
-  // Global Ctrl+K / Cmd+K shortcut & Escape handler
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
@@ -43,14 +73,12 @@ export function NavBar() {
         searchInputRef.current?.focus();
       } else if (e.key === 'Escape') {
         setIsProfileOpen(false);
-        setIsMenuOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Click outside listener for dropdowns
   useEffect(() => {
     const handlePointerDown = (e: MouseEvent) => {
       const target = e.target as Node;
@@ -67,7 +95,6 @@ export function NavBar() {
     const trimmed = searchTerm.trim();
     if (trimmed) {
       navigate(`/games?q=${encodeURIComponent(trimmed)}`);
-      setIsMenuOpen(false);
     }
   };
 
@@ -80,24 +107,23 @@ export function NavBar() {
       data-testid="navbar-header"
       className="sticky top-0 z-50 w-full bg-[#1E1B4B] border-b border-[#312E81] shadow-[0_8px_28px_rgba(30,27,75,0.22)]"
     >
-      <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="h-16 sm:h-[68px] flex items-center justify-between gap-2 sm:gap-5">
+      <div className="w-full max-w-[1440px] mx-auto px-8">
+        <div className="h-[68px] flex items-center justify-between gap-5">
           {/* Left: Brand Identity + Primary Navigation */}
-          <div className="flex items-center gap-4 lg:gap-7 min-w-0">
+          <div className="flex items-center gap-7 min-w-0">
             <Link
               to="/"
               data-testid="navbar-brand"
               className="flex items-center group shrink-0 py-1 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFC700]"
             >
               <BrandLogo
-                titleClassName="text-sm sm:text-lg"
+                titleClassName="text-lg"
                 subtitle="DIGITAL STORE"
-                subtitleClassName="hidden sm:block text-[9px] font-mono uppercase tracking-[0.24em] text-indigo-200 mt-0.5"
+                subtitleClassName="block text-[9px] font-mono uppercase tracking-[0.24em] text-indigo-200 mt-0.5"
               />
             </Link>
 
-            {/* Desktop Navigation Links */}
-            <nav aria-label="Navegación principal" className="hidden lg:flex items-center gap-1">
+            <nav aria-label="Navegación principal" className="flex items-center gap-1">
               {MAIN_NAV_LINKS.map((link) => (
                 <NavLink
                   key={link.to}
@@ -113,13 +139,11 @@ export function NavBar() {
                   {link.label}
                 </NavLink>
               ))}
-
-              {/* Customer Catalog & Space Dropdown */}
             </nav>
           </div>
 
-          {/* Center: Retro Pop Search Bar with Ctrl+K */}
-          <div className="flex-1 max-w-md hidden md:block">
+          {/* Center: Retro Pop Search Bar */}
+          <div className="flex-1 max-w-md">
             <form onSubmit={handleSearchSubmit} role="search" className="relative">
               <div className="relative flex items-center bg-[#FFFFFF] rounded-xl px-3.5 py-2 border border-white/20 focus-within:ring-2 focus-within:ring-[#FFC700] shadow-sm transition-all">
                 <svg
@@ -152,31 +176,27 @@ export function NavBar() {
                     type="button"
                     onClick={() => setSearchTerm('')}
                     aria-label="Limpiar búsqueda"
-                    className="mr-1.5 p-0.5 rounded text-[#475569] hover:text-[#FF2A5F] transition-colors"
+                    className="ml-1.5 p-0.5 rounded text-[#475569] hover:text-[#FF2A5F] transition-colors"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
                 )}
-                <kbd className="hidden xl:inline-flex items-center text-[10px] font-mono font-semibold text-[#475569] bg-[#F4F4F6] px-1.5 py-0.5 rounded border border-[#E2E8F0] shrink-0">
-                  Ctrl+K
-                </kbd>
               </div>
             </form>
           </div>
 
           {/* Right: Cart, Admin Panel CTA (ADMIN only), Account / Auth CTA */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-            {/* Cart Link with High-Conversion Pill & Dynamic Badge */}
+          <div className="flex items-center gap-2.5 shrink-0">
             <Link
               to="/orders"
               data-testid="navbar-cart-link"
               aria-label="Ver carrito y compras"
               title="Carrito de compras"
-              className="relative flex items-center gap-2 p-2 sm:px-3 sm:py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/15 transition-colors"
+              className="relative flex items-center gap-2 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/15 transition-colors"
             >
-              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#FFC700]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-5 h-5 text-[#FFC700]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -184,7 +204,7 @@ export function NavBar() {
                   d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
                 />
               </svg>
-              <span className="hidden xl:inline text-xs font-bold tracking-wide">Carrito</span>
+              <span className="text-xs font-bold tracking-wide">Carrito</span>
               {totalItems > 0 && (
                 <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-[#FF2A5F] text-white px-1 text-[10px] font-black shadow-sm">
                   {totalItems}
@@ -192,14 +212,13 @@ export function NavBar() {
               )}
             </Link>
 
-            <div className="h-6 w-px bg-white/20 hidden sm:block mx-0.5" />
+            <div className="h-6 w-px bg-white/20 mx-0.5" />
 
-            {/* Exclusive Admin Control Panel Button (rendered ONLY for ADMIN) */}
             {isAdmin && (
               <Link
                 to="/admin"
                 data-testid="navbar-admin-panel-btn"
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-full bg-[#FFC700] hover:bg-[#FFD633] text-[#0F172A] border border-[#FF2A5F]/40 shadow-[0_4px_14px_rgba(255,199,0,0.3)] hover:shadow-[0_8px_20px_rgba(255,199,0,0.45)] btn-nintendo-animation btn-nintendo-shine text-[11px] sm:text-xs font-black uppercase tracking-wider whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#FFC700] hover:bg-[#FFD633] text-[#0F172A] border border-[#FF2A5F]/40 shadow-[0_4px_14px_rgba(255,199,0,0.3)] hover:shadow-[0_8px_20px_rgba(255,199,0,0.45)] btn-nintendo-animation btn-nintendo-shine text-xs font-black uppercase tracking-wider whitespace-nowrap"
               >
                 <svg className="w-4 h-4 shrink-0 text-[#FF2A5F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path
@@ -213,7 +232,6 @@ export function NavBar() {
               </Link>
             )}
 
-            {/* User Session Profile Widget or Login CTA (preserving button animation) */}
             {currentUser ? (
               <div ref={profileMenuRef} className="relative">
                 <button
@@ -229,7 +247,7 @@ export function NavBar() {
                     {initials(currentUser.username)}
                   </div>
 
-                  <div className="hidden sm:flex flex-col items-start text-left">
+                  <div className="flex flex-col items-start text-left">
                     <span className="text-xs font-bold text-white line-clamp-1 max-w-[110px]">
                       {currentUser.username}
                     </span>
@@ -239,7 +257,7 @@ export function NavBar() {
                   </div>
 
                   <svg
-                    className={`hidden sm:block w-3.5 h-3.5 text-indigo-200 transition-transform duration-200 ${
+                    className={`w-3.5 h-3.5 text-indigo-200 transition-transform duration-200 ${
                       isProfileOpen ? 'rotate-180 text-[#FFC700]' : ''
                     }`}
                     fill="none"
@@ -284,62 +302,21 @@ export function NavBar() {
                     </div>
 
                     <div className="py-1 space-y-0.5">
-                      <Link
-                        to={`/users/${currentUser.id}`}
-                        role="menuitem"
-                        onClick={() => setIsProfileOpen(false)}
-                        className="group flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-[#475569] hover:text-[#1E1B4B] hover:bg-[#F4F4F6] transition-colors"
-                      >
-                        <svg className="w-4 h-4 shrink-0 text-[#94A3B8] group-hover:text-[#FF2A5F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        <span>Mi Perfil</span>
-                      </Link>
-                      <Link
-                        to="/my-coupons"
-                        role="menuitem"
-                        data-testid="navbar-profile-coupons-link"
-                        onClick={() => setIsProfileOpen(false)}
-                        className="group flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-[#475569] hover:text-[#1E1B4B] hover:bg-[#F4F4F6] transition-colors"
-                      >
-                        <svg className="w-4 h-4 shrink-0 text-[#94A3B8] group-hover:text-[#FF2A5F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                        </svg>
-                        <span>Mis Cupones</span>
-                      </Link>
-                      <Link
-                        to="/library"
-                        role="menuitem"
-                        onClick={() => setIsProfileOpen(false)}
-                        className="group flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-[#475569] hover:text-[#1E1B4B] hover:bg-[#F4F4F6] transition-colors"
-                      >
-                        <svg className="w-4 h-4 shrink-0 text-[#94A3B8] group-hover:text-[#FF2A5F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
-                        <span>Mi Biblioteca</span>
-                      </Link>
-                      <Link
-                        to="/wishlist"
-                        role="menuitem"
-                        onClick={() => setIsProfileOpen(false)}
-                        className="group flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-[#475569] hover:text-[#1E1B4B] hover:bg-[#F4F4F6] transition-colors"
-                      >
-                        <svg className="w-4 h-4 shrink-0 text-[#94A3B8] group-hover:text-[#FF2A5F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                        </svg>
-                        <span>Lista de Deseados</span>
-                      </Link>
-                      <Link
-                        to="/orders?tab=history"
-                        role="menuitem"
-                        onClick={() => setIsProfileOpen(false)}
-                        className="group flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-[#475569] hover:text-[#1E1B4B] hover:bg-[#F4F4F6] transition-colors"
-                      >
-                        <svg className="w-4 h-4 shrink-0 text-[#94A3B8] group-hover:text-[#FF2A5F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                        <span>Historial de Compras</span>
-                      </Link>
+                      {PROFILE_MENU_LINKS.map((item) => (
+                        <Link
+                          key={item.label}
+                          to={item.to(currentUser.id)}
+                          role="menuitem"
+                          data-testid={item.testId}
+                          onClick={() => setIsProfileOpen(false)}
+                          className="group flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-[#475569] hover:text-[#1E1B4B] hover:bg-[#F4F4F6] transition-colors"
+                        >
+                          <svg className="w-4 h-4 shrink-0 text-[#94A3B8] group-hover:text-[#FF2A5F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d={item.iconPath} />
+                          </svg>
+                          <span>{item.label}</span>
+                        </Link>
+                      ))}
                     </div>
 
                     <div className="border-t border-[#E2E8F0] pt-1.5 mt-1">
@@ -360,15 +337,15 @@ export function NavBar() {
                 )}
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   data-testid="navbar-login-btn"
                   onClick={() => setAuthModalMode('login')}
-                  className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-[#FF2A5F] hover:bg-[#E01E4F] text-white shadow-[0_4px_14px_rgba(255,42,95,0.35)] hover:shadow-[0_8px_22px_rgba(255,42,95,0.5)] btn-nintendo-animation btn-nintendo-shine text-[11px] sm:text-xs font-black uppercase tracking-wider whitespace-nowrap group"
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#FF2A5F] hover:bg-[#E01E4F] text-white shadow-[0_4px_14px_rgba(255,42,95,0.35)] hover:shadow-[0_8px_22px_rgba(255,42,95,0.5)] btn-nintendo-animation btn-nintendo-shine text-xs font-black uppercase tracking-wider whitespace-nowrap group"
                 >
                   <svg
-                    className="hidden sm:block w-4 h-4 transition-transform group-hover:translate-x-0.5"
+                    className="w-4 h-4 transition-transform group-hover:translate-x-0.5"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -388,7 +365,7 @@ export function NavBar() {
                   type="button"
                   data-testid="navbar-register-btn"
                   onClick={() => setAuthModalMode('register')}
-                  className="hidden sm:flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/25 btn-nintendo-animation text-[11px] sm:text-xs font-black uppercase tracking-wider whitespace-nowrap transition-colors"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/25 btn-nintendo-animation text-xs font-black uppercase tracking-wider whitespace-nowrap transition-colors"
                 >
                   <svg
                     className="w-4 h-4"
@@ -408,115 +385,10 @@ export function NavBar() {
                 </button>
               </div>
             )}
-
-            {/* Mobile Menu Hamburger */}
-            <button
-              type="button"
-              data-testid="navbar-mobile-toggle"
-              aria-label="Abrir menú"
-              aria-expanded={isMenuOpen}
-              onClick={() => setIsMenuOpen((open) => !open)}
-              className="p-2 rounded-xl bg-white/10 border border-white/15 text-white hover:bg-white/20 transition-colors lg:hidden"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                {isMenuOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                )}
-              </svg>
-            </button>
           </div>
         </div>
       </div>
 
-      {/* MOBILE EXPANDED MENU DRAWER */}
-      {isMenuOpen && (
-        <div className="lg:hidden bg-[#1E1B4B] border-t border-white/15 px-4 py-5 space-y-5">
-          <form onSubmit={handleSearchSubmit} role="search" className="relative">
-            <input
-              type="text"
-              maxLength={100}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar juegos, DLCs, estudios..."
-              aria-label="Buscar videojuegos"
-              className="w-full bg-[#FFFFFF] text-xs text-[#0F172A] placeholder-[#94A3B8] px-4 py-2.5 rounded-xl border border-[#E2E8F0] focus:outline-none focus:ring-2 focus:ring-[#FFC700]"
-            />
-          </form>
-
-          {isAdmin && (
-            <Link
-              to="/admin"
-              data-testid="navbar-mobile-admin-panel-btn"
-              onClick={() => setIsMenuOpen(false)}
-              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-full bg-[#FFC700] hover:bg-[#FFD633] text-[#0F172A] font-black text-xs uppercase tracking-wider btn-nintendo-animation"
-            >
-              <span>Panel de Control</span>
-            </Link>
-          )}
-
-          <div className="flex flex-col space-y-1">
-            <p className="px-3 text-[10px] font-mono font-bold uppercase tracking-widest text-[#FFC700]">
-              Navegación
-            </p>
-            {MAIN_NAV_LINKS.map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                onClick={() => setIsMenuOpen(false)}
-                className={({ isActive }) =>
-                  `px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors ${
-                    isActive
-                      ? 'bg-[#FFC700] text-[#0F172A]'
-                      : 'text-indigo-100 hover:bg-white/10 hover:text-white'
-                  }`
-                }
-              >
-                {link.label}
-              </NavLink>
-            ))}
-          </div>
-
-          {currentUser ? (
-            <div className="border-t border-white/15 pt-3 flex items-center justify-between px-1">
-              <span className="text-xs font-bold text-white">{currentUser.username}</span>
-              <button
-                type="button"
-                onClick={logout}
-                className="text-xs font-bold text-[#FFC700] hover:underline"
-              >
-                Cerrar Sesión
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  setAuthModalMode('login');
-                }}
-                className="w-full py-2.5 rounded-full bg-[#FF2A5F] hover:bg-[#E01E4F] text-white shadow-[0_4px_16px_rgba(255,42,95,0.35)] btn-nintendo-animation btn-nintendo-shine font-black text-xs uppercase tracking-wider"
-              >
-                Iniciar sesión
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  setAuthModalMode('register');
-                }}
-                className="w-full py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/25 btn-nintendo-animation font-black text-xs uppercase tracking-wider transition-colors"
-              >
-                Registrarse
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Login / Registration Authentication Modal */}
       <LoginModal
         isOpen={authModalMode !== null}
         initialMode={authModalMode ?? 'login'}

@@ -3,6 +3,7 @@ import { Button } from '@/components/atoms/Button';
 import { CoverSlot } from '@/components/atoms/CoverSlot';
 import type { Game } from '@/types';
 import { getActiveGameDiscount } from '@/utils/discount';
+import { getMinBasePrice, isNintendoTitle } from '@/utils/domain';
 import { formatCurrency } from '@/utils/format';
 
 interface GameCardProps {
@@ -12,26 +13,11 @@ interface GameCardProps {
   compact?: boolean;
 }
 
-function priceFromEditions(game: Game): number | null {
-  const prices = (game.editions ?? [])
-    .map((edition) => Number(edition.basePrice))
-    .filter((price) => Number.isFinite(price));
-  if (prices.length === 0) return null;
-  return Math.min(...prices);
-}
-
 export function GameCard({ game, onAddToCart, variant = 'cover', compact = false }: GameCardProps) {
-  const price = priceFromEditions(game);
+  const price = getMinBasePrice(game);
   const discount = getActiveGameDiscount(game);
   const discountedPrice = price !== null ? discount.computePrice(price) : null;
-  const isNintendo =
-    game.publisher?.name?.toLowerCase().includes('nintendo') ||
-    game.developer?.name?.toLowerCase().includes('nintendo') ||
-    (game.editions ?? []).some(
-      (e) =>
-        e.platform?.name?.toLowerCase().includes('switch') ||
-        e.platform?.name?.toLowerCase().includes('nintendo'),
-    );
+  const isNintendo = isNintendoTitle(game);
 
   if (variant === 'typographic') {
     return (
@@ -101,7 +87,7 @@ export function GameCard({ game, onAddToCart, variant = 'cover', compact = false
         <Link to={`/games/${game.id}`}>
           <h3
             className={`${
-              compact ? 'text-xs sm:text-sm' : 'text-sm sm:text-base'
+              compact ? 'text-sm' : 'text-base'
             } font-black text-[#0F172A] transition-colors group-hover:text-[#FF2A5F] line-clamp-1`}
           >
             {game.title}
@@ -116,12 +102,12 @@ export function GameCard({ game, onAddToCart, variant = 'cover', compact = false
                   <span className="text-xs font-semibold text-[#94A3B8] line-through tabular-nums">
                     {formatCurrency(price)}
                   </span>
-                  <span className="text-sm sm:text-base font-black text-[#059669] tabular-nums">
+                  <span className="text-base font-black text-[#059669] tabular-nums">
                     {formatCurrency(discountedPrice)}
                   </span>
                 </div>
               ) : (
-                <p className="text-sm sm:text-base font-black text-[#0F172A] tabular-nums">
+                <p className="text-base font-black text-[#0F172A] tabular-nums">
                   {formatCurrency(price)}
                 </p>
               )

@@ -8,6 +8,8 @@ export const AUTH_TOKEN_STORAGE_KEY = 'keneth.authToken';
 type UnauthorizedListener = () => void;
 const unauthorizedListeners = new Set<UnauthorizedListener>();
 
+
+
 export function getStoredAuthToken(): string | null {
   if (typeof window === 'undefined') return null;
   try {

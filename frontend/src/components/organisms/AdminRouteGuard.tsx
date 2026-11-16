@@ -34,7 +34,7 @@ export function AdminRouteGuard({ children }: AdminRouteGuardProps) {
     return (
       <section
         data-testid="admin-access-denied"
-        className="page-container py-16 sm:py-24"
+        className="page-container py-24"
       >
         <div className="mx-auto max-w-lg rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-8 text-center shadow-[0_12px_32px_rgba(15,23,42,0.08)]">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FEE2E2] text-[#EF4444] border border-[#FECACA]">

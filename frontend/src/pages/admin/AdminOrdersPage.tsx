@@ -8,21 +8,8 @@ import { Select } from '@/components/atoms/Select';
 import { Spinner } from '@/components/atoms/Spinner';
 import { errorMessage, ordersApi } from '@/api';
 import { PaymentStatus } from '@/types';
+import { PAYMENT_STATUS_META } from '@/utils/domain';
 import { formatCurrency, formatDate, humanizeEnum } from '@/utils/format';
-
-function statusBadgeTone(status: PaymentStatus): 'success' | 'warning' | 'danger' | 'neutral' {
-  switch (status) {
-    case PaymentStatus.COMPLETED:
-      return 'success';
-    case PaymentStatus.FAILED:
-      return 'danger';
-    case PaymentStatus.REFUNDED:
-      return 'neutral';
-    case PaymentStatus.PENDING:
-    default:
-      return 'warning';
-  }
-}
 
 export function AdminOrdersPage() {
   const queryClient = useQueryClient();
@@ -162,7 +149,7 @@ export function AdminOrdersPage() {
                     </td>
                     <td className="px-3 py-3 text-body-sm">
                       <div className="flex items-center gap-2">
-                        <Badge tone={statusBadgeTone(order.paymentStatus)}>
+                        <Badge tone={PAYMENT_STATUS_META[order.paymentStatus]?.tone ?? 'warning'}>
                           {humanizeEnum(order.paymentStatus)}
                         </Badge>
                         <select

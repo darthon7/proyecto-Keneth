@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { CrudResourcePage } from '@/components/organisms/CrudResourcePage';
@@ -13,6 +15,7 @@ import { digitalKeysApi, digitalKeysExtraApi, errorMessage, gameEditionsApi } fr
 import { KeyStatus, type CreateDigitalKeyPayload, type DigitalKey } from '@/types';
 import { formatDateTime, humanizeEnum } from '@/utils/format';
 import { VALIDATION_PATTERNS, type FieldConfig } from '@/utils/fields';
+import { bulkDigitalKeysSchema, type BulkDigitalKeysFormValues } from '@/utils/schemas';
 
 export function DigitalKeysPage({ embedded = false }: { embedded?: boolean }) {
   const queryClient = useQueryClient();
@@ -22,13 +25,23 @@ export function DigitalKeysPage({ embedded = false }: { embedded?: boolean }) {
   const [statusFilter, setStatusFilter] = useState<string>('');
 
   const [isBulkOpen, setIsBulkOpen] = useState(false);
-  const [bulkMode, setBulkMode] = useState<'auto' | 'manual'>('auto');
-  const [bulkEditionId, setBulkEditionId] = useState<string>(editionParam);
-  const [bulkQuantity, setBulkQuantity] = useState<string>('10');
-  const [bulkCodesText, setBulkCodesText] = useState<string>('');
-  const [bulkBatchId, setBulkBatchId] = useState<string>('');
   const [bulkFeedback, setBulkFeedback] = useState<string | null>(null);
   const [bulkError, setBulkError] = useState<string | null>(null);
+
+  const bulkForm = useForm<BulkDigitalKeysFormValues>({
+    resolver: zodResolver(bulkDigitalKeysSchema),
+    defaultValues: {
+      mode: 'auto',
+      gameEditionId: editionParam,
+      quantity: '10',
+      codesText: '',
+      batchId: '',
+    },
+  });
+
+  const { reset: resetBulkForm, clearErrors: clearBulkErrors } = bulkForm;
+  const { errors: bulkErrors } = bulkForm.formState;
+  const bulkMode = bulkForm.watch('mode');
 
   const editionsQuery = useQuery({
     queryKey: ['game-editions'],
@@ -45,27 +58,24 @@ export function DigitalKeysPage({ embedded = false }: { embedded?: boolean }) {
   };
 
   const bulkMutation = useMutation({
-    mutationFn: () => {
-      const gameEditionId = Number(bulkEditionId);
-      if (!gameEditionId) {
-        throw new Error('Selecciona una edición digital');
-      }
-      if (bulkMode === 'manual') {
-        const codes = bulkCodesText
+    mutationFn: (values: BulkDigitalKeysFormValues) => {
+      const gameEditionId = Number(values.gameEditionId);
+      const batchId = values.batchId || undefined;
+      if (values.mode === 'manual') {
+        const codes = values.codesText
           .split(/[\n,;]+/)
           .map((code) => code.trim())
           .filter(Boolean);
         return digitalKeysExtraApi.createBulk({
           gameEditionId,
           codes,
-          batchId: bulkBatchId.trim() || undefined,
+          batchId,
         });
       }
-      const quantity = Number(bulkQuantity);
       return digitalKeysExtraApi.createBulk({
         gameEditionId,
-        quantity,
-        batchId: bulkBatchId.trim() || undefined,
+        quantity: Number(values.quantity),
+        batchId,
       });
     },
     onSuccess: async (result) => {
@@ -73,64 +83,17 @@ export function DigitalKeysPage({ embedded = false }: { embedded?: boolean }) {
       setBulkFeedback(`Se registraron ${result.createdCount} claves en el lote ${result.batchId}.`);
       setBulkError(null);
       setIsBulkOpen(false);
-      setBulkCodesText('');
-      setBulkBatchId('');
+      resetBulkForm({ ...bulkForm.getValues(), codesText: '', batchId: '' });
     },
     onError: (error) => {
       setBulkError(errorMessage(error));
     },
   });
 
-  const handleBulkSubmit = () => {
+  const bulkSubmit = bulkForm.handleSubmit((values) => {
     setBulkError(null);
-    const gameEditionId = Number(bulkEditionId);
-    if (!Number.isInteger(gameEditionId) || gameEditionId < 1) {
-      setBulkError('Selecciona una edición digital');
-      return;
-    }
-
-    const trimmedBatch = bulkBatchId.trim();
-    if (trimmedBatch && !VALIDATION_PATTERNS.BATCH_ID.test(trimmedBatch)) {
-      setBulkError(
-        'El identificador de lote solo permite letras, números, guiones y guion bajo (2 a 50 caracteres).',
-      );
-      return;
-    }
-
-    if (bulkMode === 'manual') {
-      const codes = bulkCodesText
-        .split(/[\n,;]+/)
-        .map((code) => code.trim())
-        .filter(Boolean);
-      if (codes.length === 0) {
-        setBulkError('Ingresa al menos una clave digital.');
-        return;
-      }
-      if (codes.some((code) => !VALIDATION_PATTERNS.DIGITAL_KEY_CODE.test(code))) {
-        setBulkError(
-          'Cada clave debe tener formato alfanumérico separado por guiones (ej. ABCD-EFGH-IJKL-MNOP).',
-        );
-        return;
-      }
-      if (new Set(codes.map((code) => code.toUpperCase())).size !== codes.length) {
-        setBulkError('La lista contiene códigos duplicados.');
-        return;
-      }
-    } else {
-      const trimmedQty = bulkQuantity.trim();
-      if (!/^\d+$/.test(trimmedQty)) {
-        setBulkError('La cantidad debe ser un número entero entre 1 y 100.');
-        return;
-      }
-      const quantity = Number(trimmedQty);
-      if (quantity < 1 || quantity > 100) {
-        setBulkError('La cantidad debe estar entre 1 y 100.');
-        return;
-      }
-    }
-
-    bulkMutation.mutate();
-  };
+    bulkMutation.mutate(values);
+  });
 
   const editions = useMemo(() => editionsQuery.data ?? [], [editionsQuery.data]);
 
@@ -199,7 +162,13 @@ export function DigitalKeysPage({ embedded = false }: { embedded?: boolean }) {
 
   const openBulkModal = () => {
     setBulkError(null);
-    setBulkEditionId(editionFilter || (editions[0] ? String(editions[0].id) : ''));
+    resetBulkForm({
+      mode: 'auto',
+      gameEditionId: editionFilter || (editions[0] ? String(editions[0].id) : ''),
+      quantity: '10',
+      codesText: '',
+      batchId: '',
+    });
     setIsBulkOpen(true);
   };
 
@@ -249,7 +218,7 @@ export function DigitalKeysPage({ embedded = false }: { embedded?: boolean }) {
                 </button>
               </div>
             )}
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-4">
+            <div className="grid grid-cols-3 gap-3 rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-4">
               <Select
                 label="Filtrar por edición"
                 value={editionFilter}
@@ -345,22 +314,22 @@ export function DigitalKeysPage({ embedded = false }: { embedded?: boolean }) {
               variant="brand"
               data-testid="digital-keys-bulk-submit"
               isLoading={bulkMutation.isPending}
-              onClick={handleBulkSubmit}
+              onClick={bulkSubmit}
             >
               Generar claves
             </Button>
           </>
         }
       >
-        <div className="flex flex-col gap-4">
+        <form onSubmit={bulkSubmit} className="flex flex-col gap-4" noValidate>
           {bulkError && <ErrorBanner message={bulkError} />}
 
           <Select
             label="Edición digital"
-            value={bulkEditionId}
-            onChange={(event) => setBulkEditionId(event.target.value)}
             placeholder="Selecciona una edición"
             options={editionOptions}
+            error={bulkErrors.gameEditionId?.message}
+            {...bulkForm.register('gameEditionId')}
           />
 
           <div className="flex gap-2">
@@ -368,7 +337,10 @@ export function DigitalKeysPage({ embedded = false }: { embedded?: boolean }) {
               type="button"
               size="sm"
               variant={bulkMode === 'auto' ? 'brand' : 'outline'}
-              onClick={() => setBulkMode('auto')}
+              onClick={() => {
+                bulkForm.setValue('mode', 'auto');
+                clearBulkErrors(['quantity', 'codesText']);
+              }}
             >
               Generar automáticamente
             </Button>
@@ -376,7 +348,10 @@ export function DigitalKeysPage({ embedded = false }: { embedded?: boolean }) {
               type="button"
               size="sm"
               variant={bulkMode === 'manual' ? 'brand' : 'outline'}
-              onClick={() => setBulkMode('manual')}
+              onClick={() => {
+                bulkForm.setValue('mode', 'manual');
+                clearBulkErrors(['quantity', 'codesText']);
+              }}
             >
               Pegar lista de claves
             </Button>
@@ -388,26 +363,35 @@ export function DigitalKeysPage({ embedded = false }: { embedded?: boolean }) {
               type="number"
               min={1}
               max={100}
-              value={bulkQuantity}
-              onChange={(event) => setBulkQuantity(event.target.value.replace(/\D/g, ''))}
+              error={bulkErrors.quantity?.message}
+              {...bulkForm.register('quantity', {
+                onChange: (event) => {
+                  const clean = event.target.value.replace(/\D/g, '');
+                  if (event.target.value !== clean) {
+                    bulkForm.setValue('quantity', clean, {
+                      shouldValidate: bulkForm.formState.isSubmitted,
+                    });
+                  }
+                },
+              })}
             />
           ) : (
             <Textarea
               label="Códigos de activación (uno por línea o separados por coma)"
               rows={5}
               placeholder={'ABCD-EFGH-IJKL-MNOP\nQRST-UVWX-YZ23-4567'}
-              value={bulkCodesText}
-              onChange={(event) => setBulkCodesText(event.target.value)}
+              error={bulkErrors.codesText?.message}
+              {...bulkForm.register('codesText')}
             />
           )}
 
           <Input
             label="Identificador de lote (opcional)"
             placeholder="Ej. LAUNCH-2026 (vacío = automático)"
-            value={bulkBatchId}
-            onChange={(event) => setBulkBatchId(event.target.value)}
+            error={bulkErrors.batchId?.message}
+            {...bulkForm.register('batchId')}
           />
-        </div>
+        </form>
       </Modal>
     </>
   );

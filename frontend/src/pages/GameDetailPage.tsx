@@ -6,17 +6,15 @@ import { Button } from '@/components/atoms/Button';
 import { CoverSlot } from '@/components/atoms/CoverSlot';
 import { EmptyState } from '@/components/atoms/EmptyState';
 import { ErrorBanner } from '@/components/atoms/ErrorBanner';
-import { Modal } from '@/components/atoms/Modal';
 import { RatingStars } from '@/components/atoms/RatingStars';
 import { Spinner } from '@/components/atoms/Spinner';
-import { Textarea } from '@/components/atoms/Textarea';
-import { Input } from '@/components/atoms/Input';
-import { errorMessage, gamesApi, reviewsApi, reviewsExtraApi, wishlistsApi, wishlistsExtraApi } from '@/api';
-import { KeyStatus } from '@/types';
+import { GameReviewsSection } from '@/components/organisms/GameReviewsSection';
+import { errorMessage, gamesApi, reviewsExtraApi, wishlistsApi, wishlistsExtraApi } from '@/api';
 import { useCart } from '@/context/CartContext';
 import { useSession } from '@/context/SessionContext';
-import { formatCurrency, formatDate, humanizeEnum } from '@/utils/format';
 import { getActiveGameDiscount } from '@/utils/discount';
+import { countAvailableKeys, getLowestEdition, isNintendoTitle } from '@/utils/domain';
+import { formatCurrency, formatDate, humanizeEnum } from '@/utils/format';
 
 const TABS = ['Descripción', 'Ediciones', 'Requisitos'] as const;
 type Tab = (typeof TABS)[number];
@@ -31,11 +29,6 @@ export function GameDetailPage() {
   const { currentUser } = useSession();
   const [activeTab, setActiveTab] = useState<Tab>('Descripción');
   const [selectedEditionId, setSelectedEditionId] = useState<number | null>(null);
-  const [isReviewOpen, setIsReviewOpen] = useState(false);
-  const [rating, setRating] = useState(5);
-  const [reviewTitle, setReviewTitle] = useState('');
-  const [reviewBody, setReviewBody] = useState('');
-  const [formError, setFormError] = useState<string | null>(null);
   const [addedToCart, setAddedToCart] = useState(false);
 
   const gameQuery = useQuery({
@@ -69,53 +62,6 @@ export function GameDetailPage() {
     },
   });
 
-  const reviewMutation = useMutation({
-    mutationFn: () =>
-      reviewsApi.create({
-        userId: currentUser!.id,
-        gameId,
-        rating,
-        title: reviewTitle.trim(),
-        body: reviewBody.trim(),
-      }),
-    onSuccess: async () => {
-      setIsReviewOpen(false);
-      setReviewTitle('');
-      setReviewBody('');
-      setFormError(null);
-      await queryClient.invalidateQueries({ queryKey: ['reviews'] });
-      await queryClient.invalidateQueries({ queryKey: ['game', gameId] });
-    },
-    onError: (error) => setFormError(errorMessage(error)),
-  });
-
-  const handlePublishReview = () => {
-    setFormError(null);
-    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-      setFormError('Selecciona una calificación válida entre 1 y 5 estrellas.');
-      return;
-    }
-    const trimmedTitle = reviewTitle.trim();
-    if (trimmedTitle.length < 2 || trimmedTitle.length > 150) {
-      setFormError('El título de la reseña debe tener entre 2 y 150 caracteres.');
-      return;
-    }
-    if (!/^(?=.*\S)[a-zA-ZÀ-ÿ0-9\s.,!?¡¿'"()&:-]{2,150}$/.test(trimmedTitle)) {
-      setFormError('El título de la reseña contiene caracteres no válidos.');
-      return;
-    }
-    const trimmedBody = reviewBody.trim();
-    if (trimmedBody.length < 3 || trimmedBody.length > 2000) {
-      setFormError('La reseña debe tener entre 3 y 2000 caracteres.');
-      return;
-    }
-    if (!/^(?=.*\S)[\s\S]{3,2000}$/.test(trimmedBody)) {
-      setFormError('La reseña no puede estar vacía.');
-      return;
-    }
-    reviewMutation.mutate();
-  };
-
   if (!isValidGameId) {
     return (
       <section className="page-container py-16">
@@ -145,43 +91,20 @@ export function GameDetailPage() {
   const requirements = game.systemRequirements ?? [];
   const reviews = reviewsQuery.data ?? game.reviews ?? [];
 
-  const primaryEdition = editions.reduce<(typeof editions)[number] | undefined>((best, current) => {
-    if (!best) return current;
-    const bestPrice = Number(best.basePrice);
-    const currPrice = Number(current.basePrice);
-    if (!Number.isFinite(currPrice)) return best;
-    if (!Number.isFinite(bestPrice) || currPrice < bestPrice) return current;
-    return best;
-  }, undefined);
-
+  const primaryEdition = getLowestEdition(game) ?? undefined;
   const activeEdition = editions.find((e) => e.id === selectedEditionId) ?? primaryEdition;
   const activeEditionHasKeyInfo = Boolean(activeEdition && Array.isArray(activeEdition.digitalKeys));
-  const activeEditionAvailableKeys = (activeEdition?.digitalKeys ?? []).filter(
-    (key) => key.status === KeyStatus.AVAILABLE,
-  ).length;
+  const activeEditionAvailableKeys = countAvailableKeys(activeEdition);
   const isActiveEditionSoldOut = activeEditionHasKeyInfo && activeEditionAvailableKeys === 0;
 
   const avgRating =
     reviews.length > 0
       ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
       : 0;
-  const positivePercent =
-    reviews.length > 0
-      ? Math.round((reviews.filter((r) => r.rating >= 4).length / reviews.length) * 100)
-      : 0;
-
-  const isNintendoGame = Boolean(
-    game.publisher?.name?.toLowerCase().includes('nintendo') ||
-    game.developer?.name?.toLowerCase().includes('nintendo') ||
-    editions.some(
-      (e) =>
-        e.platform?.name?.toLowerCase().includes('switch') ||
-        e.platform?.name?.toLowerCase().includes('nintendo'),
-    ),
-  );
+  const isNintendoGame = isNintendoTitle(game);
 
   return (
-    <section className="page-container py-8 sm:py-10">
+    <section className="page-container py-10">
       <button
         type="button"
         onClick={() => navigate('/games')}
@@ -190,7 +113,7 @@ export function GameDetailPage() {
         ← Volver al catálogo
       </button>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[270px_1fr_300px] xl:grid-cols-[290px_1fr_320px] items-start">
+      <div className="mt-6 grid grid-cols-[290px_1fr_320px] gap-6 items-start">
         {/* Left Column: Cover + Metadata */}
         <div className="space-y-4">
           <div className="relative">
@@ -269,7 +192,7 @@ export function GameDetailPage() {
 
         {/* Center Column: Title, Rating Summary & Tabs */}
         <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#0F172A]">
+          <h1 className="text-3xl font-black tracking-tight text-[#0F172A]">
             {game.title}
           </h1>
 
@@ -314,15 +237,13 @@ export function GameDetailPage() {
             )}
 
             {activeTab === 'Ediciones' && (
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-2 gap-4">
                 {editions.length === 0 && (
                   <EmptyState title="Sin ediciones" description="Publica ediciones digitales para este juego." />
                 )}
                 {editions.map((edition) => {
                   const hasKeyInfo = Array.isArray(edition.digitalKeys);
-                  const availableKeys = (edition.digitalKeys ?? []).filter(
-                    (key) => key.status === KeyStatus.AVAILABLE,
-                  ).length;
+                  const availableKeys = countAvailableKeys(edition);
                   const isSoldOut = hasKeyInfo && availableKeys === 0;
 
                   return (
@@ -360,7 +281,7 @@ export function GameDetailPage() {
             )}
 
             {activeTab === 'Requisitos' && (
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-2 gap-4">
                 {requirements.length === 0 && (
                   <EmptyState
                     title="Sin requisitos"
@@ -407,7 +328,7 @@ export function GameDetailPage() {
           </div>
         </div>
 
-        {/* Right Column: Purchase Card (Project Palette, No Rainbow Gradients) */}
+        {/* Right Column: Purchase Card */}
         <aside className="rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-5 shadow-sm space-y-4">
           <div className="flex items-start justify-between gap-2">
             <div>
@@ -523,124 +444,13 @@ export function GameDetailPage() {
         </aside>
       </div>
 
-      {/* Reseñas directamente debajo de cada juego */}
-      <section
-        aria-labelledby="game-reviews-heading"
-        className="mt-10 border-t border-[#E2E8F0] pt-8 space-y-5"
-      >
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-3">
-            {currentUser ? (
-              <Button variant="outline" size="sm" onClick={() => setIsReviewOpen(true)}>
-                Escribir una reseña
-              </Button>
-            ) : (
-              <p className="text-xs font-medium text-[#64748B]">
-                Inicia sesión para escribir una reseña.
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <h2 id="game-reviews-heading" className="text-xl font-black text-[#0F172A]">
-              Opiniones de la comunidad ({reviews.length})
-            </h2>
-            {reviews.length > 0 ? (
-              <div className="flex items-center gap-3">
-                <div className="h-2 w-44 overflow-hidden rounded-full bg-[#E2E8F0]">
-                  <div
-                    className="h-full rounded-full bg-[#1E1B4B]"
-                    style={{ width: `${positivePercent}%` }}
-                  />
-                </div>
-                <span className="text-xs font-semibold text-[#475569]">
-                  {positivePercent}% de comentarios positivos
-                </span>
-              </div>
-            ) : (
-              <p className="text-xs text-[#475569]">
-                Opiniones verificadas y comentarios de la comunidad sobre {game.title}.
-              </p>
-            )}
-          </div>
-        </div>
-
-        {reviewsQuery.isLoading && <Spinner label="Cargando reseñas…" />}
-        {!reviewsQuery.isLoading && reviews.length === 0 && (
-          <EmptyState title="Sin reseñas" description="Sé la primera persona en opinar sobre este juego." />
-        )}
-        {reviews.length > 0 && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {reviews.map((review) => (
-              <article key={review.id} className="rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-4 shadow-xs flex flex-col justify-between">
-                <div>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-[#0F172A] truncate">
-                        {review.user?.username ?? 'Usuario'}
-                      </p>
-                      <div className="mt-0.5">
-                        <RatingStars value={review.rating} />
-                      </div>
-                    </div>
-                    {review.isVerifiedPurchase && (
-                      <Badge tone="success">Verificada</Badge>
-                    )}
-                  </div>
-                  <h3 className="mt-3 text-sm font-bold text-[#0F172A]">{review.title}</h3>
-                  <p className="mt-1 text-body-sm text-[#475569] line-clamp-3">{review.body}</p>
-                </div>
-                <p className="mt-3 text-[11px] text-[#94A3B8]">{formatDate(review.createdAt)}</p>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <Modal
-        isOpen={isReviewOpen}
-        onClose={() => setIsReviewOpen(false)}
-        title="Escribir reseña"
-        size="sm"
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setIsReviewOpen(false)}>
-              Cancelar
-            </Button>
-            <Button
-              variant="brand"
-              isLoading={reviewMutation.isPending}
-              onClick={handlePublishReview}
-            >
-              Publicar
-            </Button>
-          </>
-        }
-      >
-        <div className="flex flex-col gap-4">
-          {formError && <ErrorBanner message={formError} />}
-
-          <div className="flex flex-col gap-2">
-            <span className="text-body-sm font-semibold text-[#0F172A]">Calificación</span>
-            <RatingStars value={rating} interactive onChange={setRating} />
-          </div>
-
-          <Input
-            label="Título"
-            value={reviewTitle}
-            onChange={(event) => setReviewTitle(event.target.value)}
-            placeholder="Resumen de tu opinión"
-          />
-
-          <Textarea
-            label="Reseña"
-            rows={5}
-            value={reviewBody}
-            onChange={(event) => setReviewBody(event.target.value)}
-            placeholder="¿Qué te pareció el juego?"
-          />
-        </div>
-      </Modal>
+      <GameReviewsSection
+        gameId={gameId}
+        gameTitle={game.title}
+        reviews={reviews}
+        isLoading={reviewsQuery.isLoading}
+        currentUser={currentUser}
+      />
     </section>
   );
 }

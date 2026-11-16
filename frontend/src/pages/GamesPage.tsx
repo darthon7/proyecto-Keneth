@@ -10,6 +10,7 @@ import type { GameFilterValues } from '@/components/molecules/GameFilters';
 import { GameCard } from '@/components/molecules/GameCard';
 import { useCart } from '@/context/CartContext';
 import { getActiveGameDiscount } from '@/utils/discount';
+import { getMinBasePrice } from '@/utils/domain';
 import {
   developersApi,
   errorMessage,
@@ -23,12 +24,8 @@ import type { Game } from '@/types';
 const PAGE_SIZE = 12;
 
 function getEffectiveMinPrice(game: Game): number | null {
-  const prices = (game.editions ?? [])
-    .map((edition) => Number(edition.basePrice))
-    .filter((price) => Number.isFinite(price));
-  if (prices.length === 0) return null;
-  const minBase = Math.min(...prices);
-  return getActiveGameDiscount(game).computePrice(minBase);
+  const minBase = getMinBasePrice(game);
+  return minBase === null ? null : getActiveGameDiscount(game).computePrice(minBase);
 }
 
 export function GamesPage() {
@@ -151,21 +148,21 @@ export function GamesPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#F4F4F6] text-[#0F172A] font-sans antialiased py-5 sm:py-6">
-      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 space-y-4 sm:space-y-5">
+    <div className="relative min-h-screen bg-[#F4F4F6] text-[#0F172A] font-sans antialiased py-6">
+      <div className="w-full max-w-[1440px] mx-auto px-8 space-y-5">
         {/* Header Strip */}
-        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 sm:pb-4 border-b border-[#E2E8F0]">
+        <header className="flex flex-row items-center justify-between gap-3 pb-4 border-b border-[#E2E8F0]">
           <div className="flex items-center gap-3">
             <span className="w-2 h-5 bg-[#FF2A5F] rounded-full" />
-            <h1 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-[#0F172A]">
+            <h1 className="text-2xl font-black uppercase tracking-wider text-[#0F172A]">
               Catálogo de Videojuegos
             </h1>
           </div>
         </header>
 
         {/* Compact Search & Filters Toolbar */}
-        <section className="bg-[#FFFFFF] rounded-xl border border-[#E2E8F0] px-3 py-2.5 shadow-sm flex flex-col xl:flex-row xl:items-center gap-2.5">
-          <form onSubmit={handleSearchSubmit} className="xl:w-72 shrink-0">
+        <section className="bg-[#FFFFFF] rounded-xl border border-[#E2E8F0] px-3 py-2.5 shadow-sm flex flex-row items-center gap-2.5">
+          <form onSubmit={handleSearchSubmit} className="w-72 shrink-0">
             <div className="relative flex items-center bg-[#F4F4F6] rounded-lg px-2.5 py-1.5 border border-[#E2E8F0] focus-within:bg-[#FFFFFF] focus-within:border-[#FF2A5F] focus-within:ring-2 focus-within:ring-[#FF2A5F]/20 transition-all">
               <svg
                 className="w-3.5 h-3.5 text-[#94A3B8] mr-2 shrink-0"
@@ -197,7 +194,7 @@ export function GamesPage() {
             </div>
           </form>
 
-          <div className="hidden xl:block w-px h-6 bg-[#E2E8F0] shrink-0" aria-hidden="true" />
+          <div className="w-px h-6 bg-[#E2E8F0] shrink-0" aria-hidden="true" />
 
           <GameFilters
             value={filters}
@@ -236,7 +233,7 @@ export function GamesPage() {
           )}
 
           {visible.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-4 gap-6">
               {visible.map((game) => (
                 <GameCard key={game.id} game={game} onAddToCart={handleAddToCart} />
               ))}

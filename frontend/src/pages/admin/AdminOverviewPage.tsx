@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ErrorBanner } from '@/components/atoms/ErrorBanner';
 import { Badge } from '@/components/atoms/Badge';
 import { adminApi, errorMessage, gameEditionsApi } from '@/api';
-import { KeyStatus } from '@/types';
+import { countAvailableKeys } from '@/utils/domain';
 import { formatCurrency } from '@/utils/format';
 
 export function AdminOverviewPage() {
@@ -23,12 +23,7 @@ export function AdminOverviewPage() {
   const activePromosCount = summary?.activePromotions ?? 0;
 
   const editionStockAlerts = (editionsQuery.data ?? [])
-    .map((edition) => {
-      const available = (edition.digitalKeys ?? []).filter(
-        (key) => key.status === KeyStatus.AVAILABLE,
-      ).length;
-      return { edition, available };
-    })
+    .map((edition) => ({ edition, available: countAvailableKeys(edition) }))
     .sort((a, b) => a.available - b.available)
     .slice(0, 8);
 
@@ -117,7 +112,7 @@ export function AdminOverviewPage() {
       )}
 
       {/* Live KPIs Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         {kpiCards.map((card) => (
           <Link
             key={card.testId}
@@ -184,7 +179,7 @@ export function AdminOverviewPage() {
             Aún no hay ediciones digitales registradas. Crea una desde Videojuegos o Ediciones Digitales.
           </p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             {editionStockAlerts.map(({ edition, available }) => {
               const isOut = available === 0;
               const isLow = available > 0 && available < 3;

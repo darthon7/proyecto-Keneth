@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
@@ -7,24 +9,28 @@ import { Input } from '@/components/atoms/Input';
 import { Spinner } from '@/components/atoms/Spinner';
 import { errorMessage, gamesApi, gamesExtraApi } from '@/api';
 import { getActiveGameDiscount } from '@/utils/discount';
-import { VALIDATION_PATTERNS } from '@/utils/fields';
-import {
-  formatCurrency,
-  formatDate,
-  getTodayLocalDateTimeMin,
-  isBeforeToday,
-} from '@/utils/format';
+import { getMinBasePrice } from '@/utils/domain';
+import { formatCurrency, formatDate, getTodayLocalDateTimeMin } from '@/utils/format';
+import { discountCampaignSchema, type DiscountCampaignFormValues } from '@/utils/schemas';
 
 export function DiscountCampaignsPage() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const [campaignName, setCampaignName] = useState('Campaña de Ofertas');
-  const [discountPercent, setDiscountPercent] = useState('25');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [validationError, setValidationError] = useState<string | null>(null);
+  const [selectionError, setSelectionError] = useState<string | null>(null);
+
+  const form = useForm<DiscountCampaignFormValues>({
+    resolver: zodResolver(discountCampaignSchema),
+    defaultValues: {
+      campaignName: 'Campaña de Ofertas',
+      discountPercent: '25',
+      startDate: '',
+      endDate: '',
+    },
+  });
+
+  const { errors } = form.formState;
 
   const gamesQuery = useQuery({
     queryKey: ['games'],
@@ -52,7 +58,7 @@ export function DiscountCampaignsPage() {
       discountEndDate?: string;
     }) => gamesExtraApi.applyDiscountCampaign(payload),
     onSuccess: async (result) => {
-      setValidationError(null);
+      setSelectionError(null);
       setFeedback(
         result.discountPercentage > 0
           ? `Campaña "${result.discountCampaignName}" (-${result.discountPercentage}%) aplicada a ${result.updatedCount} juego(s).`
@@ -77,83 +83,29 @@ export function DiscountCampaignsPage() {
     setSelectedIds((prev) => Array.from(new Set([...prev, ...visibleIds])));
   };
 
-  const handleApply = (event: React.FormEvent) => {
-    event.preventDefault();
+  const handleApply = form.handleSubmit((values) => {
     setFeedback(null);
-    setValidationError(null);
+    setSelectionError(null);
 
     if (selectedIds.length === 0) {
-      setValidationError('Selecciona al menos un videojuego para aplicar la campaña.');
-      return;
-    }
-
-    const trimmedCampaignName = campaignName.trim();
-    if (
-      trimmedCampaignName &&
-      (trimmedCampaignName.length > 120 ||
-        !VALIDATION_PATTERNS.ENTITY_NAME.test(trimmedCampaignName))
-    ) {
-      setValidationError(
-        'El nombre de la campaña contiene caracteres no válidos o excede 120 caracteres.',
-      );
-      return;
-    }
-
-    const trimmedPercent = discountPercent.trim();
-    const pct = Number(trimmedPercent);
-    if (
-      !VALIDATION_PATTERNS.DECIMAL_PRICE.test(trimmedPercent) ||
-      !Number.isFinite(pct) ||
-      pct < 1 ||
-      pct > 95
-    ) {
-      setValidationError('Ingresa un porcentaje de descuento válido entre 1% y 95%.');
-      return;
-    }
-
-    if (startDate) {
-      const parsedStart = new Date(startDate);
-      if (Number.isNaN(parsedStart.getTime())) {
-        setValidationError('La fecha de inicio no es válida.');
-        return;
-      }
-      if (isBeforeToday(parsedStart)) {
-        setValidationError('La fecha de inicio no puede ser anterior al día de hoy.');
-        return;
-      }
-    }
-
-    if (endDate) {
-      const parsedEnd = new Date(endDate);
-      if (Number.isNaN(parsedEnd.getTime())) {
-        setValidationError('La fecha de fin no es válida.');
-        return;
-      }
-      if (isBeforeToday(parsedEnd)) {
-        setValidationError('La fecha de fin no puede ser anterior al día de hoy.');
-        return;
-      }
-    }
-
-    if (startDate && endDate && new Date(endDate).getTime() <= new Date(startDate).getTime()) {
-      setValidationError('La fecha de fin debe ser posterior a la fecha de inicio.');
+      setSelectionError('Selecciona al menos un videojuego para aplicar la campaña.');
       return;
     }
 
     applyCampaignMutation.mutate({
       gameIds: selectedIds,
-      discountCampaignName: campaignName.trim() || 'Campaña de Ofertas',
-      discountPercentage: pct,
-      discountStartDate: startDate ? new Date(startDate).toISOString() : undefined,
-      discountEndDate: endDate ? new Date(endDate).toISOString() : undefined,
+      discountCampaignName: values.campaignName || 'Campaña de Ofertas',
+      discountPercentage: Number(values.discountPercent),
+      discountStartDate: values.startDate ? new Date(values.startDate).toISOString() : undefined,
+      discountEndDate: values.endDate ? new Date(values.endDate).toISOString() : undefined,
     });
-  };
+  });
 
   const handleClearCampaign = () => {
     setFeedback(null);
-    setValidationError(null);
+    setSelectionError(null);
     if (selectedIds.length === 0) {
-      setValidationError('Selecciona al menos un videojuego para retirar su descuento.');
+      setSelectionError('Selecciona al menos un videojuego para retirar su descuento.');
       return;
     }
     applyCampaignMutation.mutate({
@@ -162,7 +114,7 @@ export function DiscountCampaignsPage() {
     });
   };
 
-  const previewPct = Number(discountPercent);
+  const previewPct = Number(form.watch('discountPercent'));
   const todayMin = getTodayLocalDateTimeMin();
 
   return (
@@ -189,7 +141,7 @@ export function DiscountCampaignsPage() {
         </div>
       )}
 
-      {validationError && <ErrorBanner message={validationError} />}
+      {selectionError && <ErrorBanner message={selectionError} />}
       {applyCampaignMutation.isError && (
         <ErrorBanner message={errorMessage(applyCampaignMutation.error)} />
       )}
@@ -197,13 +149,14 @@ export function DiscountCampaignsPage() {
       <form
         onSubmit={handleApply}
         className="rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] p-5 shadow-xs space-y-4"
+        noValidate
       >
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-4 gap-4">
           <Input
             label="Nombre de la campaña"
-            value={campaignName}
-            onChange={(event) => setCampaignName(event.target.value)}
             placeholder="Ej. Ofertas de Fin de Semana"
+            error={errors.campaignName?.message}
+            {...form.register('campaignName')}
           />
           <Input
             label="Descuento (%)"
@@ -211,23 +164,32 @@ export function DiscountCampaignsPage() {
             min={1}
             max={95}
             step={0.01}
-            value={discountPercent}
-            onChange={(event) => setDiscountPercent(event.target.value.replace(/[^0-9.]/g, ''))}
             placeholder="25"
+            error={errors.discountPercent?.message}
+            {...form.register('discountPercent', {
+              onChange: (event) => {
+                const clean = event.target.value.replace(/[^0-9.]/g, '');
+                if (event.target.value !== clean) {
+                  form.setValue('discountPercent', clean, {
+                    shouldValidate: form.formState.isSubmitted,
+                  });
+                }
+              },
+            })}
           />
           <Input
             label="Inicio (opcional)"
             type="datetime-local"
             min={todayMin}
-            value={startDate}
-            onChange={(event) => setStartDate(event.target.value)}
+            error={errors.startDate?.message}
+            {...form.register('startDate')}
           />
           <Input
             label="Fin (opcional)"
             type="datetime-local"
             min={todayMin}
-            value={endDate}
-            onChange={(event) => setEndDate(event.target.value)}
+            error={errors.endDate?.message}
+            {...form.register('endDate')}
           />
         </div>
 
@@ -264,7 +226,7 @@ export function DiscountCampaignsPage() {
 
       <div className="rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] p-5 shadow-xs space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="w-full sm:max-w-xs">
+          <div className="w-full max-w-xs">
             <Input
               label="Filtrar videojuegos"
               value={searchTerm}
@@ -272,7 +234,7 @@ export function DiscountCampaignsPage() {
               placeholder="Buscar por título, publisher o campaña…"
             />
           </div>
-          <div className="flex items-center gap-2 pt-4 sm:pt-0">
+          <div className="flex items-center gap-2">
             <Button type="button" variant="outline" size="sm" onClick={selectAllVisible}>
               Seleccionar visibles ({filteredGames.length})
             </Button>
@@ -312,10 +274,7 @@ export function DiscountCampaignsPage() {
                 {filteredGames.map((game) => {
                   const isSelected = selectedIds.includes(game.id);
                   const activeDiscount = getActiveGameDiscount(game);
-                  const prices = (game.editions ?? [])
-                    .map((e) => Number(e.basePrice))
-                    .filter((p) => Number.isFinite(p));
-                  const minPrice = prices.length > 0 ? Math.min(...prices) : null;
+                  const minPrice = getMinBasePrice(game);
                   const previewPrice =
                     minPrice !== null && Number.isFinite(previewPct) && previewPct > 0
                       ? Number((minPrice * (1 - previewPct / 100)).toFixed(2))

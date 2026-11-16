@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/atoms/Button';
 import { ErrorBanner } from '@/components/atoms/ErrorBanner';
 import { Input } from '@/components/atoms/Input';
 import { Spinner } from '@/components/atoms/Spinner';
+import { Textarea } from '@/components/atoms/Textarea';
 import { errorMessage, featuredTrailersApi } from '@/api';
-import { VALIDATION_PATTERNS } from '@/utils/fields';
+import { featuredTrailerSchema, type FeaturedTrailerFormValues } from '@/utils/schemas';
 import { extractYouTubeId } from '@/utils/youtube';
 
 const SLOTS = [
@@ -17,12 +20,20 @@ const SLOTS = [
 export function FeaturedTrailersPage() {
   const queryClient = useQueryClient();
   const [selectedSlot, setSelectedSlot] = useState<number>(1);
-  const [title, setTitle] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
-  const [youtubeUrl, setYoutubeUrl] = useState('');
-  const [description, setDescription] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [validationError, setValidationError] = useState<string | null>(null);
+
+  const form = useForm<FeaturedTrailerFormValues>({
+    resolver: zodResolver(featuredTrailerSchema),
+    defaultValues: {
+      title: '',
+      imageUrl: '',
+      youtubeUrl: '',
+      description: '',
+    },
+  });
+
+  const { reset } = form;
+  const { errors } = form.formState;
 
   const trailersQuery = useQuery({
     queryKey: ['featured-trailers'],
@@ -42,23 +53,23 @@ export function FeaturedTrailersPage() {
 
   useEffect(() => {
     const current = trailerBySlot.get(selectedSlot);
-    setTitle(current?.title ?? '');
-    setImageUrl(current?.imageUrl ?? '');
-    setYoutubeUrl(current?.youtubeUrl ?? '');
-    setDescription(current?.description ?? '');
-    setValidationError(null);
-  }, [selectedSlot, trailerBySlot]);
+    reset({
+      title: current?.title ?? '',
+      imageUrl: current?.imageUrl ?? '',
+      youtubeUrl: current?.youtubeUrl ?? '',
+      description: current?.description ?? '',
+    });
+  }, [selectedSlot, trailerBySlot, reset]);
 
   const saveMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (values: FeaturedTrailerFormValues) =>
       featuredTrailersApi.upsertSlot(selectedSlot, {
-        title: title.trim(),
-        imageUrl: imageUrl.trim(),
-        youtubeUrl: youtubeUrl.trim(),
-        description: description.trim() || undefined,
+        title: values.title,
+        imageUrl: values.imageUrl,
+        youtubeUrl: values.youtubeUrl,
+        description: values.description || undefined,
       }),
     onSuccess: async () => {
-      setValidationError(null);
       setFeedback(`Tráiler guardado en la posición ${selectedSlot}.`);
       await queryClient.invalidateQueries({ queryKey: ['featured-trailers'] });
     },
@@ -67,62 +78,25 @@ export function FeaturedTrailersPage() {
   const removeMutation = useMutation({
     mutationFn: () => featuredTrailersApi.removeSlot(selectedSlot),
     onSuccess: async () => {
-      setValidationError(null);
       setFeedback(`Espacio ${selectedSlot} vaciado.`);
-      setTitle('');
-      setImageUrl('');
-      setYoutubeUrl('');
-      setDescription('');
+      reset({ title: '', imageUrl: '', youtubeUrl: '', description: '' });
       await queryClient.invalidateQueries({ queryKey: ['featured-trailers'] });
     },
   });
 
-  const handleSave = (event: React.FormEvent) => {
-    event.preventDefault();
+  const handleSave = form.handleSubmit((values) => {
     setFeedback(null);
-    setValidationError(null);
+    saveMutation.mutate(values);
+  });
 
-    const trimmedTitle = title.trim();
-    if (!trimmedTitle) {
-      setValidationError('Ingresa el título del juego o tráiler.');
-      return;
-    }
-    if (
-      trimmedTitle.length < 2 ||
-      trimmedTitle.length > 180 ||
-      !VALIDATION_PATTERNS.ENTITY_NAME.test(trimmedTitle)
-    ) {
-      setValidationError('El título debe tener entre 2 y 180 caracteres válidos.');
-      return;
-    }
-    const trimmedImageUrl = imageUrl.trim();
-    if (!trimmedImageUrl) {
-      setValidationError('Ingresa la URL de la foto.');
-      return;
-    }
-    if (
-      trimmedImageUrl.length > 500 ||
-      !VALIDATION_PATTERNS.URL_OR_PATH.test(trimmedImageUrl)
-    ) {
-      setValidationError(
-        'Ingresa una URL http(s):// válida o ruta /... para la foto (máx. 500 caracteres).',
-      );
-      return;
-    }
-    if (description.trim().length > 600) {
-      setValidationError('La descripción no puede superar los 600 caracteres.');
-      return;
-    }
-    if (!extractYouTubeId(youtubeUrl)) {
-      setValidationError('Ingresa una URL o ID de YouTube válido (ej. https://www.youtube.com/watch?v=...).');
-      return;
-    }
-
-    saveMutation.mutate();
-  };
-
+  const [watchedTitle, watchedImageUrl, watchedYoutubeUrl] = form.watch([
+    'title',
+    'imageUrl',
+    'youtubeUrl',
+  ]);
   const currentSlotConfigured = trailerBySlot.has(selectedSlot);
-  const previewVideoId = extractYouTubeId(youtubeUrl);
+  const previewVideoId = extractYouTubeId(watchedYoutubeUrl ?? '');
+  const trimmedImageUrl = (watchedImageUrl ?? '').trim();
 
   return (
     <div data-testid="admin-featured-trailers-page" className="space-y-6">
@@ -156,7 +130,7 @@ export function FeaturedTrailersPage() {
       {/* Selector de 3 espacios */}
       <div className="space-y-2">
         <p className="text-sm font-extrabold text-[#0F172A]">Seleccione sección de tráiler</p>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-3 gap-4">
           {SLOTS.map(({ slot, label, hint }) => {
             const configured = trailerBySlot.get(slot);
             const isSelected = selectedSlot === slot;
@@ -208,64 +182,57 @@ export function FeaturedTrailersPage() {
         </div>
       </div>
 
-      {/* Formulario de solo 3 campos: Título, Foto, URL de YouTube */}
+      {/* Formulario de Título, Foto, URL de YouTube y Descripción */}
       <form
         onSubmit={handleSave}
         className="rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] p-6 shadow-xs space-y-4"
+        noValidate
       >
         <h2 className="text-base font-black text-[#0F172A]">
           Configurar espacio #{selectedSlot} ({SLOTS.find((s) => s.slot === selectedSlot)?.label})
         </h2>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-3 gap-4">
           <Input
             label="Título"
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
             placeholder="Ej. Elden Ring"
+            error={errors.title?.message}
+            {...form.register('title')}
           />
           <Input
             label="Foto (URL)"
-            value={imageUrl}
-            onChange={(event) => setImageUrl(event.target.value)}
             placeholder="https://..."
+            error={errors.imageUrl?.message}
+            {...form.register('imageUrl')}
           />
           <Input
             label="URL de YouTube"
-            value={youtubeUrl}
-            onChange={(event) => setYoutubeUrl(event.target.value)}
             placeholder="https://www.youtube.com/watch?v=..."
+            error={errors.youtubeUrl?.message}
+            {...form.register('youtubeUrl')}
           />
         </div>
 
-        <div>
-          <label
-            htmlFor="featured-trailer-description"
-            className="mb-1.5 block text-xs font-extrabold uppercase tracking-wider text-[#334155]"
-          >
-            Descripción
-          </label>
-          <textarea
-            id="featured-trailer-description"
-            rows={3}
-            maxLength={600}
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            placeholder="Breve descripción que aparecerá debajo del título..."
-            className="w-full rounded-xl border border-[#CBD5E1] bg-white px-3.5 py-2.5 text-sm text-[#0F172A] placeholder:text-[#94A3B8] focus:border-[#1E1B4B] focus:outline-none focus:ring-2 focus:ring-[#1E1B4B]/15"
-          />
-        </div>
+        <Textarea
+          id="featured-trailer-description"
+          label="Descripción"
+          rows={3}
+          maxLength={600}
+          placeholder="Breve descripción que aparecerá debajo del título..."
+          error={errors.description?.message}
+          {...form.register('description')}
+        />
 
-        {(imageUrl.trim() || previewVideoId) && (
-          <div className="grid grid-cols-1 gap-4 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 sm:grid-cols-2">
-            {imageUrl.trim() && (
+        {(trimmedImageUrl || previewVideoId) && (
+          <div className="grid grid-cols-2 gap-4 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
+            {trimmedImageUrl && (
               <div>
                 <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-[#475569]">
                   Vista previa de foto
                 </p>
                 <img
-                  src={imageUrl.trim()}
-                  alt={title || 'Vista previa'}
+                  src={trimmedImageUrl}
+                  alt={watchedTitle || 'Vista previa'}
                   className="aspect-[16/10] w-full max-w-xs rounded-lg object-cover bg-[#E2E8F0]"
                 />
               </div>
@@ -285,7 +252,6 @@ export function FeaturedTrailersPage() {
           </div>
         )}
 
-        {validationError && <ErrorBanner message={validationError} />}
         {saveMutation.isError && <ErrorBanner message={errorMessage(saveMutation.error)} />}
         {removeMutation.isError && <ErrorBanner message={errorMessage(removeMutation.error)} />}
 

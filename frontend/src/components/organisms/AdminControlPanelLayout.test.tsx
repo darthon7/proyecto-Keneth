@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { AdminControlPanelLayout } from '@/components/organisms/AdminControlPanelLayout';
 import { UserRole } from '@/types';
@@ -63,16 +62,5 @@ describe('AdminControlPanelLayout', () => {
     for (const item of expectedNavItems) {
       expect(screen.getByTestId(item.testId)).toHaveAttribute('href', item.href);
     }
-  });
-
-  it('alterna el menú lateral móvil mediante el botón toggle', async () => {
-    const user = userEvent.setup();
-    renderLayout('/admin');
-
-    const toggleButton = screen.getByTestId('admin-sidebar-toggle');
-    expect(toggleButton).toHaveAttribute('aria-expanded', 'false');
-
-    await user.click(toggleButton);
-    expect(toggleButton).toHaveAttribute('aria-expanded', 'true');
   });
 });

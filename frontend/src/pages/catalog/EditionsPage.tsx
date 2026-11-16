@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { CrudResourcePage } from '@/components/organisms/CrudResourcePage';
 import { Badge } from '@/components/atoms/Badge';
 import { gamesApi, gameEditionsApi, platformsApi } from '@/api';
-import { KeyStatus, type CreateGameEditionPayload, type GameEdition } from '@/types';
+import type { CreateGameEditionPayload, GameEdition } from '@/types';
+import { countAvailableKeys } from '@/utils/domain';
 import { formatCurrency } from '@/utils/format';
 import { VALIDATION_PATTERNS, type FieldConfig } from '@/utils/fields';
 
@@ -97,9 +98,7 @@ export function EditionsPage({ embedded = false }: { embedded?: boolean }) {
         {
           header: 'Stock Digital',
           render: (edition) => {
-            const available = (edition.digitalKeys ?? []).filter(
-              (key) => key.status === KeyStatus.AVAILABLE,
-            ).length;
+            const available = countAvailableKeys(edition);
             return (
               <Badge tone={available > 0 ? 'success' : 'danger'}>
                 {available > 0 ? `${available} disponibles` : 'Agotado (0)'}

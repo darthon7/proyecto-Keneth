@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, type ComponentType } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { Spinner } from '@/components/atoms/Spinner';
 import { Footer } from '@/components/molecules/Footer';
@@ -7,87 +7,53 @@ import { WelcomeCouponPopup } from '@/components/molecules/WelcomeCouponPopup';
 import { AdminControlPanelLayout } from '@/components/organisms/AdminControlPanelLayout';
 import { AdminRouteGuard } from '@/components/organisms/AdminRouteGuard';
 
-const HomePage = lazy(() => import('@/pages/HomePage').then((module) => ({ default: module.HomePage })));
-const GamesPage = lazy(() => import('@/pages/GamesPage').then((module) => ({ default: module.GamesPage })));
-const GameDetailPage = lazy(() =>
-  import('@/pages/GameDetailPage').then((module) => ({ default: module.GameDetailPage })),
-);
-const PromotionsPublicPage = lazy(() =>
-  import('@/pages/PromotionsPublicPage').then((module) => ({
-    default: module.PromotionsPublicPage,
-  })),
-);
-const OrdersPage = lazy(() => import('@/pages/OrdersPage').then((module) => ({ default: module.OrdersPage })));
-const CheckoutPage = lazy(() =>
-  import('@/pages/CheckoutPage').then((module) => ({ default: module.CheckoutPage })),
-);
-const OrderDetailPage = lazy(() =>
-  import('@/pages/OrderDetailPage').then((module) => ({ default: module.OrderDetailPage })),
-);
-const UserProfilePage = lazy(() =>
-  import('@/pages/UserProfilePage').then((module) => ({ default: module.UserProfilePage })),
-);
-const LibraryPage = lazy(() => import('@/pages/LibraryPage').then((module) => ({ default: module.LibraryPage })));
-const WishlistPage = lazy(() =>
-  import('@/pages/WishlistPage').then((module) => ({ default: module.WishlistPage })),
-);
-const NotFoundPage = lazy(() =>
-  import('@/pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })),
-);
+function lazyPage<
+  TModule extends Record<K, ComponentType<TProps>>,
+  K extends keyof TModule,
+  TProps = TModule[K] extends ComponentType<infer P> ? P : never,
+>(loader: () => Promise<TModule>, key: K) {
+  return lazy(() => loader().then((module) => ({ default: module[key] })));
+}
 
-const AdminOverviewPage = lazy(() =>
-  import('@/pages/admin/AdminOverviewPage').then((module) => ({
-    default: module.AdminOverviewPage,
-  })),
-);
-const AdminOrdersPage = lazy(() =>
-  import('@/pages/admin/AdminOrdersPage').then((module) => ({
-    default: module.AdminOrdersPage,
-  })),
-);
+const HomePage = lazyPage(() => import('@/pages/HomePage'), 'HomePage');
+const GamesPage = lazyPage(() => import('@/pages/GamesPage'), 'GamesPage');
+const GameDetailPage = lazyPage(() => import('@/pages/GameDetailPage'), 'GameDetailPage');
+const PromotionsPublicPage = lazyPage(() => import('@/pages/PromotionsPublicPage'), 'PromotionsPublicPage');
+const OrdersPage = lazyPage(() => import('@/pages/OrdersPage'), 'OrdersPage');
+const CheckoutPage = lazyPage(() => import('@/pages/CheckoutPage'), 'CheckoutPage');
+const OrderDetailPage = lazyPage(() => import('@/pages/OrderDetailPage'), 'OrderDetailPage');
+const UserProfilePage = lazyPage(() => import('@/pages/UserProfilePage'), 'UserProfilePage');
+const LibraryPage = lazyPage(() => import('@/pages/LibraryPage'), 'LibraryPage');
+const WishlistPage = lazyPage(() => import('@/pages/WishlistPage'), 'WishlistPage');
+const MyCouponsPage = lazyPage(() => import('@/pages/MyCouponsPage'), 'MyCouponsPage');
+const NotFoundPage = lazyPage(() => import('@/pages/NotFoundPage'), 'NotFoundPage');
 
-const GamesAdminPage = lazy(() =>
-  import('@/pages/catalog/GamesAdminPage').then((module) => ({ default: module.GamesAdminPage })),
-);
-const PublishersPage = lazy(() =>
-  import('@/pages/catalog/PublishersPage').then((module) => ({ default: module.PublishersPage })),
-);
-const DevelopersPage = lazy(() =>
-  import('@/pages/catalog/DevelopersPage').then((module) => ({ default: module.DevelopersPage })),
-);
-const GenresPage = lazy(() =>
-  import('@/pages/catalog/GenresPage').then((module) => ({ default: module.GenresPage })),
-);
-const PlatformsPage = lazy(() =>
-  import('@/pages/catalog/PlatformsPage').then((module) => ({ default: module.PlatformsPage })),
-);
-const EditionsPage = lazy(() =>
-  import('@/pages/catalog/EditionsPage').then((module) => ({ default: module.EditionsPage })),
-);
-const DigitalKeysPage = lazy(() =>
-  import('@/pages/catalog/DigitalKeysPage').then((module) => ({ default: module.DigitalKeysPage })),
-);
-const SystemRequirementsPage = lazy(() =>
-  import('@/pages/catalog/SystemRequirementsPage').then((module) => ({
-    default: module.SystemRequirementsPage,
-  })),
-);
-const PromotionsPage = lazy(() =>
-  import('@/pages/catalog/PromotionsPage').then((module) => ({ default: module.PromotionsPage })),
-);
-const DiscountCampaignsPage = lazy(() =>
-  import('@/pages/admin/DiscountCampaignsPage').then((module) => ({
-    default: module.DiscountCampaignsPage,
-  })),
-);
-const FeaturedTrailersPage = lazy(() =>
-  import('@/pages/admin/FeaturedTrailersPage').then((module) => ({
-    default: module.FeaturedTrailersPage,
-  })),
-);
-const MyCouponsPage = lazy(() =>
-  import('@/pages/MyCouponsPage').then((module) => ({ default: module.MyCouponsPage })),
-);
+const AdminOverviewPage = lazyPage(() => import('@/pages/admin/AdminOverviewPage'), 'AdminOverviewPage');
+const AdminOrdersPage = lazyPage(() => import('@/pages/admin/AdminOrdersPage'), 'AdminOrdersPage');
+const DiscountCampaignsPage = lazyPage(() => import('@/pages/admin/DiscountCampaignsPage'), 'DiscountCampaignsPage');
+const FeaturedTrailersPage = lazyPage(() => import('@/pages/admin/FeaturedTrailersPage'), 'FeaturedTrailersPage');
+
+const GamesAdminPage = lazyPage(() => import('@/pages/catalog/GamesAdminPage'), 'GamesAdminPage');
+const PublishersPage = lazyPage(() => import('@/pages/catalog/PublishersPage'), 'PublishersPage');
+const DevelopersPage = lazyPage(() => import('@/pages/catalog/DevelopersPage'), 'DevelopersPage');
+const GenresPage = lazyPage(() => import('@/pages/catalog/GenresPage'), 'GenresPage');
+const PlatformsPage = lazyPage(() => import('@/pages/catalog/PlatformsPage'), 'PlatformsPage');
+const EditionsPage = lazyPage(() => import('@/pages/catalog/EditionsPage'), 'EditionsPage');
+const DigitalKeysPage = lazyPage(() => import('@/pages/catalog/DigitalKeysPage'), 'DigitalKeysPage');
+const SystemRequirementsPage = lazyPage(() => import('@/pages/catalog/SystemRequirementsPage'), 'SystemRequirementsPage');
+const PromotionsPage = lazyPage(() => import('@/pages/catalog/PromotionsPage'), 'PromotionsPage');
+
+const LEGACY_CATALOG_SLUGS = [
+  'games',
+  'publishers',
+  'developers',
+  'genres',
+  'platforms',
+  'editions',
+  'digital-keys',
+  'system-requirements',
+  'promotions',
+] as const;
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -147,78 +113,17 @@ export function App() {
             </Route>
 
             {/* Rutas legacy protegidas con redirección al Panel de Control */}
-            <Route
-              path="/catalog/games"
-              element={
-                <AdminRouteGuard>
-                  <Navigate to="/admin/games" replace />
-                </AdminRouteGuard>
-              }
-            />
-            <Route
-              path="/catalog/publishers"
-              element={
-                <AdminRouteGuard>
-                  <Navigate to="/admin/publishers" replace />
-                </AdminRouteGuard>
-              }
-            />
-            <Route
-              path="/catalog/developers"
-              element={
-                <AdminRouteGuard>
-                  <Navigate to="/admin/developers" replace />
-                </AdminRouteGuard>
-              }
-            />
-            <Route
-              path="/catalog/genres"
-              element={
-                <AdminRouteGuard>
-                  <Navigate to="/admin/genres" replace />
-                </AdminRouteGuard>
-              }
-            />
-            <Route
-              path="/catalog/platforms"
-              element={
-                <AdminRouteGuard>
-                  <Navigate to="/admin/platforms" replace />
-                </AdminRouteGuard>
-              }
-            />
-            <Route
-              path="/catalog/editions"
-              element={
-                <AdminRouteGuard>
-                  <Navigate to="/admin/editions" replace />
-                </AdminRouteGuard>
-              }
-            />
-            <Route
-              path="/catalog/digital-keys"
-              element={
-                <AdminRouteGuard>
-                  <Navigate to="/admin/digital-keys" replace />
-                </AdminRouteGuard>
-              }
-            />
-            <Route
-              path="/catalog/system-requirements"
-              element={
-                <AdminRouteGuard>
-                  <Navigate to="/admin/system-requirements" replace />
-                </AdminRouteGuard>
-              }
-            />
-            <Route
-              path="/catalog/promotions"
-              element={
-                <AdminRouteGuard>
-                  <Navigate to="/admin/promotions" replace />
-                </AdminRouteGuard>
-              }
-            />
+            {LEGACY_CATALOG_SLUGS.map((slug) => (
+              <Route
+                key={slug}
+                path={`/catalog/${slug}`}
+                element={
+                  <AdminRouteGuard>
+                    <Navigate to={`/admin/${slug}`} replace />
+                  </AdminRouteGuard>
+                }
+              />
+            ))}
 
             <Route path="*" element={<NotFoundPage />} />
           </Routes>

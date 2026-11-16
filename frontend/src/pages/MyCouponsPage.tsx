@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { AccountHeroHeader } from '@/components/molecules/AccountHeroHeader';
 import { Badge } from '@/components/atoms/Badge';
 import { Button } from '@/components/atoms/Button';
 import { EmptyState } from '@/components/atoms/EmptyState';
@@ -9,6 +8,7 @@ import { ErrorBanner } from '@/components/atoms/ErrorBanner';
 import { Spinner } from '@/components/atoms/Spinner';
 import { errorMessage, promotionsExtraApi } from '@/api';
 import { useSession } from '@/context/SessionContext';
+import { useCopyFeedback } from '@/hooks/useCopyFeedback';
 import { getCouponStatus } from '@/utils/discount';
 import { formatDate } from '@/utils/format';
 
@@ -16,39 +16,14 @@ type CouponFilter = 'all' | 'available' | 'claimed' | 'expired';
 
 export function MyCouponsPage() {
   const { currentUser } = useSession();
-  const [copiedId, setCopiedId] = useState<number | null>(null);
+  const { copiedId, copy: copyCoupon } = useCopyFeedback<number>();
   const [filter, setFilter] = useState<CouponFilter>('all');
-  const copyTimerRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (copyTimerRef.current !== null) {
-        window.clearTimeout(copyTimerRef.current);
-      }
-    };
-  }, []);
 
   const couponsQuery = useQuery({
     queryKey: ['promotions', 'my', currentUser?.id],
     queryFn: () => promotionsExtraApi.myCoupons(),
     enabled: Boolean(currentUser),
   });
-
-  const handleCopy = async (id: number, code: string) => {
-    try {
-      await navigator.clipboard?.writeText(code);
-      setCopiedId(id);
-      if (copyTimerRef.current !== null) {
-        window.clearTimeout(copyTimerRef.current);
-      }
-      copyTimerRef.current = window.setTimeout(() => {
-        setCopiedId((current) => (current === id ? null : current));
-        copyTimerRef.current = null;
-      }, 2000);
-    } catch {
-      // Clipboard API unavailable
-    }
-  };
 
   const coupons = useMemo(() => couponsQuery.data ?? [], [couponsQuery.data]);
 
@@ -98,24 +73,8 @@ export function MyCouponsPage() {
   return (
     <section
       data-testid="my-coupons-page"
-      className="page-container min-h-[calc(100vh-14rem)] py-8 sm:py-12 space-y-6"
+      className="page-container min-h-[calc(100vh-14rem)] py-12 space-y-6"
     >
-      <AccountHeroHeader
-        eyebrow="Beneficios de tu Cuenta"
-        title="Mis Cupones"
-        description="Consulta tus códigos disponibles, las promociones que están por vencer y los cupones ya reclamados (límite: 1 uso por usuario)."
-        stats={[
-          { label: 'Disponibles', value: counts.available, tone: 'emerald' },
-          { label: 'Ya reclamados', value: counts.claimed, tone: 'gold' },
-          { label: 'Expirados', value: counts.expired, tone: 'pink' },
-        ]}
-        actions={
-          <Link to="/orders">
-            <Button variant="brand" size="sm">Ir al carrito</Button>
-          </Link>
-        }
-      />
-
       {coupons.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] p-2 shadow-xs">
           {(
@@ -176,7 +135,7 @@ export function MyCouponsPage() {
         )}
 
         {filteredCoupons.length > 0 && (
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-3 gap-5">
             {filteredCoupons.map((coupon) => {
               const statusInfo = getCouponStatus(coupon);
               const isClaimed = Boolean(coupon.isClaimed);
@@ -272,7 +231,7 @@ export function MyCouponsPage() {
                         {!isUnavailable && (
                           <button
                             type="button"
-                            onClick={() => void handleCopy(coupon.id, coupon.couponCode!)}
+                            onClick={() => void copyCoupon(coupon.id, coupon.couponCode!)}
                             className="rounded-md bg-[#1E1B4B] hover:bg-[#FF2A5F] px-2.5 py-1 text-[11px] font-bold text-white transition-colors cursor-pointer"
                           >
                             {copiedId === coupon.id ? '¡Copiado!' : 'Copiar'}

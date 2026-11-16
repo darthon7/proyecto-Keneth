@@ -52,8 +52,8 @@ export function GameFilters({
       : BUDGET_OPTIONS;
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 xl:flex xl:flex-1 xl:items-center gap-2">
-      <div className="min-w-0 xl:flex-1">
+    <div className="flex flex-1 items-center gap-2">
+      <div className="min-w-0 flex-1">
         <Select
           aria-label="Género"
           name="genreId"
@@ -64,7 +64,7 @@ export function GameFilters({
           options={genres.map((genre) => ({ value: genre.id, label: genre.name }))}
         />
       </div>
-      <div className="min-w-0 xl:flex-1">
+      <div className="min-w-0 flex-1">
         <Select
           aria-label="Plataforma"
           name="platformId"
@@ -75,7 +75,7 @@ export function GameFilters({
           options={platforms.map((platform) => ({ value: platform.id, label: platform.name }))}
         />
       </div>
-      <div className="min-w-0 xl:flex-1">
+      <div className="min-w-0 flex-1">
         <Select
           aria-label="Presupuesto"
           name="maxPrice"
@@ -86,7 +86,7 @@ export function GameFilters({
           options={budgetOptions}
         />
       </div>
-      <div className="min-w-0 xl:flex-1">
+      <div className="min-w-0 flex-1">
         <Select
           aria-label="Desarrolladora"
           name="developerId"
@@ -99,7 +99,7 @@ export function GameFilters({
       </div>
 
       {hasActiveFilters && (
-        <div className="col-span-2 sm:col-span-4 xl:col-span-1 flex justify-end xl:justify-start shrink-0">
+        <div className="flex justify-start shrink-0">
           <button
             type="button"
             onClick={onReset}

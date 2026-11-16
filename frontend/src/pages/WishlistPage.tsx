@@ -11,6 +11,7 @@ import { errorMessage, wishlistsApi, wishlistsExtraApi } from '@/api';
 import { useCart } from '@/context/CartContext';
 import { useSession } from '@/context/SessionContext';
 import { getActiveGameDiscount } from '@/utils/discount';
+import { getLowestEdition } from '@/utils/domain';
 import { formatCurrency, formatDate } from '@/utils/format';
 
 export function WishlistPage() {
@@ -72,7 +73,7 @@ export function WishlistPage() {
   return (
     <section
       data-testid="wishlist-page"
-      className="page-container min-h-[calc(100vh-14rem)] py-8 sm:py-12 space-y-6"
+      className="page-container min-h-[calc(100vh-14rem)] py-12 space-y-6"
     >
       <AccountHeroHeader
         eyebrow="Seguimiento de Precios"
@@ -110,14 +111,10 @@ export function WishlistPage() {
           />
         )}
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-3 gap-4">
           {items.map((wish) => {
             const game = wish.game;
-            const editions = game?.editions ?? [];
-            const sortedEditions = [...editions].sort(
-              (a, b) => Number(a.basePrice) - Number(b.basePrice),
-            );
-            const lowestEdition = sortedEditions[0] ?? null;
+            const lowestEdition = getLowestEdition(game);
             const minPrice = lowestEdition ? Number(lowestEdition.basePrice) : null;
             const discount = game
               ? getActiveGameDiscount(game)

@@ -300,7 +300,7 @@ export function LoginModal({ isOpen, onClose, initialMode = 'login' }: LoginModa
           </div>
 
           {isRegister && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 rounded-xl bg-[#F8FAFC] p-3.5 border border-[#E2E8F0]">
+            <div className="grid grid-cols-2 gap-3.5 rounded-xl bg-[#F8FAFC] p-3.5 border border-[#E2E8F0]">
               <Input
                 data-testid="login-username-input"
                 type="text"

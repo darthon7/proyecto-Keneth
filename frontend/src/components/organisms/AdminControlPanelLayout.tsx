@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { BrandLogo } from '@/components/atoms/BrandLogo';
 
@@ -48,49 +47,16 @@ const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
 ];
 
 export function AdminControlPanelLayout() {
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-
   return (
     <div
       data-testid="admin-control-panel"
       className="min-h-screen bg-[#F4F4F6] text-[#0F172A]"
     >
-      {/* Main Split Console Container */}
-      <div className="w-full px-4 sm:px-6 lg:px-0 space-y-4 lg:space-y-0">
-        <div className="pt-4 flex items-center justify-between gap-3 lg:hidden">
-          <button
-            type="button"
-            data-testid="admin-sidebar-toggle"
-            aria-label="Alternar menú operativo"
-            aria-expanded={isMobileSidebarOpen}
-            onClick={() => setIsMobileSidebarOpen((open) => !open)}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-[#FFFFFF] border border-[#E2E8F0] text-xs font-bold text-[#1E1B4B] hover:border-[#FF2A5F] transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              {isMobileSidebarOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              )}
-            </svg>
-            <span>Menú del panel</span>
-          </button>
-
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#1E1B4B] text-xs font-bold text-white hover:bg-[#312E81] transition-colors"
-          >
-            <span>← Volver a la tienda</span>
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-[312px_1fr] gap-6 items-start">
-          {/* Sidebar Navigation */}
+      <div className="w-full">
+        <div className="grid grid-cols-[312px_1fr] gap-6 items-start">
           <aside
             aria-label="Navegación del panel de control"
-            className={`${
-              isMobileSidebarOpen ? 'block' : 'hidden'
-            } lg:block lg:sticky lg:top-0 lg:min-h-screen rounded-2xl lg:rounded-none bg-[#1E1B4B] text-white border border-[#312E81] lg:border-y-0 lg:border-l-0 p-5 lg:p-6 shadow-[0_12px_28px_rgba(30,27,75,0.16)]`}
+            className="sticky top-0 min-h-screen bg-[#1E1B4B] text-white border-r border-[#312E81] p-6 shadow-[0_12px_28px_rgba(30,27,75,0.16)]"
           >
             <div className="mb-5 pb-4 border-b border-white/15 space-y-3">
               <Link
@@ -125,7 +91,6 @@ export function AdminControlPanelLayout() {
                         to={item.to}
                         end={item.end}
                         data-testid={item.testId}
-                        onClick={() => setIsMobileSidebarOpen(false)}
                         className={({ isActive }) =>
                           `px-3.5 py-2.5 rounded-xl text-sm font-bold transition-colors ${
                             isActive
@@ -143,9 +108,8 @@ export function AdminControlPanelLayout() {
             </nav>
           </aside>
 
-          {/* Operational Module Canvas */}
-          <div className="min-w-0 pb-6 lg:py-6 lg:pr-8">
-            <section className="min-w-0 rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-5 sm:p-8 shadow-xs">
+          <div className="min-w-0 py-6 pr-8">
+            <section className="min-w-0 rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-8 shadow-xs">
               <Outlet />
             </section>
           </div>

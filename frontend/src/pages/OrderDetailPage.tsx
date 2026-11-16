@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AccountHeroHeader } from '@/components/molecules/AccountHeroHeader';
@@ -10,18 +9,10 @@ import { Select } from '@/components/atoms/Select';
 import { Spinner } from '@/components/atoms/Spinner';
 import { errorMessage, ordersApi } from '@/api';
 import { useSession } from '@/context/SessionContext';
+import { useCopyFeedback } from '@/hooks/useCopyFeedback';
+import { PAYMENT_STATUS_META } from '@/utils/domain';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { PaymentStatus } from '@/types';
-
-const PAYMENT_STATUS_META: Record<
-  PaymentStatus,
-  { label: string; tone: 'success' | 'warning' | 'danger' | 'neutral' }
-> = {
-  [PaymentStatus.COMPLETED]: { label: 'Completada', tone: 'success' },
-  [PaymentStatus.PENDING]: { label: 'Pendiente', tone: 'warning' },
-  [PaymentStatus.FAILED]: { label: 'Fallida', tone: 'danger' },
-  [PaymentStatus.REFUNDED]: { label: 'Reembolsada', tone: 'neutral' },
-};
 
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -30,7 +21,7 @@ export function OrderDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { currentUser, isAdmin, isLoading: sessionLoading } = useSession();
-  const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
+  const { copiedId: copiedKeyId, copy: copyKey } = useCopyFeedback<string>();
 
   const orderQuery = useQuery({
     queryKey: ['order', orderId],
@@ -54,18 +45,6 @@ export function OrderDetailPage() {
       navigate('/orders');
     },
   });
-
-  const handleCopyKey = async (keyId: string, code: string) => {
-    try {
-      await navigator.clipboard?.writeText(code);
-      setCopiedKeyId(keyId);
-      setTimeout(() => {
-        setCopiedKeyId((current) => (current === keyId ? null : current));
-      }, 2000);
-    } catch {
-      // Clipboard unavailable
-    }
-  };
 
   if (sessionLoading) return <Spinner label="Verificando sesión…" />;
 
@@ -112,7 +91,7 @@ export function OrderDetailPage() {
   return (
     <section
       data-testid="order-detail-page"
-      className="page-container min-h-[calc(100vh-14rem)] py-8 sm:py-12 space-y-6"
+      className="page-container min-h-[calc(100vh-14rem)] py-12 space-y-6"
     >
       <AccountHeroHeader
         backLink={{ to: '/orders?tab=history', label: 'Volver a órdenes' }}
@@ -126,14 +105,14 @@ export function OrderDetailPage() {
         ]}
       />
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
+      <div className="grid grid-cols-[1fr_340px] gap-8">
         <div className="flex flex-col gap-3.5">
           {(order.items ?? []).map((item) => {
             const game = item.gameEdition?.game;
             return (
               <article
                 key={item.id}
-                className="rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-4 sm:p-5 shadow-xs space-y-3"
+                className="rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-5 shadow-xs space-y-3"
               >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="flex items-start gap-3.5 min-w-[220px] flex-1">
@@ -185,7 +164,7 @@ export function OrderDetailPage() {
                     <button
                       type="button"
                       onClick={() =>
-                        void handleCopyKey(item.digitalKey!.id, item.digitalKey!.code)
+                        void copyKey(item.digitalKey!.id, item.digitalKey!.code)
                       }
                       className="rounded-lg bg-[#FF2A5F] hover:bg-[#E01E4F] px-3 py-1.5 text-[11px] font-bold text-white transition-colors cursor-pointer"
                     >
@@ -198,7 +177,7 @@ export function OrderDetailPage() {
           })}
         </div>
 
-        <aside className="lg:self-start">
+        <aside className="self-start">
           <div className="relative overflow-hidden rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-6 shadow-sm space-y-4">
             <div
               aria-hidden="true"
