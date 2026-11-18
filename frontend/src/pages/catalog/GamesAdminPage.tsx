@@ -9,6 +9,7 @@ import { Modal } from '@/components/atoms/Modal';
 import { Spinner } from '@/components/atoms/Spinner';
 import { GameFilters, type GameFilterValues, EMPTY_FILTERS } from '@/components/molecules/GameFilters';
 import { Pagination } from '@/components/molecules/Pagination';
+import { EditionsPage } from '@/pages/catalog/EditionsPage';
 import { GameFormModal } from '@/components/organisms/GameFormModal';
 import { GameStockModal } from '@/components/organisms/GameStockModal';
 import {
@@ -539,6 +540,11 @@ export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
           onPageChange={setPage}
           className="mt-8"
         />
+      </div>
+
+      {/* Sección integrada: Ediciones Digitales y DLCs (CRUD completo) */}
+      <div className="mt-10 pt-8 border-t border-[#E2E8F0]">
+        <EditionsPage embedded />
       </div>
 
       {/* Modales de funcionalidad administrativa */}

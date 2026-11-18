@@ -38,7 +38,6 @@ const PublishersPage = lazyPage(() => import('@/pages/catalog/PublishersPage'), 
 const DevelopersPage = lazyPage(() => import('@/pages/catalog/DevelopersPage'), 'DevelopersPage');
 const GenresPage = lazyPage(() => import('@/pages/catalog/GenresPage'), 'GenresPage');
 const PlatformsPage = lazyPage(() => import('@/pages/catalog/PlatformsPage'), 'PlatformsPage');
-const EditionsPage = lazyPage(() => import('@/pages/catalog/EditionsPage'), 'EditionsPage');
 const DigitalKeysPage = lazyPage(() => import('@/pages/catalog/DigitalKeysPage'), 'DigitalKeysPage');
 const SystemRequirementsPage = lazyPage(() => import('@/pages/catalog/SystemRequirementsPage'), 'SystemRequirementsPage');
 const PromotionsPage = lazyPage(() => import('@/pages/catalog/PromotionsPage'), 'PromotionsPage');
@@ -103,7 +102,8 @@ export function App() {
               <Route path="publishers" element={<PublishersPage embedded />} />
               <Route path="genres" element={<GenresPage embedded />} />
               <Route path="platforms" element={<PlatformsPage embedded />} />
-              <Route path="editions" element={<EditionsPage embedded />} />
+              {/* Ediciones y DLCs se gestionan dentro de la vista de Videojuegos */}
+              <Route path="editions" element={<Navigate to="/admin/games" replace />} />
               <Route path="digital-keys" element={<DigitalKeysPage embedded />} />
               <Route path="system-requirements" element={<SystemRequirementsPage embedded />} />
               <Route path="promotions" element={<PromotionsPage embedded />} />

@@ -26,7 +26,6 @@ const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { to: '/admin/publishers', label: 'Publishers', testId: 'admin-nav-publishers' },
       { to: '/admin/genres', label: 'Géneros', testId: 'admin-nav-genres' },
       { to: '/admin/platforms', label: 'Plataformas', testId: 'admin-nav-platforms' },
-      { to: '/admin/editions', label: 'Ediciones Digitales y DLCs', testId: 'admin-nav-editions' },
       { to: '/admin/digital-keys', label: 'Claves Digitales', testId: 'admin-nav-digital-keys' },
       {
         to: '/admin/system-requirements',
@@ -56,7 +55,7 @@ export function AdminControlPanelLayout() {
         <div className="grid grid-cols-[312px_1fr] gap-6 items-start">
           <aside
             aria-label="Navegación del panel de control"
-            className="sticky top-0 min-h-screen bg-[#1E1B4B] text-white border-r border-[#312E81] p-6 shadow-[0_12px_28px_rgba(30,27,75,0.16)]"
+            className="admin-scroll sticky top-0 h-screen overflow-y-auto bg-[#1E1B4B] text-white border-r border-[#312E81] p-6 shadow-[0_12px_28px_rgba(30,27,75,0.16)]"
           >
             <div className="mb-5 pb-4 border-b border-white/15 space-y-3">
               <Link
