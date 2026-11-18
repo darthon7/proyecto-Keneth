@@ -9,6 +9,7 @@ import { Modal } from '@/components/atoms/Modal';
 import { Spinner } from '@/components/atoms/Spinner';
 import { GameFilters, type GameFilterValues, EMPTY_FILTERS } from '@/components/molecules/GameFilters';
 import { Pagination } from '@/components/molecules/Pagination';
+import { EditionsPage } from '@/pages/catalog/EditionsPage';
 import { GameFormModal } from '@/components/organisms/GameFormModal';
 import { GameStockModal } from '@/components/organisms/GameStockModal';
 import {
@@ -23,7 +24,8 @@ import {
 import type { Game } from '@/types';
 import { getActiveGameDiscount } from '@/utils/discount';
 import { countAvailableKeys, getMinBasePrice, isNintendoTitle } from '@/utils/domain';
-import { formatCurrency, formatDate } from '@/utils/format';
+import { formatDate } from '@/utils/format';
+
 
 const PAGE_SIZE = 12;
 
@@ -296,9 +298,7 @@ export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
                 (sum, edition) => sum + countAvailableKeys(edition),
                 0,
               );
-              const price = getMinBasePrice(game);
               const discount = getActiveGameDiscount(game);
-              const discountedPrice = price !== null ? discount.computePrice(price) : null;
               const isNintendo = isNintendoTitle(game);
 
               return (
@@ -370,31 +370,9 @@ export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
                     </div>
                   </div>
 
-                  {/* Zona inferior: Precio a la izquierda, botón Editar a la derecha */}
+                  {/* Zona inferior: Botón Editar alineado a la derecha */}
                   <div className="mt-2 pt-2 border-t border-[#E2E8F0] space-y-1.5">
-                    <div className="flex items-center justify-between gap-1.5">
-                      <div>
-                        {price !== null && discountedPrice !== null ? (
-                          discount.hasDiscount ? (
-                            <div className="flex items-baseline gap-1">
-                              <span className="text-[10px] font-semibold text-[#94A3B8] line-through tabular-nums">
-                                {formatCurrency(price)}
-                              </span>
-                              <span className="text-xs sm:text-sm font-black text-[#059669] tabular-nums">
-                                {formatCurrency(discountedPrice)}
-                              </span>
-                            </div>
-                          ) : (
-                            <p className="text-xs sm:text-sm font-black text-[#0F172A] tabular-nums">
-                              {formatCurrency(price)}
-                            </p>
-                          )
-                        ) : (
-                          <span className="text-[10px] text-[#94A3B8] font-semibold">Consultar</span>
-                        )}
-                      </div>
-
-                      {/* Botón Editar que permite abrir el modal con los datos del videojuego o placeholder */}
+                    <div className="flex items-center justify-center">
                       <Button
                         variant={isNintendo ? 'nintendo' : 'brand'}
                         size="sm"
@@ -539,6 +517,11 @@ export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
           onPageChange={setPage}
           className="mt-8"
         />
+      </div>
+
+      {/* Sección integrada: Ediciones Digitales y DLCs (CRUD completo) */}
+      <div className="mt-10 pt-8 border-t border-[#E2E8F0]">
+        <EditionsPage embedded />
       </div>
 
       {/* Modales de funcionalidad administrativa */}

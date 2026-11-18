@@ -52,7 +52,6 @@ describe('AdminControlPanelLayout', () => {
       { testId: 'admin-nav-publishers', href: '/admin/publishers' },
       { testId: 'admin-nav-genres', href: '/admin/genres' },
       { testId: 'admin-nav-platforms', href: '/admin/platforms' },
-      { testId: 'admin-nav-editions', href: '/admin/editions' },
       { testId: 'admin-nav-digital-keys', href: '/admin/digital-keys' },
       { testId: 'admin-nav-system-requirements', href: '/admin/system-requirements' },
       { testId: 'admin-nav-promotions', href: '/admin/promotions' },
