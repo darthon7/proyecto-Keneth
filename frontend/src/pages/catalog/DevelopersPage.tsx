@@ -76,22 +76,22 @@ export function DevelopersPage({ embedded = false }: { embedded?: boolean }) {
       })}
       getId={(developer) => developer.id}
       defaultViewMode="cards"
-      cardGridClassName="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
+      cardGridClassName="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5"
       renderCard={(developer, { openEdit, openDelete }) => (
         <article
           key={developer.id}
-          className="flex flex-col justify-between gap-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs p-5 transition-shadow hover:shadow-md"
+          className="flex flex-col justify-between gap-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs p-4 transition-shadow hover:shadow-md"
         >
           <div>
             {developer.coverImagenUrl && (
               <img
                 src={developer.coverImagenUrl}
                 alt={`Portada de ${developer.name}`}
-                className="mb-3 h-36 w-full rounded-xl object-cover border border-[#E2E8F0]"
+                className="mb-3 h-32 w-full rounded-xl object-cover border border-[#E2E8F0]"
                 loading="lazy"
               />
             )}
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start justify-between gap-2">
               <h3 className="text-body-lg font-bold text-[#0F172A] leading-tight">
                 {developer.name}
               </h3>

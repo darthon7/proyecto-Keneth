@@ -63,7 +63,7 @@ export function EditionsPage({ embedded = false }: { embedded?: boolean }) {
     <CrudResourcePage<GameEdition, CreateGameEditionPayload>
       embedded={embedded}
       title="Ediciones Digitales y DLCs"
-      description="Configura ediciones y DLCs digitales por plataforma y supervisa su stock de claves disponibles."
+      description="Cada edición conecta un videojuego con una plataforma de la tienda (ej. Elden Ring en Steam). Crea aquí las versiones estándar, Deluxe o DLCs, define su precio y consulta cuántas claves digitales quedan por vender."
       queryKey={['game-editions']}
       fetchList={() => gameEditionsApi.list()}
       createItem={(payload) => gameEditionsApi.create(payload)}
@@ -71,37 +71,37 @@ export function EditionsPage({ embedded = false }: { embedded?: boolean }) {
       deleteItem={(id) => gameEditionsApi.remove(id)}
       fields={fields}
       columns={[
-        { header: 'Edición', render: (edition) => edition.editionName },
+        { header: 'Nombre de la edición', render: (edition) => edition.editionName },
         {
-          header: 'Videojuego',
+          header: 'Videojuego al que pertenece',
           className: 'text-fog',
           render: (edition) => edition.game?.title ?? '—',
         },
         {
-          header: 'Plataforma',
+          header: 'Plataforma donde se vende',
           className: 'text-fog',
           render: (edition) => edition.platform?.name ?? '—',
         },
         {
-          header: 'Tipo',
+          header: 'Tipo de contenido',
           render: (edition) => (
             <Badge tone={edition.isDlc ? 'warning' : 'blue'}>
-              {edition.isDlc ? 'DLC Digital' : 'Juego Digital'}
+              {edition.isDlc ? 'DLC (contenido extra)' : 'Juego completo'}
             </Badge>
           ),
         },
         {
-          header: 'Precio',
+          header: 'Precio base',
           className: 'text-fog',
           render: (edition) => formatCurrency(edition.basePrice),
         },
         {
-          header: 'Stock Digital',
+          header: 'Stock de claves digitales',
           render: (edition) => {
             const available = countAvailableKeys(edition);
             return (
               <Badge tone={available > 0 ? 'success' : 'danger'}>
-                {available > 0 ? `${available} disponibles` : 'Agotado (0)'}
+                {available > 0 ? `${available} claves por vender` : 'Agotado (0 claves)'}
               </Badge>
             );
           },

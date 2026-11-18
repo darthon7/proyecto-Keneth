@@ -52,7 +52,7 @@ export function AdminControlPanelLayout() {
       className="min-h-screen bg-[#F4F4F6] text-[#0F172A]"
     >
       <div className="w-full">
-        <div className="grid grid-cols-[312px_1fr] gap-6 items-start">
+        <div className="grid grid-cols-[312px_1fr] items-start">
           <aside
             aria-label="Navegación del panel de control"
             className="admin-scroll sticky top-0 h-screen overflow-y-auto bg-[#1E1B4B] text-white border-r border-[#312E81] p-6 shadow-[0_12px_28px_rgba(30,27,75,0.16)]"
@@ -107,7 +107,7 @@ export function AdminControlPanelLayout() {
             </nav>
           </aside>
 
-          <div className="min-w-0 py-6 pr-8">
+          <div className="min-w-0 py-6 pl-6 pr-8">
             <section className="min-w-0 rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] p-8 shadow-xs">
               <Outlet />
             </section>
