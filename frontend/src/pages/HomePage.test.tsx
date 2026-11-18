@@ -41,7 +41,7 @@ const mockGames: Game[] = [
     coverImageUrl: 'https://example.com/cyber.jpg',
     createdAt: '2023-11-10T00:00:00.000Z',
     publisher: { id: 1, name: 'NightCity Games', websiteUrl: null, supportEmail: null, country: 'PL' },
-    developer: { id: 1, name: 'RedStudio', country: 'PL', foundedYear: 2002 },
+    developer: { id: 1, name: 'RedStudio', country: 'PL', foundedYear: 2002, coverImagenUrl: null },
     genres: [{ id: 1, name: 'RPG', slug: 'rpg', description: 'Juegos de rol' }],
     editions: [
       {

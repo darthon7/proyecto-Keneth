@@ -21,6 +21,9 @@ export class Developer {
   @Column({ type: 'int', nullable: true })
   foundedYear: number;
 
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  coverImagenUrl: string;
+
   @OneToMany(() => Game, (game) => game.developer)
   games: Relation<Game[]>;
 }

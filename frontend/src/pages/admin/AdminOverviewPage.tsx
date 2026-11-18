@@ -4,7 +4,6 @@ import { ErrorBanner } from '@/components/atoms/ErrorBanner';
 import { Badge } from '@/components/atoms/Badge';
 import { adminApi, errorMessage, gameEditionsApi } from '@/api';
 import { countAvailableKeys } from '@/utils/domain';
-import { formatCurrency } from '@/utils/format';
 
 export function AdminOverviewPage() {
   const summaryQuery = useQuery({
@@ -194,9 +193,21 @@ export function AdminOverviewPage() {
                     <Badge tone={isOut ? 'danger' : isLow ? 'warning' : 'success'}>
                       {isOut ? 'Sin claves (0)' : `${available} disponibles`}
                     </Badge>
-                    <span className="text-[11px] font-mono text-[#64748B]">
-                      {formatCurrency(edition.basePrice)}
-                    </span>
+                    {edition.game?.coverImageUrl ? (
+                      <img
+                        src={edition.game.coverImageUrl}
+                        alt={edition.game.title}
+                        loading="lazy"
+                        className="w-9 h-9 rounded-lg object-cover border border-[#E2E8F0] shrink-0 shadow-2xs"
+                      />
+                    ) : (
+                      <div
+                        className="w-9 h-9 rounded-lg bg-[#F4F4F6] border border-[#E2E8F0] flex items-center justify-center text-xs text-[#94A3B8] shrink-0"
+                        aria-hidden="true"
+                      >
+                        🎮
+                      </div>
+                    )}
                   </div>
                   <div>
                     <p className="text-sm font-extrabold text-[#0F172A] line-clamp-1">
