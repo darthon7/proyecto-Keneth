@@ -65,6 +65,54 @@ export function DevelopersPage({ embedded = false }: { embedded?: boolean }) {
         foundedYear: developer.foundedYear ?? '',
       })}
       getId={(developer) => developer.id}
+      defaultViewMode="cards"
+      renderCard={(developer, { openEdit, openDelete }) => (
+        <article
+          key={developer.id}
+          className="flex flex-col justify-between gap-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs p-5 transition-shadow hover:shadow-md"
+        >
+          <div>
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="text-body-lg font-bold text-[#0F172A] leading-tight">
+                {developer.name}
+              </h3>
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#F1F5F9] px-2.5 py-1 text-caption font-semibold text-[#475569] whitespace-nowrap">
+                🎮 {developer.games?.length ?? 0}
+              </span>
+            </div>
+            <dl className="mt-3 space-y-1.5 text-body-sm">
+              <div className="flex items-center justify-between gap-2">
+                <dt className="text-[#64748B]">País</dt>
+                <dd className="font-semibold text-[#0F172A]">{developer.country ?? '—'}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <dt className="text-[#64748B]">Fundación</dt>
+                <dd className="font-semibold text-[#0F172A]">
+                  {developer.foundedYear ? String(developer.foundedYear) : '—'}
+                </dd>
+              </div>
+            </dl>
+          </div>
+          <div className="flex items-center justify-end gap-3 border-t border-[#E2E8F0] pt-3">
+            <button
+              type="button"
+              data-testid={`crud-edit-btn-${developer.id}`}
+              onClick={() => openEdit(developer)}
+              className="text-body-sm font-semibold text-[#1E1B4B] transition-colors hover:text-[#FF2A5F] cursor-pointer"
+            >
+              Editar
+            </button>
+            <button
+              type="button"
+              data-testid={`crud-delete-btn-${developer.id}`}
+              onClick={() => openDelete(developer)}
+              className="text-body-sm font-semibold text-[#EF4444] transition-colors hover:text-[#991B1B] cursor-pointer"
+            >
+              Eliminar
+            </button>
+          </div>
+        </article>
+      )}
     />
   );
 }

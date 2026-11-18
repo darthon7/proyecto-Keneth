@@ -40,6 +40,14 @@ interface CrudResourcePageProps<T, TPayload extends object = Record<string, unkn
   headerActions?: ReactNode;
   filterControls?: ReactNode;
   transformItems?: (items: T[]) => T[];
+  renderCard?: (
+    item: T,
+    helpers: {
+      openEdit: (item: T) => void;
+      openDelete: (item: T) => void;
+    },
+  ) => ReactNode;
+  defaultViewMode?: 'table' | 'cards';
 }
 
 type ModalState<T> = { mode: 'create' } | { mode: 'edit'; item: T } | null;
@@ -61,11 +69,16 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
   headerActions,
   filterControls,
   transformItems,
+  renderCard,
+  defaultViewMode,
 }: CrudResourcePageProps<T, TPayload>) {
   const queryClient = useQueryClient();
   const [modalState, setModalState] = useState<ModalState<T> | null>(null);
   const [itemToDelete, setItemToDelete] = useState<T | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>(
+    defaultViewMode ?? (renderCard ? 'cards' : 'table'),
+  );
 
   const initialEditValues = useMemo(
     () =>
@@ -155,6 +168,40 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
           {description && <p className="mt-2 max-w-2xl text-body-sm text-[#475569]">{description}</p>}
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {renderCard && (
+            <div className="inline-flex rounded-xl bg-[#F4F4F6] p-1 border border-[#E2E8F0]">
+              <button
+                type="button"
+                onClick={() => setViewMode('cards')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  viewMode === 'cards'
+                    ? 'bg-white text-[#0F172A] shadow-xs'
+                    : 'text-[#64748B] hover:text-[#0F172A]'
+                }`}
+                title="Vista de tarjetas"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+                <span>Tarjetas</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('table')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  viewMode === 'table'
+                    ? 'bg-white text-[#0F172A] shadow-xs'
+                    : 'text-[#64748B] hover:text-[#0F172A]'
+                }`}
+                title="Vista de tabla"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+                <span>Tabla</span>
+              </button>
+            </div>
+          )}
           {headerActions}
           <Button variant="brand" data-testid="crud-create-btn" onClick={openCreate}>
             Nuevo registro
@@ -189,7 +236,13 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
           />
         )}
 
-        {visibleItems.length > 0 && (
+        {visibleItems.length > 0 && viewMode === 'cards' && renderCard && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {visibleItems.map((item) => renderCard(item, { openEdit, openDelete: openDeleteModal }))}
+          </div>
+        )}
+
+        {visibleItems.length > 0 && (viewMode === 'table' || !renderCard) && (
           <div
             tabIndex={0}
             role="region"

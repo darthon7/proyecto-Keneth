@@ -10,6 +10,7 @@ interface ModalProps {
   children: ReactNode;
   footer?: ReactNode;
   size?: 'sm' | 'md' | 'lg';
+  bodyClassName?: string;
 }
 
 const SIZES = {
@@ -26,6 +27,7 @@ export function Modal({
   children,
   footer,
   size = 'md',
+  bodyClassName = '',
 }: ModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -71,9 +73,9 @@ export function Modal({
       onClose={onClose}
       onClick={handleBackdropClick}
       {...({ closedby: 'any' } as Record<string, string>)}
-      className={`rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] text-[#0F172A] shadow-[0_24px_60px_rgba(15,23,42,0.22)] p-0 m-auto w-full ${SIZES[size]} overflow-hidden`}
+      className={`rounded-2xl bg-[#FFFFFF] border border-[#E2E8F0] text-[#0F172A] shadow-[0_24px_60px_rgba(15,23,42,0.22)] p-0 m-auto w-full ${SIZES[size]} overflow-hidden flex flex-col max-h-[85vh]`}
     >
-      <header className="flex items-start justify-between gap-4 border-b border-[#E2E8F0] px-6 py-5 bg-[#F8FAFC]">
+      <header className="flex shrink-0 items-start justify-between gap-4 border-b border-[#E2E8F0] px-6 py-5 bg-[#F8FAFC]">
         <div>
           <h2 id={titleId} className="text-lg font-bold text-[#0F172A] tracking-wide">
             {title}
@@ -101,10 +103,10 @@ export function Modal({
         </button>
       </header>
 
-      <div className="px-6 py-5">{children}</div>
+      <div className={`px-6 py-5 overflow-y-auto overscroll-contain flex-1 ${bodyClassName}`}>{children}</div>
 
       {footer && (
-        <footer className="flex flex-wrap justify-end gap-3 border-t border-[#E2E8F0] px-6 py-4 bg-[#F4F4F6]">
+        <footer className="flex shrink-0 flex-wrap justify-end gap-3 border-t border-[#E2E8F0] px-6 py-4 bg-[#F4F4F6]">
           {footer}
         </footer>
       )}
