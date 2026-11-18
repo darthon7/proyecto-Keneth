@@ -50,7 +50,7 @@ const mockGames: Game[] = [
     coverImageUrl: 'https://example.com/elden-ring.jpg',
     createdAt: '2022-02-25T00:00:00.000Z',
     publisher: { id: 1, name: 'FromSoftware', websiteUrl: null, supportEmail: null, country: 'JP' },
-    developer: { id: 1, name: 'FromSoftware', country: 'JP', foundedYear: 1986 },
+    developer: { id: 1, name: 'FromSoftware', country: 'JP', foundedYear: 1986, coverImagenUrl: null },
     genres: [{ id: 1, name: 'Action', slug: 'action', description: null }],
     editions: [
       {

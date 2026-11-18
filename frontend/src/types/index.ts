@@ -41,6 +41,7 @@ export interface Developer {
   name: string;
   country: string | null;
   foundedYear: number | null;
+  coverImagenUrl: string | null;
   games?: Game[];
 }
 
@@ -273,6 +274,7 @@ export interface CreateDeveloperPayload {
   name: string;
   country?: string;
   foundedYear?: number;
+  coverImagenUrl?: string;
 }
 
 export interface CreateGenrePayload {

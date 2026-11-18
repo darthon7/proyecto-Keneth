@@ -48,6 +48,7 @@ interface CrudResourcePageProps<T, TPayload extends object = Record<string, unkn
     },
   ) => ReactNode;
   defaultViewMode?: 'table' | 'cards';
+  cardGridClassName?: string;
 }
 
 type ModalState<T> = { mode: 'create' } | { mode: 'edit'; item: T } | null;
@@ -71,6 +72,7 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
   transformItems,
   renderCard,
   defaultViewMode,
+  cardGridClassName = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4',
 }: CrudResourcePageProps<T, TPayload>) {
   const queryClient = useQueryClient();
   const [modalState, setModalState] = useState<ModalState<T> | null>(null);
@@ -237,7 +239,7 @@ export function CrudResourcePage<T, TPayload extends object = Record<string, unk
         )}
 
         {visibleItems.length > 0 && viewMode === 'cards' && renderCard && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className={cardGridClassName}>
             {visibleItems.map((item) => renderCard(item, { openEdit, openDelete: openDeleteModal }))}
           </div>
         )}

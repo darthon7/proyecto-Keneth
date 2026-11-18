@@ -26,6 +26,7 @@ const game: Game = {
     name: 'FromSoftware',
     country: 'JP',
     foundedYear: 1986,
+    coverImagenUrl: null,
   },
   genres: [{ id: 1, name: 'Action', slug: 'action', description: null }],
   editions: [

@@ -31,6 +31,15 @@ const fields: FieldConfig[] = [
     max: 2100,
     help: 'Entre 1950 y 2100',
   },
+  {
+    name: 'coverImagenUrl',
+    label: 'URL de imagen de portada',
+    type: 'text',
+    maxLength: 500,
+    placeholder: 'https://.../portada.jpg',
+    pattern: VALIDATION_PATTERNS.HTTP_URL,
+    patternMessage: 'Ingresa una URL http(s):// válida',
+  },
 ];
 
 export function DevelopersPage({ embedded = false }: { embedded?: boolean }) {
@@ -63,22 +72,29 @@ export function DevelopersPage({ embedded = false }: { embedded?: boolean }) {
         name: developer.name,
         country: developer.country ?? '',
         foundedYear: developer.foundedYear ?? '',
+        coverImagenUrl: developer.coverImagenUrl ?? '',
       })}
       getId={(developer) => developer.id}
       defaultViewMode="cards"
+      cardGridClassName="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
       renderCard={(developer, { openEdit, openDelete }) => (
         <article
           key={developer.id}
           className="flex flex-col justify-between gap-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs p-5 transition-shadow hover:shadow-md"
         >
           <div>
+            {developer.coverImagenUrl && (
+              <img
+                src={developer.coverImagenUrl}
+                alt={`Portada de ${developer.name}`}
+                className="mb-3 h-36 w-full rounded-xl object-cover border border-[#E2E8F0]"
+                loading="lazy"
+              />
+            )}
             <div className="flex items-start justify-between gap-3">
               <h3 className="text-body-lg font-bold text-[#0F172A] leading-tight">
                 {developer.name}
               </h3>
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#F1F5F9] px-2.5 py-1 text-caption font-semibold text-[#475569] whitespace-nowrap">
-                🎮 {developer.games?.length ?? 0}
-              </span>
             </div>
             <dl className="mt-3 space-y-1.5 text-body-sm">
               <div className="flex items-center justify-between gap-2">

@@ -8,6 +8,7 @@ import {
   Max,
   MaxLength,
   Min,
+  IsUrl,
 } from 'class-validator';
 
 export class CreateDeveloperDto {
@@ -32,4 +33,9 @@ export class CreateDeveloperDto {
   @Min(1950)
   @Max(2100)
   foundedYear?: number;
+
+  @IsOptional()
+  @IsUrl({}, { message: 'La URL de la imagen de portada no es válida' })
+  @MaxLength(500)
+  coverImagenUrl?: string;
 }
