@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -14,6 +14,7 @@ import { PaymentStatus } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { useSession } from '@/context/SessionContext';
 import { useCartSummary } from '@/hooks/useCartSummary';
+import { countAvailableKeys } from '@/utils/domain';
 import { formatCurrency } from '@/utils/format';
 import { VALIDATION_PATTERNS } from '@/utils/fields';
 import { checkoutSchema, type CheckoutFormValues } from '@/utils/schemas';
@@ -50,6 +51,17 @@ export function CheckoutPage() {
     total,
   } = useCartSummary(couponCode);
 
+  const outOfStockLines = useMemo(() => {
+    return cartLines.filter((line) => {
+      const keys = line.edition.digitalKeys;
+      if (Array.isArray(keys)) {
+        return countAvailableKeys(line.edition) < line.quantity;
+      }
+      return false;
+    });
+  }, [cartLines]);
+  const hasOutOfStockItems = outOfStockLines.length > 0;
+
   const createOrder = useMutation({
     mutationFn: async () => {
       const created = await ordersApi.create({
@@ -83,6 +95,13 @@ export function CheckoutPage() {
 
     if (!currentUser) {
       setValidationError('Debes iniciar sesión para completar el pago.');
+      return;
+    }
+
+    if (hasOutOfStockItems) {
+      setValidationError(
+        'Uno o más productos en tu carrito no tienen suficientes claves digitales disponibles en tiempo real. Por favor ajusta tu pedido.',
+      );
       return;
     }
 
@@ -250,6 +269,29 @@ export function CheckoutPage() {
             </div>
           </div>
 
+          {hasOutOfStockItems && (
+            <div
+              role="alert"
+              className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-xs font-semibold text-red-600 animate-in fade-in"
+            >
+              <div className="flex items-center gap-2 font-bold mb-1">
+                <span className="inline-block h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                <span>Aviso de stock en tiempo real:</span>
+              </div>
+              <ul className="list-disc pl-5 space-y-0.5">
+                {outOfStockLines.map((l) => (
+                  <li key={l.edition.id}>
+                    {l.edition.editionName} ({l.edition.game?.title ?? 'Juego'}): solicitaste{' '}
+                    {l.quantity} pero solo hay {countAvailableKeys(l.edition)} disponibles.
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-[11px] text-[#475569]">
+                Regresa al carrito para ajustar la cantidad antes de proceder al pago.
+              </p>
+            </div>
+          )}
+
           {validationError && <ErrorBanner message={validationError} />}
           {createOrder.isError && <ErrorBanner message={errorMessage(createOrder.error)} />}
 
@@ -265,8 +307,9 @@ export function CheckoutPage() {
               size="lg"
               data-testid="checkout-confirm-pay-btn"
               isLoading={createOrder.isPending}
+              disabled={createOrder.isPending || hasOutOfStockItems}
             >
-              Pagar {formatCurrency(total)}
+              {hasOutOfStockItems ? 'Stock no disponible' : `Pagar ${formatCurrency(total)}`}
             </Button>
           </div>
         </form>

@@ -167,11 +167,17 @@ export class OrdersService {
         const subtotalPerUnit = finalSubtotalPerUnit;
 
         const availableKeys = await manager.find(DigitalKey, {
-          where: {
-            gameEdition: { id: edition.id },
-            status: KeyStatus.AVAILABLE,
-          },
-          order: { id: 'ASC' },
+          where: [
+            {
+              gameEdition: { id: edition.id },
+              status: KeyStatus.AVAILABLE,
+            },
+            {
+              gameEdition: { id: edition.id },
+              status: KeyStatus.RESERVED,
+            },
+          ],
+          order: { status: 'ASC', id: 'ASC' },
           take: quantity,
           lock: { mode: 'pessimistic_write' },
         });

@@ -17,6 +17,8 @@ export function useCartSummary(
   const editionsQuery = useQuery({
     queryKey: ['game-editions'],
     queryFn: () => gameEditionsApi.list(),
+    refetchInterval: items.length > 0 ? 3000 : false,
+    refetchIntervalInBackground: false,
   });
 
   const promotionsQuery = useQuery({

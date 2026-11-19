@@ -24,7 +24,7 @@ import {
 import type { Game } from '@/types';
 import { getActiveGameDiscount } from '@/utils/discount';
 import { countAvailableKeys, getMinBasePrice, isNintendoTitle } from '@/utils/domain';
-import { formatDate } from '@/utils/format';
+import { formatCurrency, formatDate } from '@/utils/format';
 
 
 const PAGE_SIZE = 12;
@@ -365,6 +365,11 @@ export function GamesAdminPage({ embedded = false }: { embedded?: boolean }) {
                       {game.genres && game.genres.length > 0 && (
                         <p className="text-[10px] text-[#94A3B8] truncate">
                           {game.genres.map((g) => g.name).join(', ')}
+                        </p>
+                      )}
+                      {getEffectiveMinPrice(game) !== null && (
+                        <p className="text-xs font-black text-[#0F172A] pt-0.5">
+                          {formatCurrency(getEffectiveMinPrice(game)!)}
                         </p>
                       )}
                     </div>

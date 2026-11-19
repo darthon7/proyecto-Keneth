@@ -12,6 +12,7 @@ import { GameReviewsSection } from '@/components/organisms/GameReviewsSection';
 import { errorMessage, gamesApi, reviewsExtraApi, wishlistsApi, wishlistsExtraApi } from '@/api';
 import { useCart } from '@/context/CartContext';
 import { useSession } from '@/context/SessionContext';
+import { useStockWatch } from '@/hooks/useStockWatch';
 import { getActiveGameDiscount } from '@/utils/discount';
 import { countAvailableKeys, getLowestEdition, isNintendoTitle } from '@/utils/domain';
 import { formatCurrency, formatDate, humanizeEnum } from '@/utils/format';
@@ -30,6 +31,12 @@ export function GameDetailPage() {
   const [activeTab, setActiveTab] = useState<Tab>('Descripción');
   const [selectedEditionId, setSelectedEditionId] = useState<number | null>(null);
   const [addedToCart, setAddedToCart] = useState(false);
+
+  const { alerts, dismissAlert } = useStockWatch({
+    gameId: isValidGameId ? gameId : undefined,
+    intervalMs: 1500,
+    enabled: isValidGameId,
+  });
 
   const gameQuery = useQuery({
     queryKey: ['game', gameId],
@@ -112,6 +119,36 @@ export function GameDetailPage() {
       >
         ← Volver al catálogo
       </button>
+
+      {alerts.length > 0 && (
+        <div className="mt-4 space-y-2">
+          {alerts.map((alert) => (
+            <div
+              key={alert.id}
+              role="alert"
+              className={`flex items-center justify-between rounded-xl px-4 py-3 text-xs font-bold shadow-sm transition-all animate-in fade-in slide-in-from-top-2 ${
+                alert.type === 'sold_out'
+                  ? 'bg-red-500/10 text-red-600 border border-red-500/30'
+                  : alert.type === 'restocked'
+                  ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/30'
+                  : 'bg-amber-500/10 text-amber-700 border border-amber-500/30'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="inline-block h-2 w-2 rounded-full bg-current animate-pulse" />
+                <span>{alert.message}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => dismissAlert(alert.id)}
+                className="ml-3 text-xs underline font-semibold hover:opacity-75 cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="mt-6 grid grid-cols-[290px_1fr_320px] gap-6 items-start">
         {/* Left Column: Cover + Metadata */}
@@ -401,17 +438,31 @@ export function GameDetailPage() {
           )}
 
           {activeEdition && (
-            <p
-              className={`text-xs font-semibold ${
-                isActiveEditionSoldOut ? 'text-[#EF4444]' : 'text-[#065F46]'
-              }`}
+            <div
+              key={`stock-${activeEdition.id}-${activeEditionAvailableKeys}`}
+              className="flex items-center gap-1.5 transition-all duration-300 animate-in fade-in zoom-in-95"
             >
-              {activeEditionHasKeyInfo
-                ? activeEditionAvailableKeys > 0
-                  ? `${activeEditionAvailableKeys} claves digitales disponibles`
-                  : 'Sin claves digitales disponibles'
-                : 'Entrega digital inmediata'}
-            </p>
+              <span
+                className={`inline-block h-2 w-2 rounded-full ${
+                  isActiveEditionSoldOut
+                    ? 'bg-[#EF4444]'
+                    : activeEditionAvailableKeys <= 2
+                    ? 'bg-amber-500 animate-pulse'
+                    : 'bg-[#10B981]'
+                }`}
+              />
+              <p
+                className={`text-xs font-semibold ${
+                  isActiveEditionSoldOut ? 'text-[#EF4444]' : 'text-[#065F46]'
+                }`}
+              >
+                {activeEditionHasKeyInfo
+                  ? activeEditionAvailableKeys > 0
+                    ? `${activeEditionAvailableKeys} claves digitales disponibles`
+                    : 'Sin claves digitales disponibles'
+                  : 'Entrega digital inmediata'}
+              </p>
+            </div>
           )}
 
           <div className="space-y-2.5">
