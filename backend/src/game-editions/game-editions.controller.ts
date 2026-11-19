@@ -15,6 +15,7 @@ import { UserRole } from '../users/entities/user-role.enum.js';
 import { GameEditionsService } from './game-editions.service.js';
 import { CreateGameEditionDto } from './dto/create-game-edition.dto.js';
 import { UpdateGameEditionDto } from './dto/update-game-edition.dto.js';
+import { ReserveKeysDto, ReleaseKeysDto } from './dto/reserve-keys.dto.js';
 
 @Controller('game-editions')
 export class GameEditionsController {
@@ -25,6 +26,22 @@ export class GameEditionsController {
   @Post()
   create(@Body() createDto: CreateGameEditionDto) {
     return this.gameEditionsService.create(createDto);
+  }
+
+  @Post(':id/reserve')
+  reserve(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() reserveDto: ReserveKeysDto,
+  ) {
+    return this.gameEditionsService.reserveKeys(id, reserveDto);
+  }
+
+  @Post(':id/release')
+  release(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() releaseDto: ReleaseKeysDto,
+  ) {
+    return this.gameEditionsService.releaseKeys(id, releaseDto);
   }
 
   @Get()

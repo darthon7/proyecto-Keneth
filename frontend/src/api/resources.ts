@@ -111,6 +111,23 @@ export const gameEditionsApi = crud<
   UpdatePayload<CreateGameEditionPayload>
 >('game-editions');
 
+export const gameEditionsExtraApi = {
+  async reserve(editionId: number, quantity: number): Promise<{ success: boolean; reservedCount: number }> {
+    const { data } = await apiClient.post<{ success: boolean; reservedCount: number }>(
+      `/game-editions/${editionId}/reserve`,
+      { quantity },
+    );
+    return data;
+  },
+  async release(editionId: number, quantity: number): Promise<{ success: boolean; releasedCount: number }> {
+    const { data } = await apiClient.post<{ success: boolean; releasedCount: number }>(
+      `/game-editions/${editionId}/release`,
+      { quantity },
+    );
+    return data;
+  },
+};
+
 export const digitalKeysApi = crud<
   DigitalKey,
   CreateDigitalKeyPayload,

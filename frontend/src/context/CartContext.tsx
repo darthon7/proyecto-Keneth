@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import { gameEditionsExtraApi } from '@/api';
 
 const STORAGE_KEY = 'keneth.cart';
 
@@ -63,6 +64,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addItem = useCallback((gameEditionId: number, quantity = 1) => {
     if (!Number.isInteger(gameEditionId) || gameEditionId < 1) return;
     const safeQuantity = normalizeQuantity(quantity);
+
+    // Reservar claves en el backend para que el stock disminuya inmediatamente en tiempo real
+    void gameEditionsExtraApi.reserve(gameEditionId, safeQuantity).catch(() => {
+      // Ignora error si falla red, manteniendo resiliencia offline en UI local
+    });
+
     setItems((current) => {
       const existing = current.find((item) => item.gameEditionId === gameEditionId);
       if (existing) {
@@ -77,22 +84,43 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const removeItem = useCallback((gameEditionId: number) => {
-    setItems((current) => current.filter((item) => item.gameEditionId !== gameEditionId));
+    setItems((current) => {
+      const target = current.find((item) => item.gameEditionId === gameEditionId);
+      if (target) {
+        void gameEditionsExtraApi.release(gameEditionId, target.quantity).catch(() => {});
+      }
+      return current.filter((item) => item.gameEditionId !== gameEditionId);
+    });
   }, []);
 
   const setQuantity = useCallback((gameEditionId: number, quantity: number) => {
     if (!Number.isInteger(gameEditionId) || gameEditionId < 1) return;
     const safeQuantity = normalizeQuantity(quantity);
-    setItems((current) =>
-      current.map((item) =>
+    setItems((current) => {
+      const existing = current.find((item) => item.gameEditionId === gameEditionId);
+      if (existing) {
+        const diff = safeQuantity - existing.quantity;
+        if (diff > 0) {
+          void gameEditionsExtraApi.reserve(gameEditionId, diff).catch(() => {});
+        } else if (diff < 0) {
+          void gameEditionsExtraApi.release(gameEditionId, Math.abs(diff)).catch(() => {});
+        }
+      }
+      return current.map((item) =>
         item.gameEditionId === gameEditionId
           ? { ...item, quantity: safeQuantity }
           : item,
-      ),
-    );
+      );
+    });
   }, []);
 
-  const clear = useCallback(() => setItems([]), []);
+  const clear = useCallback(() => {
+    // Al limpiar el carrito sin pagar, liberar las claves reservadas
+    for (const item of items) {
+      void gameEditionsExtraApi.release(item.gameEditionId, item.quantity).catch(() => {});
+    }
+    setItems([]);
+  }, [items]);
 
   const value = useMemo<CartContextValue>(
     () => ({

@@ -1,12 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EditionFormat, GameEdition } from './entities/game-edition.entity.js';
 import { Platform } from '../platforms/entities/platform.entity.js';
+import { DigitalKey, KeyStatus } from '../digital-keys/entities/digital-key.entity.js';
 import { GamesService } from '../games/games.service.js';
 import { sanitizeDigitalKeys } from '../digital-keys/digital-key.sanitizer.js';
 import { CreateGameEditionDto } from './dto/create-game-edition.dto.js';
 import { UpdateGameEditionDto } from './dto/update-game-edition.dto.js';
+import { ReserveKeysDto, ReleaseKeysDto } from './dto/reserve-keys.dto.js';
 
 @Injectable()
 export class GameEditionsService {
@@ -16,6 +18,9 @@ export class GameEditionsService {
 
     @InjectRepository(Platform)
     private readonly platformRepository: Repository<Platform>,
+
+    @InjectRepository(DigitalKey)
+    private readonly digitalKeyRepository: Repository<DigitalKey>,
 
     private readonly gamesService: GamesService,
   ) {}
@@ -146,5 +151,71 @@ export class GameEditionsService {
     const sanitized = await this.findOne(id);
     await this.editionRepository.remove(edition);
     return sanitized;
+  }
+
+  async reserveKeys(editionId: number, dto: ReserveKeysDto) {
+    const edition = await this.editionRepository.findOne({
+      where: { id: editionId },
+    });
+    if (!edition) {
+      throw new NotFoundException(`La edición con ID ${editionId} no existe`);
+    }
+
+    const availableKeys = await this.digitalKeyRepository.find({
+      where: {
+        gameEdition: { id: editionId },
+        status: KeyStatus.AVAILABLE,
+      },
+      take: dto.quantity,
+    });
+
+    if (availableKeys.length < dto.quantity) {
+      throw new BadRequestException(
+        `No hay suficiente stock disponible. Solicitadas: ${dto.quantity}, disponibles: ${availableKeys.length}`,
+      );
+    }
+
+    for (const key of availableKeys) {
+      key.status = KeyStatus.RESERVED;
+    }
+    await this.digitalKeyRepository.save(availableKeys);
+
+    return {
+      success: true,
+      editionId,
+      reservedCount: availableKeys.length,
+      message: `${availableKeys.length} clave(s) reservada(s) temporalmente en el carrito`,
+    };
+  }
+
+  async releaseKeys(editionId: number, dto: ReleaseKeysDto) {
+    const edition = await this.editionRepository.findOne({
+      where: { id: editionId },
+    });
+    if (!edition) {
+      throw new NotFoundException(`La edición con ID ${editionId} no existe`);
+    }
+
+    const reservedKeys = await this.digitalKeyRepository.find({
+      where: {
+        gameEdition: { id: editionId },
+        status: KeyStatus.RESERVED,
+      },
+      take: dto.quantity,
+    });
+
+    if (reservedKeys.length > 0) {
+      for (const key of reservedKeys) {
+        key.status = KeyStatus.AVAILABLE;
+      }
+      await this.digitalKeyRepository.save(reservedKeys);
+    }
+
+    return {
+      success: true,
+      editionId,
+      releasedCount: reservedKeys.length,
+      message: `${reservedKeys.length} clave(s) liberada(s) al stock disponible`,
+    };
   }
 }
