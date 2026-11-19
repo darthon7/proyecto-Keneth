@@ -12,8 +12,8 @@ import {
 } from '../common/pagination.util.js';
 import { Review } from './entities/review.entity.js';
 import { User } from '../users/entities/user.entity.js';
-import { Game } from '../games/entities/game.entity.js';
 import { UserLibrary } from '../user-libraries/entities/user-library.entity.js';
+import { GamesService, type GamePlain } from '../games/games.service.js';
 import { CreateReviewDto } from './dto/create-review.dto.js';
 import { UpdateReviewDto } from './dto/update-review.dto.js';
 
@@ -26,11 +26,10 @@ export class ReviewsService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
 
-    @InjectRepository(Game)
-    private readonly gameRepository: Repository<Game>,
-
     @InjectRepository(UserLibrary)
     private readonly libraryRepository: Repository<UserLibrary>,
+
+    private readonly gamesService: GamesService,
   ) {}
 
   async create(createDto: CreateReviewDto) {
@@ -41,34 +40,36 @@ export class ReviewsService {
       throw new NotFoundException(`Usuario con ID ${userId} no encontrado`);
     }
 
-    const game = await this.gameRepository.findOneBy({ id: gameId });
+    const game = await this.gamesService.findByIdRaw(gameId);
     if (!game) {
       throw new NotFoundException(`Videojuego con ID ${gameId} no encontrado`);
     }
 
     // Verificar si el usuario ya escribió una reseña para este juego
     const existing = await this.reviewRepository.findOne({
-      where: { user: { id: userId }, game: { id: gameId } },
+      where: { user: { id: userId }, gameId },
     });
     if (existing) {
-      throw new BadRequestException('Ya has escrito una reseña para este videojuego');
+      throw new BadRequestException(
+        'Ya has escrito una reseña para este videojuego',
+      );
     }
 
     // Certificar si es compra verificada consultando la biblioteca del usuario
     const libraryEntry = await this.libraryRepository.findOne({
       where: {
         user: { id: userId },
-        gameEdition: { game: { id: gameId } },
+        gameEdition: { gameId },
         isRevoked: false,
       },
-      relations: { gameEdition: { game: true } },
+      relations: { gameEdition: true },
     });
 
     const isVerifiedPurchase = !!libraryEntry;
 
     const review = this.reviewRepository.create({
       user,
-      game,
+      gameId: game.id,
       rating,
       title,
       body,
@@ -77,7 +78,7 @@ export class ReviewsService {
     });
 
     const saved = await this.reviewRepository.save(review);
-    return this.sanitizeReview(saved);
+    return this.formatReview(saved, game);
   }
 
   private sanitizeReview(review: Review) {
@@ -90,22 +91,37 @@ export class ReviewsService {
     };
   }
 
+  private formatReview(review: Review, game?: GamePlain | null) {
+    const sanitized = this.sanitizeReview(review);
+    if (game === undefined) {
+      return sanitized;
+    }
+    return {
+      ...sanitized,
+      game,
+    };
+  }
+
   async findAll(pagination?: PaginationOptions) {
     const { take, skip } = normalizePagination(pagination);
     const reviews = await this.reviewRepository.find({
       relations: {
         user: true,
-        game: true,
       },
       take,
       skip,
     });
-    return reviews.map((review) => this.sanitizeReview(review));
+    const gameMap = await this.gamesService.findByIdsMap(
+      reviews.map((r) => r.gameId),
+    );
+    return reviews.map((review) =>
+      this.formatReview(review, gameMap.get(review.gameId) ?? null),
+    );
   }
 
   async findByGame(gameId: number) {
     const reviews = await this.reviewRepository.find({
-      where: { game: { id: gameId } },
+      where: { gameId },
       relations: { user: true },
     });
     return reviews.map((review) => this.sanitizeReview(review));
@@ -114,36 +130,51 @@ export class ReviewsService {
   async findOne(id: number) {
     const review = await this.reviewRepository.findOne({
       where: { id },
-      relations: { user: true, game: true },
+      relations: { user: true },
     });
     if (!review) {
       throw new NotFoundException(`Reseña con ID ${id} no encontrada`);
     }
-    return this.sanitizeReview(review);
+    const game = await this.gamesService.findByIdRaw(review.gameId);
+    return this.formatReview(review, game);
   }
 
   async update(id: number, updateDto: UpdateReviewDto) {
     const review = await this.reviewRepository.findOne({
       where: { id },
-      relations: { user: true, game: true },
+      relations: { user: true },
     });
     if (!review) {
       throw new NotFoundException(`Reseña con ID ${id} no encontrada`);
     }
-    this.reviewRepository.merge(review, updateDto);
+
+    const { gameId, ...rest } = updateDto;
+    if (gameId !== undefined) {
+      const game = await this.gamesService.findByIdRaw(gameId);
+      if (!game) {
+        throw new NotFoundException(
+          `Videojuego con ID ${gameId} no encontrado`,
+        );
+      }
+      review.gameId = game.id;
+    }
+
+    this.reviewRepository.merge(review, rest);
     const saved = await this.reviewRepository.save(review);
-    return this.sanitizeReview(saved);
+    const game = await this.gamesService.findByIdRaw(saved.gameId);
+    return this.formatReview(saved, game);
   }
 
   async remove(id: number) {
     const review = await this.reviewRepository.findOne({
       where: { id },
-      relations: { user: true, game: true },
+      relations: { user: true },
     });
     if (!review) {
       throw new NotFoundException(`Reseña con ID ${id} no encontrada`);
     }
+    const game = await this.gamesService.findByIdRaw(review.gameId);
     const removed = await this.reviewRepository.remove(review);
-    return this.sanitizeReview(removed);
+    return this.formatReview(removed, game);
   }
 }

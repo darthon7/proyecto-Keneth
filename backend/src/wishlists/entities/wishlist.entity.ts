@@ -2,16 +2,16 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   ManyToOne,
   PrimaryGeneratedColumn,
   Unique,
   type Relation,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity.js';
-import { Game } from '../../games/entities/game.entity.js';
 
 @Entity('wishlists')
-@Unique(['user', 'game'])
+@Unique(['user', 'gameId'])
 export class Wishlist {
   @PrimaryGeneratedColumn()
   id: number;
@@ -28,9 +28,7 @@ export class Wishlist {
   })
   user: Relation<User>;
 
-  @ManyToOne(() => Game, (game) => game.wishlists, {
-    nullable: false,
-    onDelete: 'CASCADE',
-  })
-  game: Relation<Game>;
+  @Index()
+  @Column({ type: 'int' })
+  gameId: number;
 }

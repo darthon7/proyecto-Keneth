@@ -1,11 +1,4 @@
-import {
-  Column,
-  Entity,
-  OneToMany,
-  PrimaryGeneratedColumn,
-  type Relation,
-} from 'typeorm';
-import { Game } from '../../games/entities/game.entity.js';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('publishers')
 export class Publisher {
@@ -23,7 +16,4 @@ export class Publisher {
 
   @Column({ length: 2, nullable: true })
   country: string;
-
-  @OneToMany(() => Game, (game) => game.publisher)
-  games: Relation<Game[]>;
 }

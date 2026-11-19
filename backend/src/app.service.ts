@@ -1,7 +1,7 @@
 import { Injectable, Logger, type OnApplicationBootstrap } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
-import { Game } from './games/entities/game.entity.js';
+import { GamesService } from './games/games.service.js';
 import { Developer } from './developers/entities/developer.entity.js';
 import { DigitalKey, KeyStatus } from './digital-keys/entities/digital-key.entity.js';
 import { Order, PaymentStatus } from './orders/entities/order.entity.js';
@@ -13,21 +13,33 @@ import { executeSeed } from './database/seed.js';
 export class AppService implements OnApplicationBootstrap {
   private readonly logger = new Logger(AppService.name);
 
-  constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
+  constructor(
+    @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly gamesService: GamesService,
+  ) {}
 
   async onApplicationBootstrap() {
     try {
-      const gameRepo = this.dataSource.getRepository(Game);
-      const count = await gameRepo.count();
+      const count = await this.gamesService.count();
       if (count === 0) {
-        this.logger.log('🌱 Base de datos vacía detectada. Iniciando auto-seeding de catálogo...');
-        const result = await executeSeed(this.dataSource);
-        this.logger.log(`✅ Auto-seeding completado: ${result.createdCount} juegos creados.`);
+        this.logger.log(
+          'Base de datos vacía detectada. Iniciando auto-seeding de catálogo...',
+        );
+        const result = await executeSeed(
+          this.dataSource,
+          this.gamesService.getMongoModels(),
+        );
+        this.logger.log(
+          `Auto-seeding completado: ${result.createdCount} juegos creados.`,
+        );
       } else {
-        this.logger.log(`📦 Catálogo ya poblado con ${count} juegos.`);
+        this.logger.log(`Catálogo ya poblado con ${count} juegos.`);
       }
     } catch (error) {
-      this.logger.error('Error durante la verificación/ejecución de auto-seed:', error);
+      this.logger.error(
+        'Error durante la verificación/ejecución de auto-seed:',
+        error,
+      );
     }
   }
 
@@ -36,7 +48,10 @@ export class AppService implements OnApplicationBootstrap {
   }
 
   async manualSeed() {
-    return await executeSeed(this.dataSource);
+    return await executeSeed(
+      this.dataSource,
+      this.gamesService.getMongoModels(),
+    );
   }
 
   async getAdminSummary() {
@@ -52,7 +67,7 @@ export class AppService implements OnApplicationBootstrap {
       activePromotions,
       users,
     ] = await Promise.all([
-      this.dataSource.getRepository(Game).count(),
+      this.gamesService.count(),
       this.dataSource.getRepository(Developer).count(),
       this.dataSource.getRepository(DigitalKey).count(),
       this.dataSource

@@ -1,13 +1,13 @@
 import 'reflect-metadata';
 import * as crypto from 'node:crypto';
+import mongoose, { type Model } from 'mongoose';
 import { DataSource } from 'typeorm';
 
-// Entities
+// Entities (MySQL / PostgreSQL)
 import { Publisher } from '../publishers/entities/publisher.entity.js';
 import { Developer } from '../developers/entities/developer.entity.js';
 import { Genre } from '../genres/entities/genre.entity.js';
 import { Platform } from '../platforms/entities/platform.entity.js';
-import { Game } from '../games/entities/game.entity.js';
 import { GameEdition, EditionFormat } from '../game-editions/entities/game-edition.entity.js';
 import { DigitalKey, KeyStatus } from '../digital-keys/entities/digital-key.entity.js';
 import { SystemRequirement, RequirementTier } from '../system-requirements/entities/system-requirement.entity.js';
@@ -19,6 +19,25 @@ import { UserLibrary } from '../user-libraries/entities/user-library.entity.js';
 import { Wishlist } from '../wishlists/entities/wishlist.entity.js';
 import { Review } from '../reviews/entities/review.entity.js';
 import { Promotion } from '../promotions/entities/promotion.entity.js';
+import { CouponRedemption } from '../promotions/entities/coupon-redemption.entity.js';
+import { FeaturedTrailer } from '../featured-trailers/entities/featured-trailer.entity.js';
+
+// Schemas (MongoDB)
+import {
+  Game,
+  GameSchema,
+  type GameDocument,
+} from '../games/schemas/game.schema.js';
+import {
+  Counter,
+  CounterSchema,
+  type CounterDocument,
+} from '../games/schemas/counter.schema.js';
+
+export interface MongoSeedModels {
+  gameModel: Model<GameDocument>;
+  counterModel: Model<CounterDocument>;
+}
 
 // Attempt to load .env from current directory or backend directory
 try {
@@ -33,30 +52,33 @@ try {
 
 const databaseUrl = process.env.DATABASE_URL;
 
+const SEED_ENTITIES = [
+  Publisher,
+  Developer,
+  Genre,
+  Platform,
+  GameEdition,
+  DigitalKey,
+  SystemRequirement,
+  User,
+  Order,
+  OrderItem,
+  UserLibrary,
+  Wishlist,
+  Review,
+  Promotion,
+  CouponRedemption,
+  FeaturedTrailer,
+];
+
 const dataSource = new DataSource(
   databaseUrl
     ? {
         type: 'postgres',
         url: databaseUrl,
         ssl: { rejectUnauthorized: false },
-        entities: [
-          Publisher,
-          Developer,
-          Genre,
-          Platform,
-          Game,
-          GameEdition,
-          DigitalKey,
-          SystemRequirement,
-          User,
-          Order,
-          OrderItem,
-          UserLibrary,
-          Wishlist,
-          Review,
-          Promotion,
-        ],
-        synchronize: true,
+        entities: SEED_ENTITIES,
+        synchronize: process.env.NODE_ENV !== 'production',
       }
     : {
         type: (process.env.APP_TYPE || 'mysql') as 'mysql' | 'postgres',
@@ -66,32 +88,16 @@ const dataSource = new DataSource(
         password: process.env.APP_PASSWORD || '1111',
         database: process.env.APP_DATABASE || 'tienda_videojuegos',
         ssl: process.env.APP_TYPE === 'postgres' ? { rejectUnauthorized: false } : false,
-        entities: [
-          Publisher,
-          Developer,
-          Genre,
-          Platform,
-          Game,
-          GameEdition,
-          DigitalKey,
-          SystemRequirement,
-          User,
-          Order,
-          OrderItem,
-          UserLibrary,
-          Wishlist,
-          Review,
-          Promotion,
-        ],
-        synchronize: true,
+        entities: SEED_ENTITIES,
+        synchronize: process.env.NODE_ENV !== 'production',
       },
 );
 
 const PLATFORMS_DATA = [
-  { name: 'Nintendo Switch', code: 'NSW', iconUrl: 'https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/nintendoswitch.svg' },
-  { name: 'PlayStation 5', code: 'PS5', iconUrl: 'https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/playstation5.svg' },
-  { name: 'Xbox Series X|S', code: 'XSX', iconUrl: 'https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/xbox.svg' },
-  { name: 'PC', code: 'PC', iconUrl: 'https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/steam.svg' },
+  { name: 'Nintendo Switch', code: 'NSW', iconUrl: '/media/platforms/nsw.svg' },
+  { name: 'PlayStation 5', code: 'PS5', iconUrl: '/media/platforms/ps5.svg' },
+  { name: 'Xbox Series X|S', code: 'XSX', iconUrl: '/media/platforms/xsx.svg' },
+  { name: 'PC', code: 'PC', iconUrl: '/media/platforms/pc.svg' },
 ];
 
 const GENRES_DATA = [
@@ -111,6 +117,7 @@ const GENRES_DATA = [
   { name: 'Multijugador', slug: 'multijugador', description: 'Experiencias diseñadas para cooperar o competir con amigos en línea o local.' },
   { name: 'Ciencia Ficción', slug: 'ciencia-ficcion', description: 'Mundos futuristas, tecnología avanzada, viajes espaciales y ciberpunk.' },
   { name: 'Fantasía', slug: 'fantasia', description: 'Universos con magia, criaturas míticas y leyendas ancestrales.' },
+  { name: 'Casual', slug: 'casual', description: 'Juegos accesibles y relajados para disfrutar a tu propio ritmo.' },
 ];
 
 const PUBLISHERS_DATA = [
@@ -129,31 +136,31 @@ const PUBLISHERS_DATA = [
 ];
 
 const DEVELOPERS_DATA = [
-  { name: 'Nintendo EPD', country: 'JP', foundedYear: 2015 },
-  { name: 'Bandai Namco Studios', country: 'JP', foundedYear: 2012 },
-  { name: 'MercurySteam', country: 'ES', foundedYear: 2002 },
-  { name: 'Game Freak', country: 'JP', foundedYear: 1989 },
-  { name: 'Intelligent Systems', country: 'JP', foundedYear: 1986 },
-  { name: 'Monolith Soft', country: 'JP', foundedYear: 1999 },
-  { name: 'Insomniac Games', country: 'US', foundedYear: 1994 },
-  { name: 'Santa Monica Studio', country: 'US', foundedYear: 1999 },
-  { name: 'Bluepoint Games', country: 'US', foundedYear: 2006 },
-  { name: 'Guerrilla Games', country: 'NL', foundedYear: 2000 },
-  { name: 'Housemarque', country: 'FI', foundedYear: 1995 },
-  { name: 'Naughty Dog', country: 'US', foundedYear: 1984 },
-  { name: '343 Industries', country: 'US', foundedYear: 2007 },
-  { name: 'Playground Games', country: 'GB', foundedYear: 2010 },
-  { name: 'Bethesda Game Studios', country: 'US', foundedYear: 2001 },
-  { name: 'The Coalition', country: 'CA', foundedYear: 2010 },
-  { name: 'Tango Gameworks', country: 'JP', foundedYear: 2010 },
-  { name: 'Larian Studios', country: 'BE', foundedYear: 1996 },
-  { name: 'CD Projekt Red', country: 'PL', foundedYear: 2002 },
-  { name: 'FromSoftware', country: 'JP', foundedYear: 1986 },
-  { name: 'Rockstar Games', country: 'US', foundedYear: 1998 },
-  { name: 'Valve', country: 'US', foundedYear: 1996 },
-  { name: 'Supergiant Games', country: 'US', foundedYear: 2009 },
-  { name: 'ZA/UM', country: 'GB', foundedYear: 2016 },
-  { name: 'Blizzard Team 3', country: 'US', foundedYear: 1991 },
+  { name: 'Nintendo EPD', country: 'JP', foundedYear: 2015, coverImagenUrl: '/media/developers/nintendo-epd.svg' },
+  { name: 'Bandai Namco Studios', country: 'JP', foundedYear: 2012, coverImagenUrl: '/media/developers/bandai-namco-studios.svg' },
+  { name: 'MercurySteam', country: 'ES', foundedYear: 2002, coverImagenUrl: '/media/developers/mercurysteam.svg' },
+  { name: 'Game Freak', country: 'JP', foundedYear: 1989, coverImagenUrl: '/media/developers/game-freak.svg' },
+  { name: 'Intelligent Systems', country: 'JP', foundedYear: 1986, coverImagenUrl: '/media/developers/intelligent-systems.svg' },
+  { name: 'Monolith Soft', country: 'JP', foundedYear: 1999, coverImagenUrl: '/media/developers/monolith-soft.svg' },
+  { name: 'Insomniac Games', country: 'US', foundedYear: 1994, coverImagenUrl: '/media/developers/insomniac-games.svg' },
+  { name: 'Santa Monica Studio', country: 'US', foundedYear: 1999, coverImagenUrl: '/media/developers/santa-monica-studio.svg' },
+  { name: 'Bluepoint Games', country: 'US', foundedYear: 2006, coverImagenUrl: '/media/developers/bluepoint-games.svg' },
+  { name: 'Guerrilla Games', country: 'NL', foundedYear: 2000, coverImagenUrl: '/media/developers/guerrilla-games.svg' },
+  { name: 'Housemarque', country: 'FI', foundedYear: 1995, coverImagenUrl: '/media/developers/housemarque.svg' },
+  { name: 'Naughty Dog', country: 'US', foundedYear: 1984, coverImagenUrl: '/media/developers/naughty-dog.svg' },
+  { name: '343 Industries', country: 'US', foundedYear: 2007, coverImagenUrl: '/media/developers/343-industries.svg' },
+  { name: 'Playground Games', country: 'GB', foundedYear: 2010, coverImagenUrl: '/media/developers/playground-games.svg' },
+  { name: 'Bethesda Game Studios', country: 'US', foundedYear: 2001, coverImagenUrl: '/media/developers/bethesda-game-studios.svg' },
+  { name: 'The Coalition', country: 'CA', foundedYear: 2010, coverImagenUrl: '/media/developers/the-coalition.svg' },
+  { name: 'Tango Gameworks', country: 'JP', foundedYear: 2010, coverImagenUrl: '/media/developers/tango-gameworks.svg' },
+  { name: 'Larian Studios', country: 'BE', foundedYear: 1996, coverImagenUrl: '/media/developers/larian-studios.svg' },
+  { name: 'CD Projekt Red', country: 'PL', foundedYear: 2002, coverImagenUrl: '/media/developers/cd-projekt-red.svg' },
+  { name: 'FromSoftware', country: 'JP', foundedYear: 1986, coverImagenUrl: '/media/developers/fromsoftware.svg' },
+  { name: 'Rockstar Games', country: 'US', foundedYear: 1998, coverImagenUrl: '/media/developers/rockstar-games.svg' },
+  { name: 'Valve', country: 'US', foundedYear: 1996, coverImagenUrl: '/media/developers/valve.svg' },
+  { name: 'Supergiant Games', country: 'US', foundedYear: 2009, coverImagenUrl: '/media/developers/supergiant-games.svg' },
+  { name: 'ZA/UM', country: 'GB', foundedYear: 2016, coverImagenUrl: '/media/developers/za-um.svg' },
+  { name: 'Blizzard Team 3', country: 'US', foundedYear: 1991, coverImagenUrl: '/media/developers/blizzard-team-3.svg' },
 ];
 
 interface GameSeedDefinition {
@@ -184,7 +191,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Una aventura épica por la tierra y los cielos de Hyrule. El jugador aprovecha el poder de las nuevas habilidades de Link para luchar contra las malévolas fuerzas que amenazan el reino.',
     esrbRating: 'E10+',
     releaseDate: '2023-05-12',
-    coverImageUrl: 'https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto/f_auto/dpr_2.0/store/software/switch/70010000063714/fb30eab428df3fc993b41c76e20f72e4d76d49734d17d31996b5ab61c414b117',
+    coverImageUrl: 'https://m.media-amazon.com/images/I/81eHh0BNU0L._AC_UF894,1000_QL80_.jpg',
     publisherName: 'Nintendo',
     developerName: 'Nintendo EPD',
     platformCode: 'NSW',
@@ -197,7 +204,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Olvida todo lo que sabes sobre los juegos de The Legend of Zelda. Entra en un mundo de descubrimientos, exploración y aventura en este aclamado título de mundo abierto.',
     esrbRating: 'E10+',
     releaseDate: '2017-03-03',
-    coverImageUrl: 'https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto/f_auto/dpr_2.0/store/software/switch/70010000000025/7137262b5a64d921e193653f8aa0b722925abc5680380ca0e18a5cfd91697f58',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B01MS6MO78.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Nintendo',
     developerName: 'Nintendo EPD',
     platformCode: 'NSW',
@@ -210,7 +217,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Acompaña a Mario en una descomunal aventura en 3D por todo el planeta usando sus nuevas e increíbles habilidades para rescatar a la princesa Peach de los planes de boda de Bowser.',
     esrbRating: 'E',
     releaseDate: '2017-10-27',
-    coverImageUrl: 'https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto/f_auto/dpr_2.0/store/software/switch/70010000001130/c42553b4fd0312c31e70ec7468c6c9bccd739f340152925b9600631f2d29f8b5',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B01MZ973SY.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Nintendo',
     developerName: 'Nintendo EPD',
     platformCode: 'NSW',
@@ -223,7 +230,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: '¡Luchadores y mundos de juego legendarios colisionan en el enfrentamiento definitivo! Más personajes, más escenarios y combates trepidantes con todo el plantel histórico.',
     esrbRating: 'E10+',
     releaseDate: '2018-12-07',
-    coverImageUrl: 'https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto/f_auto/dpr_2.0/store/software/switch/70010000012332/ac4d1fc9824876ce756406f0525d50c57ded4b2a666f6dfe40a6ac5c3563fad9',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B01N5OKGLH.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Nintendo',
     developerName: 'Bandai Namco Studios',
     platformCode: 'NSW',
@@ -236,7 +243,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Pisa a fondo el acelerador en la versión definitiva de Mario Kart 8 y juega donde y cuando quieras con decenas de circuitos y personajes icónicos.',
     esrbRating: 'E',
     releaseDate: '2017-04-28',
-    coverImageUrl: 'https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto/f_auto/dpr_2.0/store/software/switch/70010000000153/de697f487a36d802dd9a5ff0341f717c8486221f2f1219b675af37aca63bc453',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B01N1037CV.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Nintendo',
     developerName: 'Nintendo EPD',
     platformCode: 'NSW',
@@ -249,7 +256,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Únete a la cazarrecompensas Samus Aran mientras escapa de un planeta alienígena letal acosado por una terrorífica amenaza mecánica: los implacables robots E.M.M.I.',
     esrbRating: 'T',
     releaseDate: '2021-10-08',
-    coverImageUrl: 'https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto/f_auto/dpr_2.0/store/software/switch/70010000042924/4f2c683f0196210ec212a2ab8bf6952223c0b88e827b820953407a2ba61c9cb2',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B097B1149G.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Nintendo',
     developerName: 'MercurySteam',
     platformCode: 'NSW',
@@ -264,7 +271,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Escapa a una isla desierta y crea tu propio paraíso mientras exploras, creas y personalizas en una relajante simulación de vida comunitaria.',
     esrbRating: 'E',
     releaseDate: '2020-03-20',
-    coverImageUrl: 'https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto/f_auto/dpr_2.0/store/software/switch/70010000027619/9989957eae3a6b545194c42fec2071675c34aadacd65e6b33fdfe7b3b6a86c3a',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B07SL6ZXBL.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Nintendo',
     developerName: 'Nintendo EPD',
     platformCode: 'NSW',
@@ -277,7 +284,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Explora la vasta región de Paldea a tu propio ritmo en un mundo abierto repleto de Pokémon salvajes, gimnasios desafiantes y misterios del fenómeno Teracristal.',
     esrbRating: 'E',
     releaseDate: '2022-11-18',
-    coverImageUrl: 'https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto/f_auto/dpr_2.0/store/software/switch/70010000053966/849c234de8df7265201d26d9d72f88eed3f32438d3dca12fc135beb4c3befc85',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B09TM8XRND.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Nintendo',
     developerName: 'Game Freak',
     platformCode: 'NSW',
@@ -290,7 +297,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Conviértete en profesor en el Monasterio de Garreg Mach y guía a tus alumnos a través de la vida académica y sangrientas batallas tácticas que decidirán el destino de Fódlan.',
     esrbRating: 'T',
     releaseDate: '2019-07-26',
-    coverImageUrl: 'https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto/f_auto/dpr_2.0/store/software/switch/70010000007606/c499fdc86779ca95e61daed1f94288a245d196360d278138e56d44097d1a3878',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B07DK13HKX.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Nintendo',
     developerName: 'Intelligent Systems',
     platformCode: 'NSW',
@@ -303,7 +310,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Una profunda historia sobre la vida y los lazos que unen a dos facciones en guerra perpetua dentro del deslumbrante y gigantesco mundo de Aionios.',
     esrbRating: 'T',
     releaseDate: '2022-07-29',
-    coverImageUrl: 'https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto/f_auto/dpr_2.0/store/software/switch/70010000053336/e933b48650b33b355e9cf2583da5c94b77180e40fb02d050041083dd62f4df39',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B09KRH3FD6.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Nintendo',
     developerName: 'Monolith Soft',
     platformCode: 'NSW',
@@ -316,7 +323,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'La evolución clásica en 2D de Mario. Descubre los Efectos Maravilla que transforman los escenarios, cobran vida las tuberías y desatan la locura creativa.',
     esrbRating: 'E',
     releaseDate: '2023-10-20',
-    coverImageUrl: 'https://assets.nintendo.com/image/upload/c_fill,w_1200/q_auto/f_auto/dpr_2.0/store/software/switch/70010000068688/87e8aa5f1fdc950b88eae7d7c62ed185c8a6373c845090bbdb2e2cf039b38da1',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B0C8VHZR14.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Nintendo',
     developerName: 'Nintendo EPD',
     platformCode: 'NSW',
@@ -331,7 +338,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Peter Parker y Miles Morales regresan en una aventura electrizante. Balancéate, salta y utiliza las nuevas alas de telaraña para recorrer la Nueva York de Marvel frente a Venom y Kraven.',
     esrbRating: 'T',
     releaseDate: '2023-10-20',
-    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/2651280/header.jpg',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B0C7WNMCSC.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Sony Interactive Entertainment',
     developerName: 'Insomniac Games',
     platformCode: 'PS5',
@@ -344,7 +351,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Kratos y Atreus deben viajar a cada uno de los Nueve Reinos en busca de respuestas mientras las fuerzas asgardianas se preparan para la batalla profetizada del fin del mundo.',
     esrbRating: 'M',
     releaseDate: '2022-11-09',
-    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/2322010/header.jpg',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B0B6FGSKCQ.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Sony Interactive Entertainment',
     developerName: 'Santa Monica Studio',
     platformCode: 'PS5',
@@ -359,7 +366,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Completamente reconstruido desde cero y mejorado magistralmente, este remake introduce los horrores de una tierra de fantasía oscura y hostil a una nueva generación de jugadores.',
     esrbRating: 'M',
     releaseDate: '2020-11-12',
-    coverImageUrl: 'https://gmedia.playstation.com/is/image/SIEPDC/demons-soul-hero-02-ps5-en-19aug20?$1200px$',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B08B285TM4.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Sony Interactive Entertainment',
     developerName: 'Bluepoint Games',
     platformCode: 'PS5',
@@ -372,7 +379,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Acompaña a Aloy mientras desafía una frontera majestuosa pero peligrosa que oculta nuevas y misteriosas amenazas en el Oeste Prohibido postapocalíptico.',
     esrbRating: 'T',
     releaseDate: '2022-02-18',
-    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/2420110/header.jpg',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B09RDRYF8L.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Sony Interactive Entertainment',
     developerName: 'Guerrilla Games',
     platformCode: 'PS5',
@@ -385,7 +392,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Tras un aterrizaje forzoso en este planeta alienígena cambiante, Selene debe buscar a través del árido paisaje de una antigua civilización para escapar, atrapada en un bucle temporal implacable.',
     esrbRating: 'M',
     releaseDate: '2021-04-30',
-    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1649240/header.jpg',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B08Q1F56TY.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Sony Interactive Entertainment',
     developerName: 'Housemarque',
     platformCode: 'PS5',
@@ -398,7 +405,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Experimenta la emotiva narración y los inolvidables personajes de Joel y Ellie reconstruidos fielmente para la consola PlayStation 5 con gráficos fotorrealistas.',
     esrbRating: 'M',
     releaseDate: '2022-09-02',
-    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1888930/header.jpg',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B0B3QWRQL8.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Sony Interactive Entertainment',
     developerName: 'Naughty Dog',
     platformCode: 'PS5',
@@ -413,7 +420,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Cuando se pierde toda esperanza y el destino de la humanidad pende de un hilo, el Jefe Maestro está listo para enfrentarse al enemigo más despiadado en el anillo Zeta Halo.',
     esrbRating: 'T',
     releaseDate: '2021-12-08',
-    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1240440/header.jpg',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B07SL6YYBW.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Xbox Game Studios',
     developerName: '343 Industries',
     platformCode: 'XSX',
@@ -426,7 +433,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Tu aventura Horizon definitiva te espera. Explora los paisajes vibrantes y en constante evolución del mundo abierto de México con acción al volante ilimitada.',
     esrbRating: 'E',
     releaseDate: '2021-11-09',
-    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1551360/header.jpg',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B097MGZ7MY.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Xbox Game Studios',
     developerName: 'Playground Games',
     platformCode: 'XSX',
@@ -439,7 +446,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'En este juego de rol de nueva generación ambientado entre las estrellas, crea el personaje que desees y explora con una libertad sin igual un millar de planetas inexplorados.',
     esrbRating: 'M',
     releaseDate: '2023-09-06',
-    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1716740/header.jpg',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B0C7PN2L5V.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Bethesda Softworks',
     developerName: 'Bethesda Game Studios',
     platformCode: 'XSX',
@@ -452,7 +459,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Con una guerra total descendiendo, Kait Diaz se separa para descubrir su conexión con el enemigo y descubre el verdadero peligro para Sera: ella misma.',
     esrbRating: 'M',
     releaseDate: '2019-09-10',
-    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1097840/header.jpg',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B07DJY4FRP.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Xbox Game Studios',
     developerName: 'The Coalition',
     platformCode: 'XSX',
@@ -465,7 +472,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Siente el ritmo mientras el aspirante a estrella de rock Chai y su variopinto equipo luchan contra una malvada megacorporación de implantes en un mundo sincronizado con la música.',
     esrbRating: 'T',
     releaseDate: '2023-01-25',
-    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1817230/header.jpg',
+    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/f/fc/Hi-Fi_Rush_cover_art.jpg',
     publisherName: 'Bethesda Softworks',
     developerName: 'Tango Gameworks',
     platformCode: 'XSX',
@@ -480,7 +487,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Reúne a tu grupo y regresa a los Reinos Olvidados en una historia de compañerismo, traición, sacrificio y supervivencia, y la atracción del poder absoluto.',
     esrbRating: 'M',
     releaseDate: '2023-08-03',
-    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1086940/header.jpg',
+    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/1/12/Baldur%27s_Gate_3_cover_art.jpg',
     publisherName: 'Larian Studios',
     developerName: 'Larian Studios',
     platformCode: 'PC',
@@ -497,7 +504,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Cyberpunk 2077 es un RPG de acción y aventura en mundo abierto ambientado en Night City, una megalópolis obsesionada con el poder, el glamur y la modificación corporal.',
     esrbRating: 'M',
     releaseDate: '2020-12-10',
-    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/header.jpg',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B07DJW4WZC.01._SCLZZZZZZZ_.jpg',
     publisherName: 'CD Projekt',
     developerName: 'CD Projekt Red',
     platformCode: 'PC',
@@ -516,7 +523,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'EL NUEVO JUEGO DE ROL Y ACCIÓN DE FANTASÍA. Álzate, tiznado, y déjate guiar por la gracia para esgrimir el poder del Círculo de Elden y convertirte en el Señor del Círculo.',
     esrbRating: 'M',
     releaseDate: '2022-02-25',
-    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1245620/header.jpg',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B09743F8P6.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Bandai Namco Entertainment',
     developerName: 'FromSoftware',
     platformCode: 'PC',
@@ -535,7 +542,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'América, 1899. Arthur Morgan y la banda de Van der Linde se ven obligados a huir. Con agentes federales y los mejores cazarrecompensas de la nación pisándoles los talones.',
     esrbRating: 'M',
     releaseDate: '2019-11-05',
-    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/header.jpg',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B01M9COSMD.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Rockstar Games',
     developerName: 'Rockstar Games',
     platformCode: 'PC',
@@ -552,7 +559,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Eres Geralt de Rivia, cazador de monstruos. En un continente devastado por la guerra e infestado de monstruos, tu misión es encontrar a Ciri, la niña de la profecía.',
     esrbRating: 'M',
     releaseDate: '2015-05-19',
-    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/292030/header.jpg',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B01K6010FM.01._SCLZZZZZZZ_.jpg',
     publisherName: 'CD Projekt',
     developerName: 'CD Projekt Red',
     platformCode: 'PC',
@@ -571,7 +578,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'El regreso de Valve a la serie Half-Life en realidad virtual. Ambientado entre los eventos de Half-Life y Half-Life 2, Alyx Vance lidera la resistencia contra la Alianza.',
     esrbRating: 'M',
     releaseDate: '2020-03-23',
-    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/546560/header.jpg',
+    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/4/49/Half-Life_Alyx_Cover_Art.jpg',
     publisherName: 'Valve',
     developerName: 'Valve',
     platformCode: 'PC',
@@ -588,7 +595,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Desafía al dios de los muertos mientras hackeas y acuchillas para salir del Inframundo en este roguelike de acción vertiginosa de los creadores de Bastion y Transistor.',
     esrbRating: 'T',
     releaseDate: '2020-09-17',
-    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1145360/header.jpg',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B08WWC6GBX.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Supergiant Games',
     developerName: 'Supergiant Games',
     platformCode: 'PC',
@@ -607,7 +614,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Un RPG policiaco innovador con un sistema de habilidades sin precedentes y una ciudad entera para forjar tu camino. Interroga a personajes inolvidables o acepta sobornos.',
     esrbRating: 'M',
     releaseDate: '2019-10-15',
-    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/632470/header.jpg',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B09HVSDKWJ.01._SCLZZZZZZZ_.jpg',
     publisherName: 'ZA/UM',
     developerName: 'ZA/UM',
     platformCode: 'PC',
@@ -624,7 +631,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'Durante más de dos décadas, CS ha ofrecido una experiencia competitiva de primer nivel. Ahora comienza el siguiente capítulo: Counter-Strike 2 con el motor Source 2.',
     esrbRating: 'M',
     releaseDate: '2023-09-27',
-    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/730/header.jpg',
+    coverImageUrl: 'https://upload.wikimedia.org/wikipedia/en/f/f2/CS2_Cover_Art.jpg',
     publisherName: 'Valve',
     developerName: 'Valve',
     platformCode: 'PC',
@@ -641,7 +648,7 @@ const GAMES_DATA: GameSeedDefinition[] = [
     synopsis: 'La batalla interminable entre los Altos Cielos y los Infiernos Abrasadores continúa mientras el odio amenaza con consumir Santuario en una oscura experiencia hack-and-slash.',
     esrbRating: 'M',
     releaseDate: '2023-06-06',
-    coverImageUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/2344520/header.jpg',
+    coverImageUrl: 'https://m.media-amazon.com/images/P/B0BPPPPYK7.01._SCLZZZZZZZ_.jpg',
     publisherName: 'Blizzard Entertainment',
     developerName: 'Blizzard Team 3',
     platformCode: 'PC',
@@ -659,82 +666,113 @@ function generateDigitalKeyCode(): string {
   return `${segment()}-${segment()}-${segment()}-${segment()}`;
 }
 
-export async function executeSeed(dataSource: DataSource): Promise<{ createdCount: number; updatedCount: number; totalCount: number }> {
-  // Repositorios
-  const platformRepo = dataSource.getRepository(Platform);
-  const genreRepo = dataSource.getRepository(Genre);
-  const publisherRepo = dataSource.getRepository(Publisher);
-  const developerRepo = dataSource.getRepository(Developer);
-  const gameRepo = dataSource.getRepository(Game);
-  const editionRepo = dataSource.getRepository(GameEdition);
-  const keyRepo = dataSource.getRepository(DigitalKey);
-  const sysReqRepo = dataSource.getRepository(SystemRequirement);
-  const userRepo = dataSource.getRepository(User);
-
-  // 0. Sembrar Usuarios Base (Administrador y Cliente de prueba)
-  console.log('👤 Sembrando Usuarios...');
-  const isProduction = process.env.NODE_ENV === 'production';
-  const adminEmail =
-    process.env.SEED_ADMIN_EMAIL || 'admin@tiendavideojuegos.local';
-  const adminUsername = process.env.SEED_ADMIN_USERNAME || 'admin';
-  const adminPassword =
-    process.env.SEED_ADMIN_PASSWORD ||
-    (isProduction ? undefined : 'AdminDev123!');
-
-  const seedUsersData: Array<{
-    email: string;
-    username: string;
-    password: string;
-    countryCode: string;
-    isActive: boolean;
-    role: UserRole;
+export async function executeSeed(
+  targetDataSource: DataSource,
+  mongoModels: MongoSeedModels,
+): Promise<{ createdCount: number; updatedCount: number; totalCount: number }> {
+  const { gameModel, counterModel } = mongoModels;
+  const previousCounter = await counterModel.findById('games');
+  const hadPreviousCounter = Boolean(previousCounter);
+  const previousSeq = previousCounter?.seq ?? 0;
+  const createdMongoGameIds: number[] = [];
+  const updatedMongoSnapshots: Array<{
+    id: number;
+    previous: Record<string, unknown>;
   }> = [];
 
-  if (!adminPassword) {
-    console.warn(
-      '⚠️ SEED_ADMIN_PASSWORD no está definido en producción; se omite la creación del usuario administrador por seguridad.',
-    );
-  } else {
-    seedUsersData.push({
-      email: adminEmail,
-      username: adminUsername,
-      password: adminPassword,
-      countryCode: 'MX',
-      isActive: true,
-      role: UserRole.ADMIN,
-    });
-  }
+  try {
+    return await targetDataSource.transaction(async (manager) => {
+    // Repositorios transaccionales (MySQL / PostgreSQL)
+    const platformRepo = manager.getRepository(Platform);
+    const genreRepo = manager.getRepository(Genre);
+    const publisherRepo = manager.getRepository(Publisher);
+    const developerRepo = manager.getRepository(Developer);
+    const editionRepo = manager.getRepository(GameEdition);
+    const keyRepo = manager.getRepository(DigitalKey);
+    const sysReqRepo = manager.getRepository(SystemRequirement);
+    const userRepo = manager.getRepository(User);
+    const promotionRepo = manager.getRepository(Promotion);
+    const reviewRepo = manager.getRepository(Review);
+    const trailerRepo = manager.getRepository(FeaturedTrailer);
 
-  const customerEmail = 'customer@tiendavideojuegos.local';
-  if (adminEmail.toLowerCase() !== customerEmail.toLowerCase()) {
-    seedUsersData.push({
-      email: customerEmail,
-      username: 'gamer_mx',
-      password: 'CustomerDev123!',
-      countryCode: 'MX',
-      isActive: true,
-      role: UserRole.CUSTOMER,
-    });
-  } else {
-    console.warn(
-      `⚠️ SEED_ADMIN_EMAIL coincide con ${customerEmail}; se omite el usuario CUSTOMER de prueba para evitar colisión de email.`,
-    );
-  }
+    // 0. Sembrar Usuarios Base (Administrador y Cliente de prueba)
+    console.log('👤 Sembrando Usuarios...');
+    const isProduction = process.env.NODE_ENV === 'production';
+    const adminEmail =
+      process.env.SEED_ADMIN_EMAIL || 'admin@tiendavideojuegos.local';
+    const adminUsername = process.env.SEED_ADMIN_USERNAME || 'admin';
+    const adminPassword =
+      process.env.SEED_ADMIN_PASSWORD ||
+      (isProduction ? undefined : 'AdminDev123!');
 
-  for (const seedUser of seedUsersData) {
-    const existingUser = await userRepo.findOne({
-      where: { email: seedUser.email },
-    });
+    const customerEmail =
+      process.env.SEED_CUSTOMER_EMAIL || 'customer@tiendavideojuegos.local';
+    const customerUsername = process.env.SEED_CUSTOMER_USERNAME || 'gamer_mx';
+    const customerPassword =
+      process.env.SEED_CUSTOMER_PASSWORD ||
+      (isProduction ? undefined : 'CustomerDev123!');
 
-    if (!existingUser) {
-      const hashedPassword = await hashPassword(seedUser.password);
-      const newUser = userRepo.create({
-        ...seedUser,
-        password: hashedPassword,
+    const seedUsersData: Array<{
+      email: string;
+      username: string;
+      password: string;
+      countryCode: string;
+      isActive: boolean;
+      role: UserRole;
+    }> = [];
+
+    if (!adminPassword) {
+      console.warn(
+        '⚠️ SEED_ADMIN_PASSWORD no está definido en producción; se omite la creación del usuario administrador por seguridad.',
+      );
+    } else {
+      seedUsersData.push({
+        email: adminEmail,
+        username: adminUsername,
+        password: adminPassword,
+        countryCode: 'MX',
+        isActive: true,
+        role: UserRole.ADMIN,
       });
-      await userRepo.save(newUser);
     }
-  }
+
+    if (!customerPassword) {
+      console.warn(
+        '⚠️ SEED_CUSTOMER_PASSWORD no está definido en producción; se omite la creación del usuario cliente por seguridad.',
+      );
+    } else if (
+      adminPassword &&
+      (adminEmail.toLowerCase() === customerEmail.toLowerCase() ||
+        adminUsername.toLowerCase() === customerUsername.toLowerCase())
+    ) {
+      console.warn(
+        `⚠️ SEED_ADMIN_EMAIL o SEED_ADMIN_USERNAME coincide con el usuario CUSTOMER (${customerEmail} / ${customerUsername}); se omite el usuario CUSTOMER para evitar colisión.`,
+      );
+    } else {
+      seedUsersData.push({
+        email: customerEmail,
+        username: customerUsername,
+        password: customerPassword,
+        countryCode: 'MX',
+        isActive: true,
+        role: UserRole.CUSTOMER,
+      });
+    }
+
+    for (const seedUser of seedUsersData) {
+      const existingUser = await userRepo.findOne({
+        where: [{ email: seedUser.email }, { username: seedUser.username }],
+      });
+
+      if (!existingUser) {
+        const hashedPassword = await hashPassword(seedUser.password);
+        const newUser = userRepo.create({
+          ...seedUser,
+          password: hashedPassword,
+        });
+        await userRepo.save(newUser);
+      }
+    }
 
   // 1. Sembrar Plataformas
   console.log('📦 Sembrando Plataformas...');
@@ -743,6 +781,10 @@ export async function executeSeed(dataSource: DataSource): Promise<{ createdCoun
     let plat = await platformRepo.findOne({ where: { code: p.code } });
     if (!plat) {
       plat = platformRepo.create(p);
+      plat = await platformRepo.save(plat);
+    } else if (plat.iconUrl !== p.iconUrl || plat.name !== p.name) {
+      plat.iconUrl = p.iconUrl;
+      plat.name = p.name;
       plat = await platformRepo.save(plat);
     }
     platformMap.set(p.code, plat);
@@ -780,14 +822,39 @@ export async function executeSeed(dataSource: DataSource): Promise<{ createdCoun
     if (!d) {
       d = developerRepo.create(dev);
       d = await developerRepo.save(d);
+    } else if (d.coverImagenUrl !== dev.coverImagenUrl) {
+      d.coverImagenUrl = dev.coverImagenUrl;
+      d = await developerRepo.save(d);
     }
     developerMap.set(dev.name, d);
   }
 
-  // 5. Sembrar Videojuegos, Ediciones, Claves y Requerimientos
+  // 5. Sembrar Videojuegos (MongoDB), Ediciones, Claves y Requerimientos (MySQL)
   console.log(`🎮 Sembrando ${GAMES_DATA.length} videojuegos reales con carátulas e inventario...`);
   let createdCount = 0;
   let updatedCount = 0;
+  const gameMap = new Map<string, { id: number; slug: string }>();
+  const batchTimestamp = Date.now();
+  const platformCounts = new Map<string, number>();
+
+  const getNextGameId = async (): Promise<number> => {
+    const existingCounter = await counterModel.findById('games');
+    if (!existingCounter) {
+      const latestGame = await gameModel.findOne({}, { id: 1 }, { sort: { id: -1 } });
+      const baseSeq = latestGame?.id ?? 0;
+      await counterModel.updateOne(
+        { _id: 'games' },
+        { $setOnInsert: { seq: baseSeq } },
+        { upsert: true },
+      );
+    }
+    const counter = await counterModel.findOneAndUpdate(
+      { _id: 'games' },
+      { $inc: { seq: 1 } },
+      { upsert: true, returnDocument: 'after' },
+    );
+    return counter!.seq;
+  };
 
   for (const data of GAMES_DATA) {
     const publisher = publisherMap.get(data.publisherName);
@@ -804,14 +871,14 @@ export async function executeSeed(dataSource: DataSource): Promise<{ createdCoun
       const g = genreMap.get(gName);
       if (g) assignedGenres.push(g);
     }
+    const genreIds = assignedGenres.map((g) => g.id);
 
-    let game = await gameRepo.findOne({
-      where: { slug: data.slug },
-      relations: { genres: true },
-    });
+    let game = await gameModel.findOne({ slug: data.slug });
 
     if (!game) {
-      game = gameRepo.create({
+      const nextId = await getNextGameId();
+      game = await gameModel.create({
+        id: nextId,
         title: data.title,
         slug: data.slug,
         synopsis: data.synopsis,
@@ -820,28 +887,63 @@ export async function executeSeed(dataSource: DataSource): Promise<{ createdCoun
         coverImageUrl: data.coverImageUrl,
         discountCampaignName: data.discountCampaignName ?? null,
         discountPercentage: data.discountPercentage ?? 0,
-        publisher,
-        developer,
-        genres: assignedGenres,
+        discountStartDate: null,
+        discountEndDate: null,
+        publisherId: publisher.id,
+        developerId: developer.id,
+        genreIds,
       });
-      game = await gameRepo.save(game);
+      createdMongoGameIds.push(game.id);
       createdCount++;
     } else {
-      game.title = data.title;
-      game.synopsis = data.synopsis;
-      game.coverImageUrl = data.coverImageUrl;
-      game.esrbRating = data.esrbRating;
-      game.releaseDate = data.releaseDate;
-      if (data.discountPercentage !== undefined && (!game.discountPercentage || Number(game.discountPercentage) === 0)) {
-        game.discountPercentage = data.discountPercentage;
-        game.discountCampaignName = data.discountCampaignName ?? null;
+      updatedMongoSnapshots.push({
+        id: game.id,
+        previous: {
+          title: game.title,
+          synopsis: game.synopsis ?? null,
+          coverImageUrl: game.coverImageUrl ?? null,
+          esrbRating: game.esrbRating ?? 'E',
+          releaseDate: game.releaseDate,
+          publisherId: game.publisherId,
+          developerId: game.developerId,
+          genreIds: Array.isArray(game.genreIds) ? [...game.genreIds] : [],
+          discountPercentage: game.discountPercentage ?? 0,
+          discountCampaignName: game.discountCampaignName ?? null,
+        },
+      });
+      const discountUpdates: Record<string, unknown> = {};
+      if (
+        data.discountPercentage !== undefined &&
+        (!game.discountPercentage || Number(game.discountPercentage) === 0)
+      ) {
+        discountUpdates.discountPercentage = data.discountPercentage;
+        discountUpdates.discountCampaignName =
+          data.discountCampaignName ?? null;
       }
-      game.publisher = publisher;
-      game.developer = developer;
-      game.genres = assignedGenres;
-      game = await gameRepo.save(game);
+
+      await gameModel.updateOne(
+        { id: game.id },
+        {
+          $set: {
+            title: data.title,
+            synopsis: data.synopsis,
+            coverImageUrl: data.coverImageUrl,
+            esrbRating: data.esrbRating,
+            releaseDate: data.releaseDate,
+            publisherId: publisher.id,
+            developerId: developer.id,
+            genreIds,
+            ...discountUpdates,
+          },
+        },
+      );
       updatedCount++;
     }
+    gameMap.set(data.slug, { id: game.id, slug: game.slug });
+    platformCounts.set(
+      data.platformCode,
+      (platformCounts.get(data.platformCode) ?? 0) + 1,
+    );
 
     // Ediciones: Standard Edition y Deluxe Edition
     const editionsToSeed = [
@@ -852,7 +954,7 @@ export async function executeSeed(dataSource: DataSource): Promise<{ createdCoun
     for (const edInfo of editionsToSeed) {
       let edition = await editionRepo.findOne({
         where: {
-          game: { id: game.id },
+          gameId: game.id,
           platform: { id: platform.id },
           editionName: edInfo.name,
           format: EditionFormat.DIGITAL,
@@ -865,12 +967,13 @@ export async function executeSeed(dataSource: DataSource): Promise<{ createdCoun
           format: EditionFormat.DIGITAL,
           basePrice: edInfo.price,
           isDlc: false,
-          game,
+          gameId: game.id,
           platform,
         });
         edition = await editionRepo.save(edition);
 
         // Generar 5 claves digitales únicas por edición
+        const batchId = `SEED-${data.platformCode}-${batchTimestamp}`;
         const keysToInsert: DigitalKey[] = [];
         for (let i = 0; i < 5; i++) {
           const rawCode = generateDigitalKeyCode();
@@ -879,7 +982,7 @@ export async function executeSeed(dataSource: DataSource): Promise<{ createdCoun
             code: rawCode,
             codeHash: hash,
             status: KeyStatus.AVAILABLE,
-            batchId: `SEED-${data.platformCode}-${Date.now()}`,
+            batchId,
             gameEdition: edition,
           });
           keysToInsert.push(dKey);
@@ -890,7 +993,7 @@ export async function executeSeed(dataSource: DataSource): Promise<{ createdCoun
 
     // Requerimientos del sistema (si aplica para PC)
     if (data.sysReq) {
-      const existingReqs = await sysReqRepo.find({ where: { game: { id: game.id } } });
+      const existingReqs = await sysReqRepo.find({ where: { gameId: game.id } });
       if (existingReqs.length === 0) {
         const min = sysReqRepo.create({
           tier: RequirementTier.MINIMUM,
@@ -900,7 +1003,7 @@ export async function executeSeed(dataSource: DataSource): Promise<{ createdCoun
           graphicsCard: data.sysReq.min.gpu,
           storageGb: data.sysReq.min.storage,
           directxVersion: data.sysReq.min.dx || 'DirectX 11',
-          game,
+          gameId: game.id,
         });
         const rec = sysReqRepo.create({
           tier: RequirementTier.RECOMMENDED,
@@ -910,7 +1013,7 @@ export async function executeSeed(dataSource: DataSource): Promise<{ createdCoun
           graphicsCard: data.sysReq.rec.gpu,
           storageGb: data.sysReq.rec.storage,
           directxVersion: data.sysReq.rec.dx || 'DirectX 12',
-          game,
+          gameId: game.id,
         });
         await sysReqRepo.save([min, rec]);
       }
@@ -918,7 +1021,6 @@ export async function executeSeed(dataSource: DataSource): Promise<{ createdCoun
   }
 
   // 6. Sembrar Cupones Promocionales de ejemplo
-  const promotionRepo = dataSource.getRepository(Promotion);
   const nowMs = Date.now();
   const DAY_MS = 24 * 60 * 60 * 1000;
   const seedPromotions = [
@@ -962,24 +1064,229 @@ export async function executeSeed(dataSource: DataSource): Promise<{ createdCoun
     }
   }
 
-  console.log(`\n🎉 Seeding completado exitosamente:`);
-  console.log(`   - Juegos creados: ${createdCount}`);
-  console.log(`   - Juegos actualizados: ${updatedCount}`);
-  console.log(`   - Total catálogo: ${GAMES_DATA.length}`);
-  console.log(`   - Nintendo Switch: 11 juegos`);
-  console.log(`   - PlayStation 5: 6 juegos`);
-  console.log(`   - Xbox Series X|S: 5 juegos`);
-  console.log(`   - PC: 10 juegos`);
+  // 7. Sembrar Reseñas de ejemplo
+  const reviewerUser =
+    (await userRepo.findOne({ where: { email: customerEmail } })) ??
+    (await userRepo.findOne({ where: { email: adminEmail } }));
 
-  return { createdCount, updatedCount, totalCount: GAMES_DATA.length };
+  if (reviewerUser) {
+    const seedReviews = [
+      {
+        slug: 'the-legend-of-zelda-tears-of-the-kingdom',
+        rating: 5,
+        title: 'Una obra maestra absoluta de exploración',
+        body: 'La libertad creativa de Ultrahand y los cielos e islas subterráneas de Hyrule llevan la fórmula a otro nivel.',
+        helpfulCount: 24,
+      },
+      {
+        slug: 'elden-ring',
+        rating: 5,
+        title: 'El estándar de oro en RPG de acción',
+        body: 'Cada rincón de las Tierras Intermedias recompensa la curiosidad con jefes memorables y un diseño de mundo insuperable.',
+        helpfulCount: 31,
+      },
+      {
+        slug: 'baldurs-gate-3',
+        rating: 5,
+        title: 'Libertad narrativa sin precedentes',
+        body: 'Cada decisión importa y los combates tácticos por turnos mantienen una profundidad increíble de principio a fin.',
+        helpfulCount: 29,
+      },
+      {
+        slug: 'god-of-war-ragnarok',
+        rating: 5,
+        title: 'Cierre épico para la saga nórdica',
+        body: 'Combate contundente, dirección artística impecable y una historia emotiva entre Kratos y Atreus.',
+        helpfulCount: 18,
+      },
+      {
+        slug: 'cyberpunk-2077',
+        rating: 4,
+        title: 'Night City brilla como nunca',
+        body: 'Con las actualizaciones recientes el combate, los árboles de habilidades y la inmersión en la ciudad son sobresalientes.',
+        helpfulCount: 15,
+      },
+      {
+        slug: 'hades',
+        rating: 5,
+        title: 'Adictivo y con arte espectacular',
+        body: 'Cada intento de escape del Inframundo ofrece diálogos nuevos, combinaciones de bendiciones y música increíble.',
+        helpfulCount: 21,
+      },
+      {
+        slug: 'forza-horizon-5',
+        rating: 5,
+        title: 'Conducción arcade perfecta en México',
+        body: 'Variedad enorme de vehículos, biomas vibrantes y eventos constantes para jugar solo o en línea.',
+        helpfulCount: 12,
+      },
+      {
+        slug: 'mario-kart-8-deluxe',
+        rating: 5,
+        title: 'Imprescindible para jugar con amigos',
+        body: 'Decenas de pistas clásicas y nuevas con una jugabilidad pulida al milímetro.',
+        helpfulCount: 19,
+      },
+    ];
+
+    for (const revInfo of seedReviews) {
+      const targetGame = gameMap.get(revInfo.slug);
+      if (!targetGame) continue;
+      const existingReview = await reviewRepo.findOne({
+        where: {
+          user: { id: reviewerUser.id },
+          gameId: targetGame.id,
+        },
+      });
+      if (!existingReview) {
+        await reviewRepo.save(
+          reviewRepo.create({
+            rating: revInfo.rating,
+            title: revInfo.title,
+            body: revInfo.body,
+            isVerifiedPurchase: true,
+            helpfulCount: revInfo.helpfulCount,
+            user: reviewerUser,
+            gameId: targetGame.id,
+          }),
+        );
+      }
+    }
+  }
+
+  // 8. Sembrar Trailers Destacados (Slots 1, 2, 3)
+  console.log('🎬 Sembrando Trailers Destacados...');
+  const seedTrailers = [
+    {
+      slot: 1,
+      title: 'The Legend of Zelda: Tears of the Kingdom',
+      imageUrl: '/media/trailers/the-legend-of-zelda-tears-of-the-kingdom.jpg',
+      youtubeUrl: 'https://www.youtube.com/watch?v=uHGShqcAHlQ',
+      description: 'Descubre los cielos y profundidades de Hyrule en la secuela de Breath of the Wild.',
+    },
+    {
+      slot: 2,
+      title: 'Elden Ring',
+      imageUrl: '/media/trailers/elden-ring.jpg',
+      youtubeUrl: 'https://www.youtube.com/watch?v=E3Huy2cdih0',
+      description: 'Álzate, tiznado, y reclama el Círculo de Elden en las Tierras Intermedias.',
+    },
+    {
+      slot: 3,
+      title: "Baldur's Gate 3",
+      imageUrl: '/media/trailers/baldurs-gate-3.jpg',
+      youtubeUrl: 'https://www.youtube.com/watch?v=1T22wNvoNiU',
+      description: 'Forja tu destino en los Reinos Olvidados con el RPG de Larian Studios.',
+    },
+  ];
+
+  for (const tInfo of seedTrailers) {
+    let trailer = await trailerRepo.findOne({ where: { slot: tInfo.slot } });
+    if (!trailer) {
+      trailer = trailerRepo.create(tInfo);
+    } else {
+      trailer.title = tInfo.title;
+      trailer.imageUrl = tInfo.imageUrl;
+      trailer.youtubeUrl = tInfo.youtubeUrl;
+      trailer.description = tInfo.description;
+    }
+    await trailerRepo.save(trailer);
+  }
+
+    console.log(`\n🎉 Seeding completado exitosamente:`);
+    console.log(`   - Juegos creados: ${createdCount}`);
+    console.log(`   - Juegos actualizados: ${updatedCount}`);
+    console.log(`   - Total catálogo: ${GAMES_DATA.length}`);
+    for (const [code, count] of platformCounts.entries()) {
+      console.log(`   - ${code}: ${count} juegos`);
+    }
+
+    return { createdCount, updatedCount, totalCount: GAMES_DATA.length };
+  });
+  } catch (error) {
+    try {
+      if (createdMongoGameIds.length > 0) {
+        await gameModel.deleteMany({ id: { $in: createdMongoGameIds } });
+      }
+      for (const snapshot of updatedMongoSnapshots) {
+        await gameModel.updateOne(
+          { id: snapshot.id },
+          { $set: snapshot.previous },
+        );
+      }
+      if (!hadPreviousCounter) {
+        await counterModel.deleteMany({ _id: 'games' });
+      } else {
+        await counterModel.updateOne(
+          { _id: 'games' },
+          { $set: { seq: previousSeq } },
+        );
+      }
+    } catch (compensationError) {
+      console.error(
+        '⚠️ Error durante la compensación de MongoDB tras fallo del seeder:',
+        compensationError,
+      );
+    }
+    throw error;
+  }
 }
 
-export async function runSeed() {
+export async function runSeed(
+  targetDataSource: DataSource = dataSource,
+  argv: string[] = process.argv,
+  providedMongoModels?: MongoSeedModels,
+) {
+  const shouldReset = argv.includes('--reset');
+  const mongoUri =
+    process.env.MONGODB_URI || 'mongodb://localhost:27017/tienda_videojuegos';
+  let connectedMongoose = false;
+
   console.log('🚀 Conectando a la base de datos...');
-  await dataSource.initialize();
-  console.log('✅ Conexión establecida con éxito.');
-  await executeSeed(dataSource);
-  await dataSource.destroy();
+  try {
+    await targetDataSource.initialize();
+
+    let mongoModels: MongoSeedModels;
+    if (providedMongoModels) {
+      mongoModels = providedMongoModels;
+    } else {
+      if (shouldReset && process.env.NODE_ENV === 'production') {
+        throw new Error('No se permite --reset en entorno de producción.');
+      }
+      await mongoose.connect(mongoUri);
+      connectedMongoose = true;
+      const gameModel = (mongoose.models[Game.name] ??
+        mongoose.model(
+          Game.name,
+          GameSchema as unknown as mongoose.Schema,
+        )) as Model<GameDocument>;
+      const counterModel = (mongoose.models[Counter.name] ??
+        mongoose.model(
+          Counter.name,
+          CounterSchema as unknown as mongoose.Schema,
+        )) as Model<CounterDocument>;
+      mongoModels = { gameModel, counterModel };
+    }
+
+    console.log('✅ Conexión establecida con éxito.');
+    if (shouldReset) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('No se permite --reset en entorno de producción.');
+      }
+      console.log('🧹 Reiniciando esquema de base de datos (--reset)...');
+      await targetDataSource.synchronize(true);
+      await mongoModels.gameModel.deleteMany({});
+      await mongoModels.counterModel.deleteMany({ _id: 'games' });
+    }
+    await executeSeed(targetDataSource, mongoModels);
+  } finally {
+    if (connectedMongoose) {
+      await mongoose.disconnect();
+    }
+    if (targetDataSource.isInitialized) {
+      await targetDataSource.destroy();
+    }
+  }
 }
 
 if (process.argv[1]?.includes('seed.js') || process.argv[1]?.includes('seed.ts')) {

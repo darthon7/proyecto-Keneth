@@ -8,7 +8,6 @@ import {
   Unique,
   type Relation,
 } from 'typeorm';
-import { Game } from '../../games/entities/game.entity.js';
 import { Platform } from '../../platforms/entities/platform.entity.js';
 import { DigitalKey } from '../../digital-keys/entities/digital-key.entity.js';
 import { OrderItem } from '../../orders/entities/order-item.entity.js';
@@ -19,7 +18,7 @@ export enum EditionFormat {
 }
 
 @Entity('game_editions')
-@Unique(['game', 'platform', 'editionName', 'format'])
+@Unique(['gameId', 'platform', 'editionName', 'format'])
 export class GameEdition {
   @PrimaryGeneratedColumn()
   id: number;
@@ -51,11 +50,8 @@ export class GameEdition {
   @CreateDateColumn()
   createdAt: Date;
 
-  @ManyToOne(() => Game, (game) => game.editions, {
-    nullable: false,
-    onDelete: 'CASCADE',
-  })
-  game: Relation<Game>;
+  @Column({ type: 'int' })
+  gameId: number;
 
   @ManyToOne(() => Platform, (platform) => platform.editions, {
     nullable: false,

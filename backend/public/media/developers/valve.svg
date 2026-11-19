@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="320" viewBox="0 0 640 320" role="img" aria-label="Valve">
+  <defs>
+    <linearGradient id="bg-21" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#1E1B4B"/>
+    </linearGradient>
+    <linearGradient id="acc-21" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF2A5F"/>
+      <stop offset="100%" stop-color="#A855F7"/>
+    </linearGradient>
+    <pattern id="grid-21" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="640" height="320" fill="url(#bg-21)"/>
+  <rect width="640" height="320" fill="url(#grid-21)"/>
+
+  <!-- Retro Pop Geometric Accents -->
+  <circle cx="560" cy="54" r="110" fill="#FF2A5F" fill-opacity="0.16"/>
+  <circle cx="595" cy="275" r="78" fill="#A855F7" fill-opacity="0.14"/>
+  <rect x="0" y="0" width="640" height="6" fill="url(#acc-21)"/>
+  <rect x="0" y="314" width="640" height="6" fill="url(#acc-21)"/>
+
+  <!-- Geometric Emblem Badge -->
+  <g transform="translate(48, 86)">
+    <polygon points="74,4 136,40 136,112 74,148 12,112 12,40" fill="#0F0D2E" stroke="url(#acc-21)" stroke-width="4"/>
+    <polygon points="74,16 124,45 124,107 74,136 24,107 24,45" fill="url(#acc-21)" fill-opacity="0.18"/>
+    <text x="74" y="88" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="30" letter-spacing="1.5" fill="#FFFFFF">VLV</text>
+  </g>
+
+  <!-- Studio Typography -->
+  <g transform="translate(216, 108)">
+    <rect x="0" y="0" width="142" height="26" rx="13" fill="url(#acc-21)"/>
+    <text x="71" y="17.5" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="11.5" letter-spacing="1.4" fill="#1E1B4B">GAME STUDIO</text>
+
+    <text x="0" y="72" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="34" fill="#FFFFFF">Valve</text>
+
+    <g transform="translate(0, 96)">
+      <rect x="0" y="0" width="166" height="32" rx="8" fill="#FFFFFF" fill-opacity="0.1" stroke="#FFFFFF" stroke-opacity="0.22"/>
+      <text x="83" y="21" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="12.5" letter-spacing="0.6" fill="#E0E7FF">US · EE. UU.</text>
+
+      <rect x="178" y="0" width="116" height="32" rx="8" fill="#A855F7" fill-opacity="0.18" stroke="#A855F7" stroke-opacity="0.65"/>
+      <text x="236" y="21" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="13" letter-spacing="0.8" fill="#FFC700">EST. 1996</text>
+    </g>
+  </g>
+</svg>

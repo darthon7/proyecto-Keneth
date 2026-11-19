@@ -1,5 +1,4 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, type Relation } from 'typeorm';
-import { Game } from '../../games/entities/game.entity.js';
+import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 
 export enum RequirementTier {
   MINIMUM = 'MINIMUM',
@@ -37,9 +36,7 @@ export class SystemRequirement {
   @Column({ length: 50, nullable: true })
   directxVersion: string;
 
-  @ManyToOne(() => Game, (game) => game.systemRequirements, {
-    nullable: false,
-    onDelete: 'CASCADE',
-  })
-  game: Relation<Game>;
+  @Index()
+  @Column({ type: 'int' })
+  gameId: number;
 }

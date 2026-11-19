@@ -8,7 +8,7 @@ import {
   Max,
   MaxLength,
   Min,
-  IsUrl,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreateDeveloperDto {
@@ -35,7 +35,14 @@ export class CreateDeveloperDto {
   foundedYear?: number;
 
   @IsOptional()
-  @IsUrl({}, { message: 'La URL de la imagen de portada no es válida' })
+  @ValidateIf(
+    (_object, value) => value !== undefined && value !== null && value !== '',
+  )
+  @IsString()
   @MaxLength(500)
+  @Matches(/^(\/[^\s]*|https?:\/\/[^\s/$.?#].[^\s]*)$/i, {
+    message:
+      'La URL de la imagen de portada debe ser http(s):// válida o ruta /...',
+  })
   coverImagenUrl?: string;
 }

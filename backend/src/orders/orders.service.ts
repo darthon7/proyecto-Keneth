@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { sanitizeUser } from '../auth/index.js';
 import {
   normalizePagination,
@@ -15,6 +15,7 @@ import { OrderItem } from './entities/order-item.entity.js';
 import { User } from '../users/entities/user.entity.js';
 import { GameEdition } from '../game-editions/entities/game-edition.entity.js';
 import { PromotionsService } from '../promotions/promotions.service.js';
+import { GamesService } from '../games/games.service.js';
 import { CouponRedemption } from '../promotions/entities/coupon-redemption.entity.js';
 import { UserLibrary } from '../user-libraries/entities/user-library.entity.js';
 import { CreateOrderDto } from './dto/create-order.dto.js';
@@ -43,6 +44,8 @@ export class OrdersService {
     private readonly orderRepository: Repository<Order>,
 
     private readonly promotionsService: PromotionsService,
+
+    private readonly gamesService: GamesService,
 
     @InjectDataSource()
     private readonly dataSource: DataSource,
@@ -106,6 +109,18 @@ export class OrdersService {
         throw new NotFoundException(`El usuario con ID ${userId} no existe`);
       }
 
+      const editionIds = [...new Set(items.map((item) => item.gameEditionId))];
+      const preloadedEditions =
+        editionIds.length > 0
+          ? await manager.find(GameEdition, {
+              where: { id: In(editionIds) },
+              select: { id: true, gameId: true },
+            })
+          : [];
+      const gameMap = await this.gamesService.findByIdsMap(
+        preloadedEditions.map((e) => e.gameId),
+      );
+
       const itemsToSave: PreparedOrderItem[] = [];
 
       for (const itemDto of items) {
@@ -125,18 +140,17 @@ export class OrdersService {
           );
         }
 
-        const editionWithGame = await manager.findOne(GameEdition, {
-          where: { id: edition.id },
-          relations: { game: true },
-        });
-        const game = editionWithGame?.game;
+        const game = gameMap.get(edition.gameId);
         const now = new Date();
         const campaignStartOk =
           !game?.discountStartDate || new Date(game.discountStartDate) <= now;
         const campaignEndOk =
           !game?.discountEndDate || new Date(game.discountEndDate) >= now;
         const campaignPercent =
-          game && Number(game.discountPercentage) > 0 && campaignStartOk && campaignEndOk
+          game &&
+          Number(game.discountPercentage) > 0 &&
+          campaignStartOk &&
+          campaignEndOk
             ? Number(game.discountPercentage)
             : 0;
 
@@ -259,7 +273,7 @@ export class OrdersService {
   }
 
   async confirmPayment(orderId: number) {
-    return await this.dataSource.transaction(async (manager) => {
+    const confirmedOrder = await this.dataSource.transaction(async (manager) => {
       const lockedOrder = await manager.findOne(Order, {
         where: { id: orderId },
         lock: { mode: 'pessimistic_write' },
@@ -280,7 +294,7 @@ export class OrdersService {
         relations: {
           user: true,
           items: {
-            gameEdition: { game: true, platform: true },
+            gameEdition: { platform: true },
             digitalKey: true,
           },
         },
@@ -320,8 +334,11 @@ export class OrdersService {
         }
       }
 
-      return this.sanitizeOrderRelations(orderWithRelations);
+      return orderWithRelations;
     });
+
+    const [hydrated] = await this.hydrateAndSanitizeOrders([confirmedOrder]);
+    return hydrated;
   }
 
   private sanitizeOrderRelations(order: Order) {
@@ -334,20 +351,51 @@ export class OrdersService {
     };
   }
 
+  private async hydrateAndSanitizeOrders(orders: Order[]) {
+    const gameIds = orders.flatMap((order) =>
+      (order.items ?? [])
+        .map((item) => item.gameEdition?.gameId)
+        .filter((id): id is number => typeof id === 'number'),
+    );
+    const gameMap = await this.gamesService.findByIdsMap(gameIds);
+
+    return orders.map((order) => {
+      const sanitized = this.sanitizeOrderRelations(order);
+      if (!order.items) {
+        return sanitized;
+      }
+      return {
+        ...sanitized,
+        items: order.items.map((item) => {
+          if (!item.gameEdition) {
+            return item;
+          }
+          return {
+            ...item,
+            gameEdition: {
+              ...item.gameEdition,
+              game: gameMap.get(item.gameEdition.gameId) ?? null,
+            },
+          };
+        }),
+      };
+    });
+  }
+
   async findAll(pagination?: PaginationOptions) {
     const { take, skip } = normalizePagination(pagination);
     const orders = await this.orderRepository.find({
       relations: {
         user: true,
         items: {
-          gameEdition: { game: true, platform: true },
+          gameEdition: { platform: true },
           digitalKey: true,
         },
       },
       take,
       skip,
     });
-    return orders.map((order) => this.sanitizeOrderRelations(order));
+    return await this.hydrateAndSanitizeOrders(orders);
   }
 
   async findByUser(userId: number, pagination?: PaginationOptions) {
@@ -357,14 +405,14 @@ export class OrdersService {
       relations: {
         user: true,
         items: {
-          gameEdition: { game: true, platform: true },
+          gameEdition: { platform: true },
           digitalKey: true,
         },
       },
       take,
       skip,
     });
-    return orders.map((order) => this.sanitizeOrderRelations(order));
+    return await this.hydrateAndSanitizeOrders(orders);
   }
 
   async findOne(id: number) {
@@ -373,7 +421,7 @@ export class OrdersService {
       relations: {
         user: true,
         items: {
-          gameEdition: { game: true, platform: true },
+          gameEdition: { platform: true },
           digitalKey: true,
         },
       },
@@ -383,7 +431,8 @@ export class OrdersService {
       throw new NotFoundException(`Orden con ID ${id} no encontrada`);
     }
 
-    return this.sanitizeOrderRelations(order);
+    const [hydrated] = await this.hydrateAndSanitizeOrders([order]);
+    return hydrated;
   }
 
   async update(id: number, updateDto: UpdateOrderDto) {
@@ -392,7 +441,7 @@ export class OrdersService {
       relations: {
         user: true,
         items: {
-          gameEdition: { game: true, platform: true },
+          gameEdition: { platform: true },
           digitalKey: true,
         },
       },
@@ -402,11 +451,12 @@ export class OrdersService {
     }
     this.orderRepository.merge(order, updateDto);
     const saved = await this.orderRepository.save(order);
-    return this.sanitizeOrderRelations(saved);
+    const [hydrated] = await this.hydrateAndSanitizeOrders([saved]);
+    return hydrated;
   }
 
   async remove(id: number) {
-    return await this.dataSource.transaction(async (manager) => {
+    const removedOrder = await this.dataSource.transaction(async (manager) => {
       const lockedOrder = await manager.findOne(Order, {
         where: { id },
         lock: { mode: 'pessimistic_write' },
@@ -420,7 +470,7 @@ export class OrdersService {
         relations: {
           user: true,
           items: {
-            gameEdition: { game: true, platform: true },
+            gameEdition: { platform: true },
             digitalKey: true,
           },
         },
@@ -436,9 +486,12 @@ export class OrdersService {
         }
       }
 
-      const sanitized = this.sanitizeOrderRelations(order);
+      const snapshot = { ...order };
       await manager.remove(Order, order);
-      return sanitized;
+      return snapshot as Order;
     });
+
+    const [hydrated] = await this.hydrateAndSanitizeOrders([removedOrder]);
+    return hydrated;
   }
 }

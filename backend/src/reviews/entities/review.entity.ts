@@ -2,12 +2,12 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   ManyToOne,
   PrimaryGeneratedColumn,
   type Relation,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity.js';
-import { Game } from '../../games/entities/game.entity.js';
 
 @Entity('reviews')
 export class Review {
@@ -38,9 +38,7 @@ export class Review {
   })
   user: Relation<User>;
 
-  @ManyToOne(() => Game, (game) => game.reviews, {
-    nullable: false,
-    onDelete: 'CASCADE',
-  })
-  game: Relation<Game>;
+  @Index()
+  @Column({ type: 'int' })
+  gameId: number;
 }

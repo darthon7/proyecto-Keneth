@@ -8,6 +8,7 @@ import { UserLibrary } from '../user-libraries/entities/user-library.entity.js';
 import { GameEditionsModule } from '../game-editions/game-editions.module.js';
 import { DigitalKeysModule } from '../digital-keys/digital-keys.module.js';
 import { PromotionsModule } from '../promotions/promotions.module.js';
+import { GamesModule } from '../games/games.module.js';
 import { OrdersService } from './orders.service.js';
 import { OrdersController } from './orders.controller.js';
 
@@ -23,6 +24,7 @@ import { OrdersController } from './orders.controller.js';
     GameEditionsModule,
     DigitalKeysModule,
     PromotionsModule,
+    GamesModule,
   ],
   controllers: [OrdersController],
   providers: [OrdersService],

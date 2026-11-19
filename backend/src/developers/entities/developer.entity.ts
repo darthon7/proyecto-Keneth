@@ -1,11 +1,4 @@
-import {
-  Column,
-  Entity,
-  OneToMany,
-  PrimaryGeneratedColumn,
-  type Relation,
-} from 'typeorm';
-import { Game } from '../../games/entities/game.entity.js';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('developers')
 export class Developer {
@@ -23,7 +16,4 @@ export class Developer {
 
   @Column({ type: 'varchar', length: 500, nullable: true })
   coverImagenUrl: string;
-
-  @OneToMany(() => Game, (game) => game.developer)
-  games: Relation<Game[]>;
 }

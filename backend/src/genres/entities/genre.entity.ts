@@ -1,11 +1,4 @@
-import {
-  Column,
-  Entity,
-  ManyToMany,
-  PrimaryGeneratedColumn,
-  type Relation,
-} from 'typeorm';
-import { Game } from '../../games/entities/game.entity.js';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('genres')
 export class Genre {
@@ -20,7 +13,4 @@ export class Genre {
 
   @Column({ type: 'text', nullable: true })
   description: string;
-
-  @ManyToMany(() => Game, (game) => game.genres)
-  games: Relation<Game[]>;
 }

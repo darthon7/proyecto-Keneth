@@ -12,6 +12,7 @@ import {
 } from '../common/pagination.util.js';
 import { DigitalKey, KeyStatus } from './entities/digital-key.entity.js';
 import { GameEdition } from '../game-editions/entities/game-edition.entity.js';
+import { GamesService, type GamePlain } from '../games/games.service.js';
 import {
   CreateBulkDigitalKeysDto,
   CreateDigitalKeyDto,
@@ -28,6 +29,8 @@ export class DigitalKeysService {
 
     @InjectRepository(GameEdition)
     private readonly editionRepository: Repository<GameEdition>,
+
+    private readonly gamesService: GamesService,
   ) {}
 
   private generateKeyCode(): string {
@@ -43,9 +46,34 @@ export class DigitalKeysService {
     return crypto.createHash('sha256').update(code.trim()).digest('hex');
   }
 
+  private async hydrateKeys(keys: DigitalKey[]) {
+    const gameIds = keys
+      .map((k) => k.gameEdition?.gameId)
+      .filter((id): id is number => typeof id === 'number');
+    const gameMap: Map<number, GamePlain> =
+      await this.gamesService.findByIdsMap(gameIds);
+
+    return keys.map((key) => {
+      if (!key.gameEdition) {
+        return key;
+      }
+      return {
+        ...key,
+        gameEdition: {
+          ...key.gameEdition,
+          game: gameMap.get(key.gameEdition.gameId) ?? null,
+        },
+      };
+    });
+  }
+
   async create(createDto: CreateDigitalKeyDto) {
-    const { gameEditionId, code: rawCode, codeHash: rawHash, ...datos } =
-      createDto;
+    const {
+      gameEditionId,
+      code: rawCode,
+      codeHash: rawHash,
+      ...datos
+    } = createDto;
 
     const gameEdition = await this.editionRepository.findOneBy({
       id: gameEditionId,
@@ -81,7 +109,7 @@ export class DigitalKeysService {
   async createBulk(bulkDto: CreateBulkDigitalKeysDto) {
     const gameEdition = await this.editionRepository.findOne({
       where: { id: bulkDto.gameEditionId },
-      relations: { game: true, platform: true },
+      relations: { platform: true },
     });
     if (!gameEdition) {
       throw new NotFoundException(
@@ -125,7 +153,6 @@ export class DigitalKeysService {
           `Se encontraron ${collisions.length} clave(s) ya registradas previamente en el sistema`,
         );
       }
-      // Regenerate in the extremely unlikely event of an auto-generated collision
       const collisionHashes = new Set(collisions.map((k) => k.codeHash));
       const uniqueCodes = new Set(codes);
       codes = codes.map((c) => {
@@ -163,17 +190,18 @@ export class DigitalKeysService {
 
   async findAll(pagination?: PaginationOptions) {
     const { take, skip } = normalizePagination(pagination);
-    return await this.keyRepository.find({
-      relations: { gameEdition: { game: true, platform: true } },
+    const keys = await this.keyRepository.find({
+      relations: { gameEdition: { platform: true } },
       take,
       skip,
     });
+    return await this.hydrateKeys(keys);
   }
 
-  async findOne(id: string) {
+  private async findEntityOrFail(id: string): Promise<DigitalKey> {
     const key = await this.keyRepository.findOne({
       where: { id },
-      relations: { gameEdition: { game: true, platform: true } },
+      relations: { gameEdition: { platform: true } },
     });
     if (!key) {
       throw new NotFoundException(`Llave digital con ID ${id} no encontrada`);
@@ -181,13 +209,20 @@ export class DigitalKeysService {
     return key;
   }
 
+  async findOne(id: string) {
+    const key = await this.findEntityOrFail(id);
+    const [hydrated] = await this.hydrateKeys([key]);
+    return hydrated;
+  }
+
   async update(id: string, updateDto: UpdateDigitalKeyDto) {
-    const key = await this.findOne(id);
+    const key = await this.findEntityOrFail(id);
     const { gameEditionId, ...datos } = updateDto;
 
     if (gameEditionId) {
-      const edition = await this.editionRepository.findOneBy({
-        id: gameEditionId,
+      const edition = await this.editionRepository.findOne({
+        where: { id: gameEditionId },
+        relations: { platform: true },
       });
       if (!edition) {
         throw new NotFoundException(
@@ -213,15 +248,18 @@ export class DigitalKeysService {
     }
 
     this.keyRepository.merge(key, datos);
-    return await this.keyRepository.save(key);
+    const saved = await this.keyRepository.save(key);
+    const [hydrated] = await this.hydrateKeys([saved]);
+    return hydrated;
   }
 
   async remove(id: string) {
-    const key = await this.findOne(id);
-    return await this.keyRepository.remove(key);
+    const key = await this.findEntityOrFail(id);
+    const [hydrated] = await this.hydrateKeys([key]);
+    await this.keyRepository.remove(key);
+    return hydrated;
   }
 
-  // Método de negocio para obtener una llave disponible para venta
   async obtenerLlaveDisponible(gameEditionId: number) {
     const key = await this.keyRepository.findOne({
       where: {
@@ -240,7 +278,7 @@ export class DigitalKeysService {
   }
 
   async marcarComoAsignada(keyId: string) {
-    const key = await this.findOne(keyId);
+    const key = await this.findEntityOrFail(keyId);
     key.status = KeyStatus.ASSIGNED;
     return await this.keyRepository.save(key);
   }

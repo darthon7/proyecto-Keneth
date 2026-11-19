@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SystemRequirement } from './entities/system-requirement.entity.js';
-import { Game } from '../games/entities/game.entity.js';
+import { GamesService } from '../games/games.service.js';
 import { CreateSystemRequirementDto } from './dto/create-system-requirement.dto.js';
 import { UpdateSystemRequirementDto } from './dto/update-system-requirement.dto.js';
 
@@ -12,59 +12,96 @@ export class SystemRequirementsService {
     @InjectRepository(SystemRequirement)
     private readonly requirementRepository: Repository<SystemRequirement>,
 
-    @InjectRepository(Game)
-    private readonly gameRepository: Repository<Game>,
+    private readonly gamesService: GamesService,
   ) {}
 
   async create(createDto: CreateSystemRequirementDto) {
     const { gameId, ...datos } = createDto;
-    const game = await this.gameRepository.findOneBy({ id: gameId });
+    const game = await this.gamesService.findByIdRaw(gameId);
     if (!game) {
       throw new NotFoundException(`El videojuego con ID ${gameId} no existe`);
     }
 
     const requirement = this.requirementRepository.create({
       ...datos,
-      game,
+      gameId: game.id,
     });
-    return await this.requirementRepository.save(requirement);
+    const saved = await this.requirementRepository.save(requirement);
+    return {
+      ...saved,
+      game,
+    };
   }
 
   async findAll() {
-    return await this.requirementRepository.find({
-      relations: { game: true },
-    });
+    const requirements = await this.requirementRepository.find();
+    const gameMap = await this.gamesService.findByIdsMap(
+      requirements.map((r) => r.gameId),
+    );
+    return requirements.map((req) => ({
+      ...req,
+      game: gameMap.get(req.gameId) ?? null,
+    }));
   }
 
   async findOne(id: number) {
     const requirement = await this.requirementRepository.findOne({
       where: { id },
-      relations: { game: true },
     });
     if (!requirement) {
-      throw new NotFoundException(`Requisito de sistema con ID ${id} no encontrado`);
+      throw new NotFoundException(
+        `Requisito de sistema con ID ${id} no encontrado`,
+      );
     }
-    return requirement;
+    const game = await this.gamesService.findByIdRaw(requirement.gameId);
+    return {
+      ...requirement,
+      game,
+    };
   }
 
   async update(id: number, updateDto: UpdateSystemRequirementDto) {
-    const requirement = await this.findOne(id);
+    const requirement = await this.requirementRepository.findOne({
+      where: { id },
+    });
+    if (!requirement) {
+      throw new NotFoundException(
+        `Requisito de sistema con ID ${id} no encontrado`,
+      );
+    }
     const { gameId, ...datos } = updateDto;
 
     if (gameId) {
-      const game = await this.gameRepository.findOneBy({ id: gameId });
+      const game = await this.gamesService.findByIdRaw(gameId);
       if (!game) {
         throw new NotFoundException(`El videojuego con ID ${gameId} no existe`);
       }
-      requirement.game = game;
+      requirement.gameId = game.id;
     }
 
     this.requirementRepository.merge(requirement, datos);
-    return await this.requirementRepository.save(requirement);
+    const saved = await this.requirementRepository.save(requirement);
+    const game = await this.gamesService.findByIdRaw(saved.gameId);
+    return {
+      ...saved,
+      game,
+    };
   }
 
   async remove(id: number) {
-    const requirement = await this.findOne(id);
-    return await this.requirementRepository.remove(requirement);
+    const requirement = await this.requirementRepository.findOne({
+      where: { id },
+    });
+    if (!requirement) {
+      throw new NotFoundException(
+        `Requisito de sistema con ID ${id} no encontrado`,
+      );
+    }
+    const game = await this.gamesService.findByIdRaw(requirement.gameId);
+    const removed = await this.requirementRepository.remove(requirement);
+    return {
+      ...removed,
+      game,
+    };
   }
 }
