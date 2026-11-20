@@ -57,14 +57,19 @@ export function useStockWatch(options: UseStockWatchOptions = {}) {
       const nextMap = new Map<number, number>();
       const newAlerts: StockAlert[] = [];
       const isInitial = isInitialSnapshotRef.current;
+      let hasStockChanged = false;
 
       for (const edition of editions) {
         const availableCount = countAvailableKeys(edition);
         nextMap.set(edition.id, availableCount);
 
+        if (!isInitial && prevMap.get(edition.id) !== availableCount) {
+          hasStockChanged = true;
+        }
+
         if (!isInitial && prevMap.has(edition.id)) {
           const previousCount = prevMap.get(edition.id)!;
-          const editionLabel = edition.name || (edition.platform?.name ? `Edición ${edition.platform.name}` : `Edición #${edition.id}`);
+          const editionLabel = edition.editionName || (edition.platform?.name ? `Edición ${edition.platform.name}` : `Edición #${edition.id}`);
 
           if (previousCount > 0 && availableCount === 0) {
             newAlerts.push({
@@ -104,8 +109,10 @@ export function useStockWatch(options: UseStockWatchOptions = {}) {
 
       if (newAlerts.length > 0) {
         setAlerts((curr) => [...newAlerts, ...curr].slice(0, 5));
-        // Invalida la query del juego para que los componentes suscritos se sincronicen
-        void queryClient.setQueryData(['game', gameId], game);
+      }
+
+      if (hasStockChanged || newAlerts.length > 0) {
+        queryClient.setQueryData(['game', gameId], game);
       }
     };
 

@@ -4,6 +4,7 @@ import type { Repository } from 'typeorm';
 import { GameEditionsService } from './game-editions.service.js';
 import type { GameEdition } from './entities/game-edition.entity.js';
 import type { Platform } from '../platforms/entities/platform.entity.js';
+import type { DigitalKey } from '../digital-keys/entities/digital-key.entity.js';
 import type { GamesService } from '../games/games.service.js';
 
 describe('GameEditionsService (sanitización de digitalKeys)', () => {
@@ -50,6 +51,7 @@ describe('GameEditionsService (sanitización de digitalKeys)', () => {
     } as unknown as Repository<GameEdition>;
 
     const mockPlatformRepo = {} as Repository<Platform>;
+    const mockDigitalKeyRepo = {} as Repository<DigitalKey>;
 
     const mockGamesService = {
       findByIdsMap: vi.fn(async () => new Map([[5, { id: 5, title: 'Elden Ring' }]])),
@@ -59,6 +61,7 @@ describe('GameEditionsService (sanitización de digitalKeys)', () => {
     service = new GameEditionsService(
       mockEditionRepo,
       mockPlatformRepo,
+      mockDigitalKeyRepo,
       mockGamesService,
     );
   });

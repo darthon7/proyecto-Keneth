@@ -120,36 +120,6 @@ export function GameDetailPage() {
         ← Volver al catálogo
       </button>
 
-      {alerts.length > 0 && (
-        <div className="mt-4 space-y-2">
-          {alerts.map((alert) => (
-            <div
-              key={alert.id}
-              role="alert"
-              className={`flex items-center justify-between rounded-xl px-4 py-3 text-xs font-bold shadow-sm transition-all animate-in fade-in slide-in-from-top-2 ${
-                alert.type === 'sold_out'
-                  ? 'bg-red-500/10 text-red-600 border border-red-500/30'
-                  : alert.type === 'restocked'
-                  ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/30'
-                  : 'bg-amber-500/10 text-amber-700 border border-amber-500/30'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <span className="inline-block h-2 w-2 rounded-full bg-current animate-pulse" />
-                <span>{alert.message}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => dismissAlert(alert.id)}
-                className="ml-3 text-xs underline font-semibold hover:opacity-75 cursor-pointer"
-              >
-                Cerrar
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
       <div className="mt-6 grid grid-cols-[290px_1fr_320px] gap-6 items-start">
         {/* Left Column: Cover + Metadata */}
         <div className="space-y-4">
@@ -438,10 +408,7 @@ export function GameDetailPage() {
           )}
 
           {activeEdition && (
-            <div
-              key={`stock-${activeEdition.id}-${activeEditionAvailableKeys}`}
-              className="flex items-center gap-1.5 transition-all duration-300 animate-in fade-in zoom-in-95"
-            >
+            <div className="flex items-center gap-1.5">
               <span
                 className={`inline-block h-2 w-2 rounded-full ${
                   isActiveEditionSoldOut
@@ -456,12 +423,48 @@ export function GameDetailPage() {
                   isActiveEditionSoldOut ? 'text-[#EF4444]' : 'text-[#065F46]'
                 }`}
               >
-                {activeEditionHasKeyInfo
-                  ? activeEditionAvailableKeys > 0
-                    ? `${activeEditionAvailableKeys} claves digitales disponibles`
-                    : 'Sin claves digitales disponibles'
-                  : 'Entrega digital inmediata'}
+                {activeEditionHasKeyInfo ? (
+                  activeEditionAvailableKeys > 0 ? (
+                    <>
+                      <span>{activeEditionAvailableKeys}</span> claves digitales disponibles
+                    </>
+                  ) : (
+                    'Sin claves digitales disponibles'
+                  )
+                ) : (
+                  'Entrega digital inmediata'
+                )}
               </p>
+            </div>
+          )}
+
+          {alerts.length > 0 && (
+            <div className="space-y-2">
+              {alerts.map((alert) => (
+                <div
+                  key={alert.id}
+                  role="alert"
+                  className={`flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-bold shadow-xs transition-all animate-in fade-in ${
+                    alert.type === 'sold_out'
+                      ? 'bg-red-500/10 text-red-600 border border-red-500/30'
+                      : alert.type === 'restocked'
+                      ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/30'
+                      : 'bg-amber-500/10 text-amber-700 border border-amber-500/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-current animate-pulse" />
+                    <span className="leading-snug">{alert.message}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => dismissAlert(alert.id)}
+                    className="shrink-0 text-[11px] underline font-semibold hover:opacity-75 cursor-pointer"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              ))}
             </div>
           )}
 
