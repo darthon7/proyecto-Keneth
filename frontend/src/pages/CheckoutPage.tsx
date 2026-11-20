@@ -78,7 +78,7 @@ export function CheckoutPage() {
       return created;
     },
     onSuccess: async (data) => {
-      clear();
+      clear({ releaseReservations: false });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['orders'] }),
         queryClient.invalidateQueries({ queryKey: ['user-libraries'] }),

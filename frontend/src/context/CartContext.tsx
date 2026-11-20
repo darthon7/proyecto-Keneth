@@ -23,13 +23,17 @@ interface StoredCartPayload {
   expiresAt: number | null;
 }
 
+export interface ClearCartOptions {
+  releaseReservations?: boolean;
+}
+
 interface CartContextValue {
   items: CartItem[];
   expiresAt: number | null;
   addItem: (gameEditionId: number, quantity?: number) => void;
   removeItem: (gameEditionId: number) => void;
   setQuantity: (gameEditionId: number, quantity: number) => void;
-  clear: () => void;
+  clear: (options?: ClearCartOptions) => void;
   totalItems: number;
 }
 
@@ -179,10 +183,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const clear = useCallback(() => {
-    // Al limpiar el carrito sin pagar, liberar las claves reservadas
-    for (const item of items) {
-      void gameEditionsExtraApi.release(item.gameEditionId, item.quantity).catch(() => {});
+  const clear = useCallback((options?: ClearCartOptions) => {
+    const shouldRelease = options?.releaseReservations ?? true;
+    if (shouldRelease) {
+      // Al limpiar el carrito sin pagar, liberar las claves reservadas
+      for (const item of items) {
+        void gameEditionsExtraApi.release(item.gameEditionId, item.quantity).catch(() => {});
+      }
     }
     setItems([]);
     setExpiresAt(null);

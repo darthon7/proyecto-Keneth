@@ -177,7 +177,9 @@ export class OrdersService {
               status: KeyStatus.RESERVED,
             },
           ],
-          order: { status: 'ASC', id: 'ASC' },
+          // Priorizar claves RESERVED (reservadas por el carrito) antes que AVAILABLE
+          // para no dejar reservas huérfanas que reaparezcan como stock tras la compra.
+          order: { status: 'DESC', id: 'ASC' },
           take: quantity,
           lock: { mode: 'pessimistic_write' },
         });
