@@ -14,7 +14,7 @@ import { PaymentStatus } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { useSession } from '@/context/SessionContext';
 import { useCartSummary } from '@/hooks/useCartSummary';
-import { countAvailableKeys } from '@/utils/domain';
+import { countPurchasableKeys } from '@/utils/domain';
 import { formatCurrency } from '@/utils/format';
 import { VALIDATION_PATTERNS } from '@/utils/fields';
 import { checkoutSchema, type CheckoutFormValues } from '@/utils/schemas';
@@ -55,7 +55,7 @@ export function CheckoutPage() {
     return cartLines.filter((line) => {
       const keys = line.edition.digitalKeys;
       if (Array.isArray(keys)) {
-        return countAvailableKeys(line.edition) < line.quantity;
+        return countPurchasableKeys(line.edition) < line.quantity;
       }
       return false;
     });
@@ -268,29 +268,6 @@ export function CheckoutPage() {
               />
             </div>
           </div>
-
-          {hasOutOfStockItems && (
-            <div
-              role="alert"
-              className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-xs font-semibold text-red-600 animate-in fade-in"
-            >
-              <div className="flex items-center gap-2 font-bold mb-1">
-                <span className="inline-block h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                <span>Aviso de stock en tiempo real:</span>
-              </div>
-              <ul className="list-disc pl-5 space-y-0.5">
-                {outOfStockLines.map((l) => (
-                  <li key={l.edition.id}>
-                    {l.edition.editionName} ({l.edition.game?.title ?? 'Juego'}): solicitaste{' '}
-                    {l.quantity} pero solo hay {countAvailableKeys(l.edition)} disponibles.
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-2 text-[11px] text-[#475569]">
-                Regresa al carrito para ajustar la cantidad antes de proceder al pago.
-              </p>
-            </div>
-          )}
 
           {validationError && <ErrorBanner message={validationError} />}
           {createOrder.isError && <ErrorBanner message={errorMessage(createOrder.error)} />}

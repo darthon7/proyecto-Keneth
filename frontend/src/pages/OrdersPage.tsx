@@ -12,7 +12,11 @@ import { errorMessage, ordersApi } from '@/api';
 import { useCart } from '@/context/CartContext';
 import { useSession } from '@/context/SessionContext';
 import { useCartSummary } from '@/hooks/useCartSummary';
-import { PAYMENT_STATUS_META } from '@/utils/domain';
+import {
+  countAvailableKeys,
+  countPurchasableKeys,
+  PAYMENT_STATUS_META,
+} from '@/utils/domain';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { VALIDATION_PATTERNS } from '@/utils/fields';
 
@@ -61,7 +65,18 @@ export function OrdersPage() {
   const isCouponInvalid =
     hasCouponInput && !isCouponFormatInvalid && !promotionsQuery.isLoading && !matchedPromotion;
 
+  const hasOutOfStockItems = useMemo(
+    () =>
+      cartLines.some(
+        (line) =>
+          Array.isArray(line.edition.digitalKeys) &&
+          countPurchasableKeys(line.edition) < line.quantity,
+      ),
+    [cartLines],
+  );
+
   const goToCheckout = () => {
+    if (hasOutOfStockItems) return;
     const query = activePromotion?.couponCode
       ? `?coupon=${encodeURIComponent(activePromotion.couponCode)}`
       : '';
@@ -200,8 +215,13 @@ export function OrdersPage() {
                           <button
                             type="button"
                             aria-label="Agregar una unidad"
+                            disabled={
+                              line.quantity >= 50 ||
+                              (Array.isArray(line.edition.digitalKeys) &&
+                                countAvailableKeys(line.edition) <= 0)
+                            }
                             onClick={() => setQuantity(line.edition.id, line.quantity + 1)}
-                            className="h-7 w-7 rounded-lg bg-[#FFFFFF] border border-[#E2E8F0] font-bold text-[#0F172A] hover:border-[#FF2A5F] cursor-pointer"
+                            className="h-7 w-7 rounded-lg bg-[#FFFFFF] border border-[#E2E8F0] font-bold text-[#0F172A] hover:border-[#FF2A5F] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             +
                           </button>
@@ -285,7 +305,7 @@ export function OrdersPage() {
                 size="lg"
                 className="mt-5 w-full"
                 data-testid="orders-open-checkout-btn"
-                disabled={cartLines.length === 0 || !currentUser}
+                disabled={cartLines.length === 0 || !currentUser || hasOutOfStockItems}
                 onClick={goToCheckout}
               >
                 Proceder al pago

@@ -46,3 +46,9 @@ export function getMinBasePrice(game?: Game | null): number | null {
 export function countAvailableKeys(edition?: GameEdition | null): number {
   return (edition?.digitalKeys ?? []).filter((key) => key.status === KeyStatus.AVAILABLE).length;
 }
+
+export function countPurchasableKeys(edition?: GameEdition | null): number {
+  return (edition?.digitalKeys ?? []).filter(
+    (key) => key.status === KeyStatus.AVAILABLE || key.status === KeyStatus.RESERVED,
+  ).length;
+}
