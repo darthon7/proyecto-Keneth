@@ -1,6 +1,6 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { gameEditionsExtraApi } from '@/api';
+import { errorMessage, gameEditionsExtraApi } from '@/api';
 
 const STORAGE_KEY = 'keneth.cart';
 export const CART_RESERVATION_TTL_MS = 3 * 60 * 1000;
@@ -30,9 +30,11 @@ export interface ClearCartOptions {
 interface CartContextValue {
   items: CartItem[];
   expiresAt: number | null;
-  addItem: (gameEditionId: number, quantity?: number) => void;
+  stockError: string | null;
+  clearStockError: () => void;
+  addItem: (gameEditionId: number, quantity?: number) => Promise<boolean>;
   removeItem: (gameEditionId: number) => void;
-  setQuantity: (gameEditionId: number, quantity: number) => void;
+  setQuantity: (gameEditionId: number, quantity: number) => Promise<boolean>;
   clear: (options?: ClearCartOptions) => void;
   totalItems: number;
 }
@@ -93,10 +95,21 @@ function readStoredCart(): StoredCartPayload {
   }
 }
 
+function isHttpError(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'response' in error && Boolean((error as { response?: unknown }).response);
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [initialCart] = useState<StoredCartPayload>(readStoredCart);
   const [items, setItems] = useState<CartItem[]>(initialCart.items);
   const [expiresAt, setExpiresAt] = useState<number | null>(initialCart.expiresAt);
+  const [stockError, setStockError] = useState<string | null>(null);
+  const itemsRef = useRef<CartItem[]>(items);
+  itemsRef.current = items;
+
+  const clearStockError = useCallback(() => {
+    setStockError(null);
+  }, []);
 
   useEffect(() => {
     const payload: StoredCartPayload = {
@@ -126,14 +139,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return () => window.clearTimeout(timerId);
   }, [items.length, expiresAt]);
 
-  const addItem = useCallback((gameEditionId: number, quantity = 1) => {
-    if (!Number.isInteger(gameEditionId) || gameEditionId < 1) return;
+  const addItem = useCallback(async (gameEditionId: number, quantity = 1): Promise<boolean> => {
+    if (!Number.isInteger(gameEditionId) || gameEditionId < 1) return false;
     const safeQuantity = normalizeQuantity(quantity);
+    setStockError(null);
 
-    // Reservar claves en el backend para que el stock disminuya inmediatamente en tiempo real
-    void gameEditionsExtraApi.reserve(gameEditionId, safeQuantity).catch(() => {
+    try {
+      // Reservar claves en el backend antes de reflejar el incremento en el carrito
+      await gameEditionsExtraApi.reserve(gameEditionId, safeQuantity);
+    } catch (error) {
+      if (isHttpError(error)) {
+        setStockError(errorMessage(error));
+        return false;
+      }
       // Ignora error si falla red, manteniendo resiliencia offline en UI local
-    });
+    }
 
     setExpiresAt(Date.now() + CART_RESERVATION_TTL_MS);
 
@@ -148,9 +168,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
       return [...current, { gameEditionId, quantity: safeQuantity }];
     });
+    return true;
   }, []);
 
   const removeItem = useCallback((gameEditionId: number) => {
+    setStockError(null);
     setItems((current) => {
       const target = current.find((item) => item.gameEditionId === gameEditionId);
       if (target) {
@@ -160,30 +182,42 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const setQuantity = useCallback((gameEditionId: number, quantity: number) => {
-    if (!Number.isInteger(gameEditionId) || gameEditionId < 1) return;
+  const setQuantity = useCallback(async (gameEditionId: number, quantity: number): Promise<boolean> => {
+    if (!Number.isInteger(gameEditionId) || gameEditionId < 1) return false;
     const safeQuantity = normalizeQuantity(quantity);
+    setStockError(null);
+
+    const existing = itemsRef.current.find((item) => item.gameEditionId === gameEditionId);
+    if (existing) {
+      const diff = safeQuantity - existing.quantity;
+      if (diff > 0) {
+        try {
+          await gameEditionsExtraApi.reserve(gameEditionId, diff);
+        } catch (error) {
+          if (isHttpError(error)) {
+            setStockError(errorMessage(error));
+            return false;
+          }
+        }
+      } else if (diff < 0) {
+        void gameEditionsExtraApi.release(gameEditionId, Math.abs(diff)).catch(() => {});
+      }
+    }
+
     setExpiresAt(Date.now() + CART_RESERVATION_TTL_MS);
 
-    setItems((current) => {
-      const existing = current.find((item) => item.gameEditionId === gameEditionId);
-      if (existing) {
-        const diff = safeQuantity - existing.quantity;
-        if (diff > 0) {
-          void gameEditionsExtraApi.reserve(gameEditionId, diff).catch(() => {});
-        } else if (diff < 0) {
-          void gameEditionsExtraApi.release(gameEditionId, Math.abs(diff)).catch(() => {});
-        }
-      }
-      return current.map((item) =>
+    setItems((current) =>
+      current.map((item) =>
         item.gameEditionId === gameEditionId
           ? { ...item, quantity: safeQuantity }
           : item,
-      );
-    });
+      ),
+    );
+    return true;
   }, []);
 
   const clear = useCallback((options?: ClearCartOptions) => {
+    setStockError(null);
     const shouldRelease = options?.releaseReservations ?? true;
     if (shouldRelease) {
       // Al limpiar el carrito sin pagar, liberar las claves reservadas
@@ -199,13 +233,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     () => ({
       items,
       expiresAt,
+      stockError,
+      clearStockError,
       addItem,
       removeItem,
       setQuantity,
       clear,
       totalItems: items.reduce((acc, item) => acc + item.quantity, 0),
     }),
-    [items, expiresAt, addItem, removeItem, setQuantity, clear],
+    [items, expiresAt, stockError, clearStockError, addItem, removeItem, setQuantity, clear],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

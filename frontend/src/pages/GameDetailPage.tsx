@@ -26,11 +26,30 @@ export function GameDetailPage() {
   const isValidGameId = Number.isInteger(gameId) && gameId >= 1;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { addItem } = useCart();
+  const { addItem, stockError } = useCart();
   const { currentUser } = useSession();
   const [activeTab, setActiveTab] = useState<Tab>('Descripción');
   const [selectedEditionId, setSelectedEditionId] = useState<number | null>(null);
   const [addedToCart, setAddedToCart] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+
+  const handleAddToCart = async (editionId: number, goToOrders = false) => {
+    if (isAddingToCart) return;
+    setIsAddingToCart(true);
+    try {
+      const ok = await addItem(editionId, 1);
+      await gameQuery.refetch();
+      if (ok) {
+        if (goToOrders) {
+          navigate('/orders');
+        } else {
+          setAddedToCart(true);
+        }
+      }
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
 
   const { alerts, dismissAlert } = useStockWatch({
     gameId: isValidGameId ? gameId : undefined,
@@ -276,8 +295,8 @@ export function GameDetailPage() {
                         variant={isNintendoGame || Boolean(edition.platform?.name?.toLowerCase().includes('switch')) ? 'nintendo' : 'brand'}
                         size="sm"
                         className="mt-4"
-                        disabled={isSoldOut}
-                        onClick={() => addItem(edition.id, 1)}
+                        disabled={isSoldOut || isAddingToCart}
+                        onClick={() => void handleAddToCart(edition.id)}
                       >
                         {isSoldOut ? 'Agotado' : 'Agregar al carrito'}
                       </Button>
@@ -468,14 +487,15 @@ export function GameDetailPage() {
             </div>
           )}
 
+          {stockError && <ErrorBanner message={stockError} />}
+
           <div className="space-y-2.5">
             <Button
               variant={isNintendoGame ? 'nintendo' : 'brand'}
               className="w-full"
-              disabled={editions.length === 0 || isActiveEditionSoldOut}
+              disabled={editions.length === 0 || isActiveEditionSoldOut || isAddingToCart}
               onClick={() => {
-                if (activeEdition) addItem(activeEdition.id, 1);
-                navigate('/orders');
+                if (activeEdition) void handleAddToCart(activeEdition.id, true);
               }}
             >
               {isActiveEditionSoldOut ? 'Sin stock digital' : 'Comprar ahora'}
@@ -484,12 +504,9 @@ export function GameDetailPage() {
             <Button
               variant="outline"
               className="w-full"
-              disabled={editions.length === 0 || isActiveEditionSoldOut}
+              disabled={editions.length === 0 || isActiveEditionSoldOut || isAddingToCart}
               onClick={() => {
-                if (activeEdition) {
-                  addItem(activeEdition.id, 1);
-                  setAddedToCart(true);
-                }
+                if (activeEdition) void handleAddToCart(activeEdition.id, false);
               }}
             >
               {addedToCart ? '¡Añadido al carrito!' : 'Añadir al carrito'}

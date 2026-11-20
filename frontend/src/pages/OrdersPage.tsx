@@ -22,12 +22,13 @@ import { VALIDATION_PATTERNS } from '@/utils/fields';
 
 export function OrdersPage() {
   const { currentUser } = useSession();
-  const { removeItem, setQuantity, totalItems } = useCart();
+  const { removeItem, setQuantity, totalItems, stockError, clearStockError } = useCart();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') === 'history' ? 'history' : 'cart';
   const paidOrderNumber = searchParams.get('paid');
   const [couponCode, setCouponCode] = useState('');
+  const [updatingEditionId, setUpdatingEditionId] = useState<number | null>(null);
 
   const selectTab = (tab: 'cart' | 'history') => {
     const next = new URLSearchParams(searchParams);
@@ -146,6 +147,11 @@ export function OrdersPage() {
             <SectionHeader title="Tu carrito" description={`${totalItems} artículos`} />
 
             <div className="mt-5">
+              {stockError && (
+                <div className="mb-4">
+                  <ErrorBanner message={stockError} onRetry={clearStockError} />
+                </div>
+              )}
               {editionsQuery.isLoading && <Spinner label="Cargando ediciones…" />}
 
               {cartLines.length === 0 && !editionsQuery.isLoading && (
@@ -163,6 +169,23 @@ export function OrdersPage() {
               <div className="flex flex-col gap-3">
                 {cartLines.map((line) => {
                   const game = line.edition.game;
+                  const hasKeyInfo = Array.isArray(line.edition.digitalKeys);
+                  const availableKeys = countAvailableKeys(line.edition);
+                  const purchasableKeys = countPurchasableKeys(line.edition);
+                  const isLineUpdating = updatingEditionId === line.edition.id;
+                  const exceedsStock = hasKeyInfo && purchasableKeys < line.quantity;
+
+                  const handleChangeQuantity = async (nextQty: number) => {
+                    if (isLineUpdating) return;
+                    setUpdatingEditionId(line.edition.id);
+                    try {
+                      await setQuantity(line.edition.id, nextQty);
+                      await editionsQuery.refetch();
+                    } finally {
+                      setUpdatingEditionId(null);
+                    }
+                  };
+
                   return (
                     <article
                       key={line.edition.id}
@@ -191,6 +214,11 @@ export function OrdersPage() {
                           <p className="mt-1 text-caption font-semibold text-[#64748B]">
                             {formatCurrency(line.unitPrice)} c/u
                           </p>
+                          {exceedsStock && (
+                            <p className="mt-1 text-caption font-bold text-[#EF4444]">
+                              Stock insuficiente (máx. {purchasableKeys} disponible{purchasableKeys === 1 ? '' : 's'})
+                            </p>
+                          )}
                         </div>
                       </div>
 
@@ -199,13 +227,9 @@ export function OrdersPage() {
                           <button
                             type="button"
                             aria-label="Quitar una unidad"
-                            onClick={() =>
-                              setQuantity(
-                                line.edition.id,
-                                Math.max(1, line.quantity - 1),
-                              )
-                            }
-                            className="h-7 w-7 rounded-lg bg-[#FFFFFF] border border-[#E2E8F0] font-bold text-[#0F172A] hover:border-[#FF2A5F] cursor-pointer"
+                            disabled={isLineUpdating || line.quantity <= 1}
+                            onClick={() => void handleChangeQuantity(Math.max(1, line.quantity - 1))}
+                            className="h-7 w-7 rounded-lg bg-[#FFFFFF] border border-[#E2E8F0] font-bold text-[#0F172A] hover:border-[#FF2A5F] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             −
                           </button>
@@ -216,11 +240,11 @@ export function OrdersPage() {
                             type="button"
                             aria-label="Agregar una unidad"
                             disabled={
+                              isLineUpdating ||
                               line.quantity >= 50 ||
-                              (Array.isArray(line.edition.digitalKeys) &&
-                                countAvailableKeys(line.edition) <= 0)
+                              (hasKeyInfo && (availableKeys <= 0 || line.quantity >= purchasableKeys))
                             }
-                            onClick={() => setQuantity(line.edition.id, line.quantity + 1)}
+                            onClick={() => void handleChangeQuantity(line.quantity + 1)}
                             className="h-7 w-7 rounded-lg bg-[#FFFFFF] border border-[#E2E8F0] font-bold text-[#0F172A] hover:border-[#FF2A5F] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             +
@@ -231,7 +255,10 @@ export function OrdersPage() {
                         </span>
                         <button
                           type="button"
-                          onClick={() => removeItem(line.edition.id)}
+                          onClick={() => {
+                            removeItem(line.edition.id);
+                            void editionsQuery.refetch();
+                          }}
                           className="text-xs font-bold text-[#EF4444] hover:text-[#991B1B] cursor-pointer"
                         >
                           Quitar
