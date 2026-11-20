@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { gameEditionsExtraApi } from '@/api';
 
 const STORAGE_KEY = 'keneth.cart';
+export const CART_RESERVATION_TTL_MS = 3 * 60 * 1000;
 
 export function clearStoredCart(): void {
   try {
@@ -17,8 +18,14 @@ export interface CartItem {
   quantity: number;
 }
 
+interface StoredCartPayload {
+  items: CartItem[];
+  expiresAt: number | null;
+}
+
 interface CartContextValue {
   items: CartItem[];
+  expiresAt: number | null;
   addItem: (gameEditionId: number, quantity?: number) => void;
   removeItem: (gameEditionId: number) => void;
   setQuantity: (gameEditionId: number, quantity: number) => void;
@@ -33,33 +40,87 @@ function normalizeQuantity(quantity: number): number {
   return Math.min(50, Math.max(1, Math.floor(quantity)));
 }
 
-function readStoredItems(): CartItem[] {
+function isValidCartItem(item: unknown): item is CartItem {
+  return (
+    typeof item === 'object' &&
+    item !== null &&
+    Number.isInteger((item as CartItem).gameEditionId) &&
+    (item as CartItem).gameEditionId >= 1 &&
+    Number.isInteger((item as CartItem).quantity) &&
+    (item as CartItem).quantity >= 1 &&
+    (item as CartItem).quantity <= 50
+  );
+}
+
+function readStoredCart(): StoredCartPayload {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
+    if (!raw) return { items: [], expiresAt: null };
     const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (item): item is CartItem =>
-        typeof item === 'object' &&
-        item !== null &&
-        Number.isInteger((item as CartItem).gameEditionId) &&
-        (item as CartItem).gameEditionId >= 1 &&
-        Number.isInteger((item as CartItem).quantity) &&
-        (item as CartItem).quantity >= 1 &&
-        (item as CartItem).quantity <= 50,
-    );
+
+    if (Array.isArray(parsed)) {
+      const validItems = parsed.filter(isValidCartItem);
+      return {
+        items: validItems,
+        expiresAt: validItems.length > 0 ? Date.now() + CART_RESERVATION_TTL_MS : null,
+      };
+    }
+
+    if (typeof parsed === 'object' && parsed !== null) {
+      const payload = parsed as { items?: unknown; expiresAt?: unknown };
+      const validItems = Array.isArray(payload.items) ? payload.items.filter(isValidCartItem) : [];
+      const expiresAt = typeof payload.expiresAt === 'number' && Number.isFinite(payload.expiresAt)
+        ? payload.expiresAt
+        : null;
+
+      if (validItems.length === 0 || (expiresAt !== null && Date.now() >= expiresAt)) {
+        return { items: [], expiresAt: null };
+      }
+
+      return {
+        items: validItems,
+        expiresAt: expiresAt ?? Date.now() + CART_RESERVATION_TTL_MS,
+      };
+    }
+
+    return { items: [], expiresAt: null };
   } catch {
-    return [];
+    return { items: [], expiresAt: null };
   }
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>(readStoredItems);
+  const [initialCart] = useState<StoredCartPayload>(readStoredCart);
+  const [items, setItems] = useState<CartItem[]>(initialCart.items);
+  const [expiresAt, setExpiresAt] = useState<number | null>(initialCart.expiresAt);
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  }, [items]);
+    const payload: StoredCartPayload = {
+      items,
+      expiresAt: items.length > 0 ? expiresAt : null,
+    };
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  }, [items, expiresAt]);
+
+  useEffect(() => {
+    if (items.length === 0 || expiresAt === null) {
+      return;
+    }
+
+    const remainingMs = expiresAt - Date.now();
+    if (remainingMs <= 0) {
+      setItems([]);
+      setExpiresAt(null);
+      return;
+    }
+
+    const timerId = window.setTimeout(() => {
+      setItems([]);
+      setExpiresAt(null);
+    }, remainingMs);
+
+    return () => window.clearTimeout(timerId);
+  }, [items.length, expiresAt]);
 
   const addItem = useCallback((gameEditionId: number, quantity = 1) => {
     if (!Number.isInteger(gameEditionId) || gameEditionId < 1) return;
@@ -69,6 +130,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     void gameEditionsExtraApi.reserve(gameEditionId, safeQuantity).catch(() => {
       // Ignora error si falla red, manteniendo resiliencia offline en UI local
     });
+
+    setExpiresAt(Date.now() + CART_RESERVATION_TTL_MS);
 
     setItems((current) => {
       const existing = current.find((item) => item.gameEditionId === gameEditionId);
@@ -96,6 +159,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const setQuantity = useCallback((gameEditionId: number, quantity: number) => {
     if (!Number.isInteger(gameEditionId) || gameEditionId < 1) return;
     const safeQuantity = normalizeQuantity(quantity);
+    setExpiresAt(Date.now() + CART_RESERVATION_TTL_MS);
+
     setItems((current) => {
       const existing = current.find((item) => item.gameEditionId === gameEditionId);
       if (existing) {
@@ -120,18 +185,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
       void gameEditionsExtraApi.release(item.gameEditionId, item.quantity).catch(() => {});
     }
     setItems([]);
+    setExpiresAt(null);
   }, [items]);
 
   const value = useMemo<CartContextValue>(
     () => ({
       items,
+      expiresAt,
       addItem,
       removeItem,
       setQuantity,
       clear,
       totalItems: items.reduce((acc, item) => acc + item.quantity, 0),
     }),
-    [items, addItem, removeItem, setQuantity, clear],
+    [items, expiresAt, addItem, removeItem, setQuantity, clear],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

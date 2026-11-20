@@ -195,6 +195,7 @@ export class OrdersService {
 
         for (const key of availableKeys) {
           key.status = targetKeyStatus;
+          key.reservedUntil = null;
         }
         await manager.save(DigitalKey, availableKeys);
 
@@ -321,6 +322,7 @@ export class OrdersService {
       for (const item of orderWithRelations.items ?? []) {
         if (item.digitalKey && item.digitalKey.status === KeyStatus.RESERVED) {
           item.digitalKey.status = KeyStatus.ASSIGNED;
+          item.digitalKey.reservedUntil = null;
           await manager.save(DigitalKey, item.digitalKey);
         }
 

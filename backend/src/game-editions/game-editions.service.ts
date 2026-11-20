@@ -1,4 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EditionFormat, GameEdition } from './entities/game-edition.entity.js';
@@ -10,8 +17,14 @@ import { CreateGameEditionDto } from './dto/create-game-edition.dto.js';
 import { UpdateGameEditionDto } from './dto/update-game-edition.dto.js';
 import { ReserveKeysDto, ReleaseKeysDto } from './dto/reserve-keys.dto.js';
 
+export const CART_RESERVATION_TTL_MS = 3 * 60 * 1000;
+const RESERVATION_CLEANUP_INTERVAL_MS = 15 * 1000;
+
 @Injectable()
-export class GameEditionsService {
+export class GameEditionsService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(GameEditionsService.name);
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
+
   constructor(
     @InjectRepository(GameEdition)
     private readonly editionRepository: Repository<GameEdition>,
@@ -24,6 +37,43 @@ export class GameEditionsService {
 
     private readonly gamesService: GamesService,
   ) {}
+
+  onModuleInit() {
+    this.cleanupTimer = setInterval(() => {
+      void this.releaseExpiredCartReservations().catch((err) => {
+        this.logger.warn(
+          `Error liberando reservas expiradas de carrito: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      });
+    }, RESERVATION_CLEANUP_INTERVAL_MS);
+    this.cleanupTimer.unref?.();
+  }
+
+  onModuleDestroy() {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
+  }
+
+  async releaseExpiredCartReservations(): Promise<number> {
+    const result = await this.digitalKeyRepository
+      .createQueryBuilder()
+      .update(DigitalKey)
+      .set({ status: KeyStatus.AVAILABLE, reservedUntil: null })
+      .where('status = :status', { status: KeyStatus.RESERVED })
+      .andWhere('reservedUntil IS NOT NULL')
+      .andWhere('reservedUntil <= :now', { now: new Date() })
+      .execute();
+
+    const released = result.affected ?? 0;
+    if (released > 0) {
+      this.logger.log(
+        `Liberadas ${released} clave(s) de carrito por expiración de TTL (3 min).`,
+      );
+    }
+    return released;
+  }
 
   private sanitizeEdition(edition: GameEdition) {
     return {
@@ -154,6 +204,8 @@ export class GameEditionsService {
   }
 
   async reserveKeys(editionId: number, dto: ReserveKeysDto) {
+    await this.releaseExpiredCartReservations();
+
     const edition = await this.editionRepository.findOne({
       where: { id: editionId },
     });
@@ -175,8 +227,10 @@ export class GameEditionsService {
       );
     }
 
+    const expiresAt = new Date(Date.now() + CART_RESERVATION_TTL_MS);
     for (const key of availableKeys) {
       key.status = KeyStatus.RESERVED;
+      key.reservedUntil = expiresAt;
     }
     await this.digitalKeyRepository.save(availableKeys);
 
@@ -184,7 +238,8 @@ export class GameEditionsService {
       success: true,
       editionId,
       reservedCount: availableKeys.length,
-      message: `${availableKeys.length} clave(s) reservada(s) temporalmente en el carrito`,
+      expiresAt: expiresAt.toISOString(),
+      message: `${availableKeys.length} clave(s) reservada(s) temporalmente en el carrito (expira en 3 min)`,
     };
   }
 
@@ -201,12 +256,14 @@ export class GameEditionsService {
         gameEdition: { id: editionId },
         status: KeyStatus.RESERVED,
       },
+      order: { reservedUntil: 'ASC' },
       take: dto.quantity,
     });
 
     if (reservedKeys.length > 0) {
       for (const key of reservedKeys) {
         key.status = KeyStatus.AVAILABLE;
+        key.reservedUntil = null;
       }
       await this.digitalKeyRepository.save(reservedKeys);
     }

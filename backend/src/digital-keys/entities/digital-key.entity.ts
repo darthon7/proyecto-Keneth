@@ -36,6 +36,9 @@ export class DigitalKey {
   @Column({ length: 50, nullable: true })
   batchId: string;
 
+  @Column({ type: 'timestamp', nullable: true })
+  reservedUntil: Date | null;
+
   @UpdateDateColumn()
   updatedAt: Date;
 
